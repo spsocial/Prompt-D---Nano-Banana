@@ -39,25 +39,19 @@ export default async function handler(req, res) {
     const slipData = await easySlipResponse.json()
     console.log('EasySlip Response:', slipData)
 
-    // ตรวจสอบผลการอ่านสลิป
-    if (!slipData.success || !slipData.data) {
+    // ตรวจสอบผลการอ่านสลิป - รองรับ format ใหม่
+    if (!slipData || !slipData.data) {
       return res.status(200).json({
         success: false,
         message: 'ไม่สามารถอ่านข้อมูลจากสลิปได้ กรุณาถ่ายภาพให้ชัดเจน'
       })
     }
 
-    // ดึงข้อมูลจากสลิป
-    const {
-      amount,
-      receiver_account_name,
-      sender_account_name,
-      transaction_date,
-      transaction_ref
-    } = slipData.data
+    // ดึงข้อมูลจากสลิป - รองรับ format ใหม่
+    const data = slipData.data
 
-    // ตรวจสอบจำนวนเงิน
-    const slipAmount = parseFloat(amount?.value || amount || 0)
+    // ตรวจสอบจำนวนเงิน - format ใหม่
+    const slipAmount = data.amount?.amount || data.amount || 0
     const expected = parseFloat(expectedAmount)
 
     console.log('Slip Amount:', slipAmount, 'Expected:', expected)
@@ -70,8 +64,14 @@ export default async function handler(req, res) {
       })
     }
 
-    // ตรวจสอบชื่อผู้รับ (ถ้ามี)
-    const receiverName = receiver_account_name?.value || receiver_account_name || ''
+    // ตรวจสอบชื่อผู้รับ (ถ้ามี) - format ใหม่
+    const receiverName = data.receiver?.account?.name?.th ||
+                        data.receiver?.account?.displayName || ''
+
+    const senderBank = data.sender?.bank?.short || data.sender?.bank?.name || ''
+    const senderAccount = data.sender?.account?.name?.th ||
+                          data.sender?.account?.proxy?.value ||
+                          'Unknown'
 
     // ในระบบจริง ควรตรวจสอบว่าโอนมาที่บัญชีเราจริงๆ
     // if (!receiverName.includes('พรอมท์') && !receiverName.includes('Prompt')) {
@@ -85,9 +85,10 @@ export default async function handler(req, res) {
     const paymentRecord = {
       userId,
       amount: slipAmount,
-      transactionRef: transaction_ref?.value || transaction_ref || 'N/A',
-      transactionDate: transaction_date?.value || transaction_date || new Date().toISOString(),
-      senderName: sender_account_name?.value || sender_account_name || 'Unknown',
+      transactionRef: data.transRef || 'N/A',
+      transactionDate: data.date || new Date().toISOString(),
+      senderName: senderAccount,
+      senderBank: senderBank,
       receiverName: receiverName,
       timestamp: new Date().toISOString()
     }
