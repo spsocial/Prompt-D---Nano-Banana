@@ -1,0 +1,337 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Banana Yellow Theme */
+:root {
+  --banana-yellow: #FFE135;
+  --banana-yellow-dark: #FFD700;
+  --banana-yellow-light: #FFF59D;
+  --banana-brown: #8B4513;
+  --banana-green: #7CB342;
+  --banana-purple: #9C27B0;
+  --banana-blue: #2196F3;
+  --banana-pink: #E91E63;
+}
+
+/* Glassmorphism Effect */
+:root {
+  --glass-light: rgba(255, 255, 255, 0.25);
+  --glass-medium: rgba(255, 255, 255, 0.15);
+  --glass-dark: rgba(0, 0, 0, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.18);
+}
+
+/* Global Styles */
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--banana-yellow);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--banana-yellow-dark);
+}
+
+/* Animation Classes */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-yellow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 225, 53, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(255, 225, 53, 0);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-yellow {
+  animation: pulse-yellow 2s infinite;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+/* Gradient Backgrounds */
+.bg-banana-gradient {
+  background: linear-gradient(135deg, var(--banana-yellow-light) 0%, var(--banana-yellow) 50%, var(--banana-yellow-dark) 100%);
+}
+
+.bg-banana-radial {
+  background: radial-gradient(circle at center, var(--banana-yellow-light), var(--banana-yellow));
+}
+
+.bg-neon-gradient {
+  background: linear-gradient(135deg, #FFE135, #FFD700, #FFA500, #FF8C00);
+}
+
+/* Glassmorphism Effect */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+}
+
+.glass-effect-dark {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Custom Button Styles */
+.btn-banana {
+  @apply px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-white rounded-xl font-semibold transition-all duration-300 hover:from-yellow-500 hover:to-yellow-600 hover:shadow-lg active:scale-95 transform;
+}
+
+.btn-banana-outline {
+  @apply px-6 py-3 border-2 border-yellow-500 text-yellow-600 rounded-xl font-semibold transition-all duration-300 hover:bg-gradient-to-r hover:from-yellow-400 hover:to-yellow-500 hover:text-white hover:shadow-lg;
+}
+
+.btn-modern {
+  @apply px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-semibold transition-all duration-300 hover:from-purple-600 hover:to-indigo-700 hover:shadow-lg active:scale-95 transform;
+}
+
+/* Card Effects */
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-2xl hover:-translate-y-2;
+}
+
+.card-modern {
+  @apply bg-white/30 backdrop-blur-lg rounded-2xl border border-white/20 shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl;
+}
+
+/* Text Gradients */
+.text-gradient-banana {
+  background: linear-gradient(135deg, var(--banana-yellow-dark), var(--banana-yellow-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-neon {
+  background: linear-gradient(135deg, #FFD700, #FFA500, #FF8C00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+}
+
+/* Loading Dots */
+.loading-dots span {
+  animation: loading-dot 1.4s infinite ease-in-out both;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes loading-dot {
+  0%, 60%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Image Upload Area */
+.upload-area {
+  @apply border-2 border-dashed border-gray-300/50 rounded-2xl p-8 text-center cursor-pointer transition-all duration-300;
+}
+
+.upload-area:hover {
+  @apply border-yellow-400 bg-yellow-50/20 backdrop-blur-sm;
+}
+
+.upload-area.drag-active {
+  @apply border-yellow-500 bg-yellow-100/30 backdrop-blur-md;
+}
+
+/* Result Cards */
+.result-card {
+  @apply bg-white/40 backdrop-blur-lg rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl;
+}
+
+.result-card-modern {
+  @apply bg-gradient-to-br from-white/40 to-white/20 backdrop-blur-xl rounded-2xl border border-white/30 shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+}
+
+/* Utility Classes */
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Camera View */
+.camera-view {
+  @apply fixed inset-0 bg-black z-50 flex flex-col;
+}
+
+.camera-controls {
+  @apply absolute top-4 left-0 right-0 flex justify-between px-4;
+}
+
+.camera-capture-btn {
+  @apply absolute bottom-8 left-0 right-0 flex justify-center;
+}
+
+/* Responsive Typography */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none;
+  }
+}
+
+/* Focus Styles */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--banana-yellow);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Selection Colors */
+::selection {
+  background-color: var(--banana-yellow-light);
+  color: var(--banana-brown);
+}
+
+::-moz-selection {
+  background-color: var(--banana-yellow-light);
+  color: var(--banana-brown);
+}
+
+/* Modern Input Styles */
+.modern-input {
+  @apply w-full px-4 py-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all duration-300;
+}
+
+.modern-textarea {
+  @apply w-full px-4 py-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all duration-300 resize-none;
+}
+
+/* Fullscreen Image Modal Improvements */
+.fullscreen-image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fullscreen-image-container img {
+  max-height: calc(100vh - 200px);
+  max-width: 90vw;
+  object-fit: contain;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* Ensure modals are properly layered */
+.fixed.inset-0.z-50 {
+  z-index: 100;
+}

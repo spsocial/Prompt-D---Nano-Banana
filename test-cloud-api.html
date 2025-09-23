@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Google Cloud API for Gemini Image</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 15px;
+      margin-bottom: 30px;
+    }
+    .input-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #555;
+      font-weight: 600;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    button {
+      flex: 1;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .success {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      border-left: 4px solid #667eea;
+    }
+    .error {
+      background: #ffebee;
+      border-left-color: #f44336;
+      color: #c62828;
+    }
+    .success-result {
+      background: #e8f5e9;
+      border-left-color: #4caf50;
+    }
+    .warning {
+      background: #fff3e0;
+      border-left-color: #ff9800;
+      color: #e65100;
+    }
+    pre {
+      background: #263238;
+      color: #aed581;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .step {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+    .step-number {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      background: #667eea;
+      color: white;
+      text-align: center;
+      line-height: 30px;
+      border-radius: 50%;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    .image-result {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .image-result img {
+      max-width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .info-box {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      border: 2px solid #667eea30;
+      padding: 15px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 ทดสอบ Google Cloud API สำหรับ Gemini Image Generation</h1>
+
+    <div class="info-box">
+      <h3>📋 ขั้นตอนการตั้งค่า:</h3>
+      <div class="step">
+        <span class="step-number">1</span>
+        ไปที่ <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a>
+      </div>
+      <div class="step">
+        <span class="step-number">2</span>
+        สร้าง API Key จาก APIs & Services > Credentials
+      </div>
+      <div class="step">
+        <span class="step-number">3</span>
+        Enable "Generative Language API"
+      </div>
+      <div class="step">
+        <span class="step-number">4</span>
+        ตรวจสอบว่า Project ผูกกับ Billing Account แล้ว
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label for="apiKey">🔑 Google Cloud API Key (ไม่ใช่ AI Studio):</label>
+      <input type="text" id="apiKey" placeholder="AIza..." value="">
+    </div>
+
+    <div class="input-group">
+      <label for="projectId">📁 Google Cloud Project ID (optional):</label>
+      <input type="text" id="projectId" placeholder="my-project-123456">
+    </div>
+
+    <div class="input-group">
+      <label for="prompt">🎨 Image Prompt:</label>
+      <textarea id="prompt" rows="3">Generate a photorealistic image of a luxury watch on marble surface with dramatic lighting</textarea>
+    </div>
+
+    <div class="btn-group">
+      <button onclick="testAPI()">🧪 Test API</button>
+      <button onclick="checkBilling()" class="secondary">💳 Check Billing</button>
+      <button onclick="generateImage()" class="success">🎨 Generate Image</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    async function testAPI() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const resultDiv = document.getElementById('result');
+
+      if (!apiKey) {
+        alert('กรุณาใส่ API Key');
+        return;
+      }
+
+      resultDiv.innerHTML = '<div class="result">⏳ กำลังทดสอบ API...</div>';
+
+      try {
+        // Test 1: Check if API key works
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+          const hasImageModel = data.models?.some(m =>
+            m.name.includes('flash-image-preview')
+          );
+
+          let html = '<div class="result success-result">';
+          html += '<h3>✅ API Key ใช้งานได้!</h3>';
+          html += `<p>พบ ${data.models?.length || 0} models</p>`;
+
+          if (hasImageModel) {
+            html += '<p class="success">✅ พบ gemini-2.5-flash-image-preview</p>';
+          } else {
+            html += '<p class="warning">⚠️ ไม่พบ image preview model - อาจต้องรอ enable</p>';
+          }
+
+          html += '<h4>Models ที่ใช้ได้:</h4>';
+          html += '<pre>' + JSON.stringify(
+            data.models?.map(m => m.name).slice(0, 5),
+            null, 2
+          ) + '</pre>';
+          html += '</div>';
+
+          resultDiv.innerHTML = html;
+        } else {
+          resultDiv.innerHTML = `
+            <div class="result error">
+              <h3>❌ API Key ไม่ถูกต้อง</h3>
+              <p>${data.error?.message || 'Unknown error'}</p>
+              <p>ตรวจสอบว่า:</p>
+              <ul>
+                <li>ใช้ API key จาก Google Cloud (ไม่ใช่ AI Studio)</li>
+                <li>Enable Generative Language API แล้ว</li>
+                <li>Project ผูก Billing Account แล้ว</li>
+              </ul>
+            </div>
+          `;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="result error">
+            <h3>❌ Error</h3>
+            <p>${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    async function checkBilling() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const resultDiv = document.getElementById('result');
+
+      if (!apiKey) {
+        alert('กรุณาใส่ API Key');
+        return;
+      }
+
+      resultDiv.innerHTML = `
+        <div class="result warning">
+          <h3>💳 การตรวจสอบ Billing</h3>
+          <p>ไปตรวจสอบด้วยตัวเองที่:</p>
+          <ol>
+            <li><a href="https://console.cloud.google.com/billing" target="_blank">Google Cloud Billing</a></li>
+            <li>ดูว่า "Billing account is active" ✅</li>
+            <li>ดูว่า Project ผูกกับ billing แล้ว</li>
+            <li>ตั้ง Budget Alert เพื่อควบคุมค่าใช้จ่าย</li>
+          </ol>
+          <p><strong>ราคา:</strong> ~$0.039/ภาพ (~1.4 บาท)</p>
+          <p><strong>Free Credits:</strong> $300 สำหรับผู้ใช้ใหม่</p>
+        </div>
+      `;
+    }
+
+    async function generateImage() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const prompt = document.getElementById('prompt').value.trim();
+      const resultDiv = document.getElementById('result');
+
+      if (!apiKey || !prompt) {
+        alert('กรุณาใส่ API Key และ Prompt');
+        return;
+      }
+
+      resultDiv.innerHTML = '<div class="result">🎨 กำลังสร้างภาพ...</div>';
+
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              contents: [{
+                role: 'user',
+                parts: [{
+                  text: prompt
+                }]
+              }],
+              generationConfig: {
+                temperature: 0.4,
+                maxOutputTokens: 8192
+              }
+            })
+          }
+        );
+
+        const data = await response.json();
+
+        if (response.ok && data.candidates?.[0]?.content?.parts) {
+          let html = '<div class="result success-result">';
+          html += '<h3>✅ สร้างภาพสำเร็จ!</h3>';
+
+          // Check for image in response
+          const parts = data.candidates[0].content.parts;
+          const imagePart = parts.find(p => p.inlineData);
+
+          if (imagePart) {
+            const imageData = imagePart.inlineData.data;
+            const mimeType = imagePart.inlineData.mimeType || 'image/png';
+            html += `
+              <div class="image-result">
+                <img src="data:${mimeType};base64,${imageData}" alt="Generated Image">
+              </div>
+            `;
+          } else {
+            html += '<p>ไม่พบภาพในคำตอบ - อาจต้องใช้ prompt ที่ชัดเจนกว่านี้</p>';
+            html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+          }
+
+          html += '</div>';
+          resultDiv.innerHTML = html;
+        } else {
+          const errorMsg = data.error?.message || 'Unknown error';
+
+          let suggestion = '';
+          if (errorMsg.includes('429') || errorMsg.includes('quota')) {
+            suggestion = `
+              <p><strong>💡 แก้ไข:</strong></p>
+              <ul>
+                <li>รอ 1 นาที แล้วลองใหม่</li>
+                <li>ตรวจสอบ Billing Account</li>
+                <li>ใช้ API key จาก Google Cloud (ไม่ใช่ AI Studio)</li>
+              </ul>
+            `;
+          } else if (errorMsg.includes('404')) {
+            suggestion = `
+              <p><strong>💡 แก้ไข:</strong></p>
+              <ul>
+                <li>Model นี้อาจยังไม่ available ในภูมิภาคของคุณ</li>
+                <li>ลองใช้ gemini-2.0-flash-exp แทน</li>
+                <li>Enable Generative Language API ใน Cloud Console</li>
+              </ul>
+            `;
+          }
+
+          resultDiv.innerHTML = `
+            <div class="result error">
+              <h3>❌ ไม่สามารถสร้างภาพได้</h3>
+              <p>${errorMsg}</p>
+              ${suggestion}
+              <details>
+                <summary>Full Response</summary>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+              </details>
+            </div>
+          `;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="result error">
+            <h3>❌ Error</h3>
+            <p>${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Auto-fill if URL has API key parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlApiKey = urlParams.get('key');
+    if (urlApiKey) {
+      document.getElementById('apiKey').value = urlApiKey;
+    }
+  </script>
+</body>
+</html>

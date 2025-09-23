@@ -1,0 +1,108 @@
+import { GoogleGenAI } from "@google/genai"
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+  },
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  try {
+    const { image, apiKey, customPrompt } = req.body
+
+    if (!image) {
+      return res.status(400).json({ error: 'No image provided' })
+    }
+
+    // Use Gemini API key
+    const geminiApiKey = apiKey || process.env.GEMINI_API_KEY || 'AIzaSyCaUEO45dTltA6huicctEvJEOT0GC4Qzsg'
+
+    // Initialize with correct package
+    const ai = new GoogleGenAI({ apiKey: geminiApiKey })
+
+    // Convert base64 to proper format
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '')
+
+    // Analyze image with Gemini
+    const analysisPrompt = `วิเคราะห์ภาพสินค้านี้และระบุรายละเอียดต่อไปนี้:
+    1. ประเภทและหมวดหมู่ของสินค้า
+    2. ลักษณะเด่นของสินค้า (สี, พื้นผิว, วัสดุ)
+    3. กลุ่มเป้าหมาย
+    4. จุดขายที่สำคัญ
+    5. อารมณ์และความรู้สึกที่ต้องการสื่อ
+
+    ตอบเป็นภาษาไทยแบบกระชับและชัดเจน`
+
+    // Use text generation model for analysis
+    const analysisResponse = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: [
+        {
+          text: analysisPrompt
+        },
+        {
+          inlineData: {
+            mimeType: "image/jpeg",
+            data: base64Data
+          }
+        }
+      ]
+    })
+
+    let analysis = ''
+    if (analysisResponse.candidates && analysisResponse.candidates[0]) {
+      const parts = analysisResponse.candidates[0].content.parts
+      if (parts) {
+        for (const part of parts) {
+          if (part.text) {
+            analysis += part.text
+          }
+        }
+      }
+    }
+
+    // Premium base prompt
+    const premiumBasePrompt = customPrompt || `สร้างภาพโฆษณาสินค้าจากภาพต้นฉบับ ในบรรยากาศที่หรูหราและทรงพลัง ถ่ายทอดความรู้สึกระดับพรีเมียมอย่างชัดเจน ออกแบบการจัดวางองค์ประกอบภาพอย่างพิถีพิถันเหมือนงานโฆษณามืออาชีพ จัดแสงเงาให้โดดเด่นและเสริมความงามของตัวสินค้า พร้อมเลือกฉากหลังที่มีความหรูหรา กลมกลืน และสื่อถึงคุณค่าของแบรนด์
+ภาพที่ได้ต้องคมชัดในระดับไฮเปอร์เรียลลิสติก รายละเอียดสมจริงทุกมุมมอง โทนสีเน้นความมีระดับ สะท้อนภาพลักษณ์ที่น่าเชื่อถือ ดูทันสมัย และสร้างแรงดึงดูดให้ผู้ชมรู้สึกว่าผลิตภัณฑ์นี้มีคุณค่าเหนือกว่าใคร`
+
+    // Create 4 premium style variations
+    const prompts = [
+      {
+        style: "Luxury Minimalist",
+        prompt: premiumBasePrompt
+      },
+      {
+        style: "Premium Lifestyle",
+        prompt: premiumBasePrompt
+      },
+      {
+        style: "Bold Luxury Statement",
+        prompt: premiumBasePrompt
+      },
+      {
+        style: "Ultra Premium Dark",
+        prompt: premiumBasePrompt
+      }
+    ]
+
+    res.status(200).json({
+      analysis,
+      prompts,
+      premiumPrompt: premiumBasePrompt,
+      success: true
+    })
+
+  } catch (error) {
+    console.error('Vision analysis error:', error)
+    res.status(500).json({
+      error: error.message || 'Failed to analyze image',
+      details: error.response?.data?.error || null
+    })
+  }
+}
