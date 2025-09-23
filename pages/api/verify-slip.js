@@ -13,8 +13,8 @@ export default async function handler(req, res) {
       })
     }
 
-    // EasySlip API Token ของคุณ
-    const EASYSLIP_TOKEN = 'bf4c6851-0df7-4020-8488-cfe5a7f4f276'
+    // EasySlip API Token จาก environment variable
+    const EASYSLIP_TOKEN = process.env.EASYSLIP_API_TOKEN || 'bf4c6851-0df7-4020-8488-cfe5a7f4f276'
 
     // เรียก EasySlip API
     const easySlipResponse = await fetch('https://developer.easyslip.com/api/v1/verify', {
