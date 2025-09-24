@@ -1,11 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import useStore from '../lib/store'
 import { X, Download, Calendar, Image as ImageIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function History() {
-  const { history, removeFromHistory } = useStore()
+  const { history, removeFromHistory, loadHistory } = useStore()
   const [selectedImage, setSelectedImage] = useState(null)
+
+  // Load history from IndexedDB on mount
+  useEffect(() => {
+    if (loadHistory) {
+      loadHistory()
+    }
+  }, [])
 
   const handleDownload = async (imageUrl, id) => {
     try {
@@ -63,8 +70,8 @@ export default function History() {
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-1">ยังไม่มีประวัติ</h3>
         <p className="text-gray-500">รูปภาพที่คุณสร้างจะแสดงที่นี่</p>
-        <p className="text-sm text-gray-400 mt-2">ระบบจะเก็บประวัติล่าสุด 15 รายการ</p>
-        <p className="text-xs text-gray-400 mt-1">กรุณาดาวน์โหลดรูปที่ต้องการเก็บไว้</p>
+        <p className="text-sm text-gray-400 mt-2">ระบบจะเก็บประวัติล่าสุด 30 รายการ</p>
+        <p className="text-xs text-gray-400 mt-1">ใช้ IndexedDB เก็บภาพคุณภาพเต็ม</p>
       </div>
     )
   }
