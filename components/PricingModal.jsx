@@ -347,7 +347,7 @@ export default function PricingModal({ onClose }) {
         <div className="p-5 bg-gradient-to-r from-gray-100/50 to-gray-200/50 backdrop-blur-sm border-t border-white/20 rounded-b-3xl">
           <div className="text-center">
             <p className="text-sm text-gray-700 mb-2">
-              💡 สำหรับลูกค้า: กรุณาติดต่อ Prompt D เพื่อซื้อแพ็คเกจ
+              💡 สำหรับลูกค้า: หากเติมเครดิตไม่เข้ากรุณาติดต่อที่เพจ
             </p>
             <div className="flex flex-col items-center space-y-1">
               <a
