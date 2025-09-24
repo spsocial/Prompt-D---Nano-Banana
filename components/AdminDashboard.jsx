@@ -32,6 +32,17 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       const summary = await getAnalyticsSummary(); // Add await since it's now async
+
+      // Add free credits statistics from localStorage
+      const totalFreeCredits = parseInt(localStorage.getItem('nano_total_free_credits') || '0');
+
+      if (summary) {
+        summary.freeCredits = {
+          total: totalFreeCredits,
+          description: 'เครดิตฟรีที่แจกทั้งหมด'
+        };
+      }
+
       setStats(summary);
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -121,7 +132,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Total Users Card */}
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl text-white shadow-lg">
           <div className="flex justify-between items-start">
@@ -175,6 +186,20 @@ export default function AdminDashboard() {
               </p>
             </div>
             <TrendingUp className="h-8 w-8 text-purple-200" />
+          </div>
+        </div>
+
+        {/* Free Credits Card */}
+        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-6 rounded-2xl text-white shadow-lg">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-indigo-100 text-sm">เครดิตฟรีที่แจก</p>
+              <p className="text-3xl font-bold mt-1">{stats.freeCredits?.total || 0}</p>
+              <p className="text-indigo-100 text-xs mt-2">
+                ทดลองใช้ (ไม่นับรายได้)
+              </p>
+            </div>
+            <Award className="h-8 w-8 text-indigo-200" />
           </div>
         </div>
       </div>

@@ -13,6 +13,7 @@ export default function AdminSettings() {
   const [creditAmount, setCreditAmount] = useState('')
   const [creditMessage, setCreditMessage] = useState('')
   const [creditMessageType, setCreditMessageType] = useState('') // 'success' or 'error'
+  const [creditType, setCreditType] = useState('paid') // 'free' or 'paid'
 
   // Credit Check States
   const [checkUserId, setCheckUserId] = useState('')
@@ -112,11 +113,23 @@ export default function AdminSettings() {
       // Save to localStorage
       localStorage.setItem(userCreditKey, newCredits.toString())
 
+      // Track payment for analytics (only for paid credits)
+      if (creditType === 'paid') {
+        // Track as real revenue
+        const { trackPayment } = await import('../lib/analytics-client')
+        await trackPayment(
+          targetUserId,
+          credits * 1.65, // Assume average price per credit
+          'Manual Add (Paid)',
+          `MANUAL-${Date.now()}`
+        )
+      }
+
       // Also save a transaction log
       const transactionKey = `nano_credit_log_${targetUserId}`
       const existingLog = JSON.parse(localStorage.getItem(transactionKey) || '[]')
       existingLog.push({
-        type: 'admin_add',
+        type: creditType === 'free' ? 'admin_add_free' : 'admin_add_paid',
         amount: credits,
         balance: newCredits,
         timestamp: new Date().toISOString(),
@@ -124,7 +137,15 @@ export default function AdminSettings() {
       })
       localStorage.setItem(transactionKey, JSON.stringify(existingLog))
 
-      setCreditMessage(`✅ เพิ่ม ${credits} เครดิตให้ User ID: ${targetUserId} สำเร็จ (รวม: ${newCredits} เครดิต)`)
+      // Track free credits separately for statistics
+      if (creditType === 'free') {
+        const freeCreditsKey = 'nano_total_free_credits'
+        const totalFree = parseInt(localStorage.getItem(freeCreditsKey) || '0')
+        localStorage.setItem(freeCreditsKey, (totalFree + credits).toString())
+      }
+
+      const creditTypeText = creditType === 'free' ? '(ฟรีทดลอง)' : '(ชำระเงินแล้ว)'
+      setCreditMessage(`✅ เพิ่ม ${credits} เครดิต ${creditTypeText} ให้ User ID: ${targetUserId} สำเร็จ (รวม: ${newCredits} เครดิต)`)
       setCreditMessageType('success')
       setTargetUserId('')
       setCreditAmount('')
@@ -309,6 +330,39 @@ export default function AdminSettings() {
               <p className="text-xs text-gray-500 mt-1">
                 User ID จะแสดงในหน้าจอของผู้ใช้ด้านล่างซ้าย
               </p>
+            </div>
+
+            {/* Credit Type Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                ประเภทเครดิต
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCreditType('paid')}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    creditType === 'paid'
+                      ? 'border-green-500 bg-green-50 text-green-700'
+                      : 'border-gray-200 bg-white/50 text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-semibold mb-1">💰 เครดิตจากการชำระเงิน</div>
+                  <div className="text-xs">ลูกค้าโอนเงินมาแล้ว (นับรายได้จริง)</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCreditType('free')}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    creditType === 'free'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 bg-white/50 text-gray-600 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-semibold mb-1">🎁 เครดิตฟรีทดลอง</div>
+                  <div className="text-xs">แจกให้ทดลองใช้ (ไม่นับรายได้)</div>
+                </button>
+              </div>
             </div>
 
             <div>
