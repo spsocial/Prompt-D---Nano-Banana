@@ -116,7 +116,8 @@ export default function ImageUploader() {
         body: JSON.stringify({
           image: compressedImage,
           apiKey: userPlan === 'free' ? apiKeys.gemini : null,
-          customPrompt: promptToUse
+          customPrompt: promptToUse,
+          selectedStyle: selectedPromptStyle
         }),
       })
 

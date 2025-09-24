@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { image, apiKey, customPrompt } = req.body
+    const { image, apiKey, customPrompt, selectedStyle } = req.body
 
     if (!image) {
       return res.status(400).json({ error: 'No image provided' })
@@ -71,25 +71,45 @@ export default async function handler(req, res) {
     const premiumBasePrompt = customPrompt || `สร้างภาพโฆษณาสินค้าจากภาพต้นฉบับ ในบรรยากาศที่หรูหราและทรงพลัง ถ่ายทอดความรู้สึกระดับพรีเมียมอย่างชัดเจน ออกแบบการจัดวางองค์ประกอบภาพอย่างพิถีพิถันเหมือนงานโฆษณามืออาชีพ จัดแสงเงาให้โดดเด่นและเสริมความงามของตัวสินค้า พร้อมเลือกฉากหลังที่มีความหรูหรา กลมกลืน และสื่อถึงคุณค่าของแบรนด์
 ภาพที่ได้ต้องคมชัดในระดับไฮเปอร์เรียลลิสติก รายละเอียดสมจริงทุกมุมมอง โทนสีเน้นความมีระดับ สะท้อนภาพลักษณ์ที่น่าเชื่อถือ ดูทันสมัย และสร้างแรงดึงดูดให้ผู้ชมรู้สึกว่าผลิตภัณฑ์นี้มีคุณค่าเหนือกว่าใคร`
 
-    // Create 4 premium style variations
-    const prompts = [
-      {
-        style: "Luxury Minimalist",
-        prompt: premiumBasePrompt
-      },
-      {
-        style: "Premium Lifestyle",
-        prompt: premiumBasePrompt
-      },
-      {
-        style: "Bold Luxury Statement",
-        prompt: premiumBasePrompt
-      },
-      {
-        style: "Ultra Premium Dark",
-        prompt: premiumBasePrompt
-      }
-    ]
+    // Create 4 style variations based on selected style
+    let styleNames = []
+
+    // Determine style names based on selected prompt style
+    if (selectedStyle === 'floating') {
+      styleNames = [
+        "ลอยในอากาศ - สไตล์ 1",
+        "ลอยในอากาศ - สไตล์ 2",
+        "ลอยในอากาศ - สไตล์ 3",
+        "ลอยในอากาศ - สไตล์ 4"
+      ]
+    } else if (selectedStyle === 'moody') {
+      styleNames = [
+        "โทนภาพ Moody - สไตล์ 1",
+        "โทนภาพ Moody - สไตล์ 2",
+        "โทนภาพ Moody - สไตล์ 3",
+        "โทนภาพ Moody - สไตล์ 4"
+      ]
+    } else if (selectedStyle === 'custom') {
+      styleNames = [
+        "Custom - สไตล์ 1",
+        "Custom - สไตล์ 2",
+        "Custom - สไตล์ 3",
+        "Custom - สไตล์ 4"
+      ]
+    } else {
+      // Default to premium style names
+      styleNames = [
+        "พรีเมี่ยมหรูหรา - สไตล์ 1",
+        "พรีเมี่ยมหรูหรา - สไตล์ 2",
+        "พรีเมี่ยมหรูหรา - สไตล์ 3",
+        "พรีเมี่ยมหรูหรา - สไตล์ 4"
+      ]
+    }
+
+    const prompts = styleNames.map((styleName) => ({
+      style: styleName,
+      prompt: premiumBasePrompt
+    }))
 
     res.status(200).json({
       analysis,
