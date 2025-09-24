@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for tracking unique users
+model User {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  firstSeen     DateTime @default(now())
+  lastActive    DateTime @updatedAt
+  totalGenerated Int     @default(0)
+  totalSpent    Float   @default(0)
+
+  // Relations
+  transactions  Transaction[]
+  images        ImageGeneration[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([lastActive])
+}
+
+// Transaction model for payment tracking
+model Transaction {
+  id            String   @id @default(cuid())
+  transactionId String   @unique
+  userId        String
+  amount        Float
+  packageName   String
+  status        String   @default("completed")
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [userId])
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Image generation tracking
+model ImageGeneration {
+  id            String   @id @default(cuid())
+  userId        String
+  style         String
+  prompt        String?  @db.Text
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [userId])
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([style])
+  @@index([createdAt])
+}
+
+// Daily statistics (aggregated data)
+model DailyStats {
+  id            String   @id @default(cuid())
+  date          DateTime @unique @db.Date
+  newUsers      Int      @default(0)
+  activeUsers   Int      @default(0)
+  totalImages   Int      @default(0)
+  totalRevenue  Float    @default(0)
+  totalTransactions Int  @default(0)
+
+  createdAt     DateTime @default(now())
+
+  @@index([date])
+}
+
+// Monthly statistics
+model MonthlyStats {
+  id            String   @id @default(cuid())
+  month         String   @unique // Format: YYYY-MM
+  totalUsers    Int      @default(0)
+  activeUsers   Int      @default(0)
+  totalImages   Int      @default(0)
+  totalRevenue  Float    @default(0)
+  totalTransactions Int  @default(0)
+
+  createdAt     DateTime @default(now())
+
+  @@index([month])
+}

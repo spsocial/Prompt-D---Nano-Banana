@@ -591,21 +591,7 @@ export default function ImageUploader() {
               หรือ <span className="text-yellow-600 font-bold">คลิกเพื่อเลือกไฟล์</span>
             </p>
 
-            <div className="mt-4 flex justify-center gap-3">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  startCamera()
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-blue-700 transition-all"
-                aria-label="ใช้กล้อง"
-              >
-                <Camera className="h-5 w-5" />
-                <span>ใช้กล้อง</span>
-              </button>
-            </div>
-
-            <p className="text-sm text-gray-500 mt-3">
+            <p className="text-sm text-gray-500 mt-4">
               รองรับ: JPG, PNG, GIF, WebP (สูงสุด 10MB)
             </p>
           </>
