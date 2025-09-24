@@ -111,7 +111,7 @@ export default function APIKeyManager() {
               <p className="text-sm text-blue-700">
                 <span className="font-semibold">💡 สำหรับลูกค้า:</span>
                 <br />กรุณาติดต่อ Prompt D เพื่อซื้อแพ็คเกจ
-                <br />📱 Line: @promptd
+                <br />📱 Facebook Page: <a href="https://m.me/719837687869400" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-medium hover:underline">Prompt D</a>
                 <br />💰 เริ่มต้นเพียง 29 บาท/15 เครดิต
                 <br />🎯 ยอดนิยม 99 บาท/60 เครดิต (1.65 บาท/ภาพ)
               </p>
