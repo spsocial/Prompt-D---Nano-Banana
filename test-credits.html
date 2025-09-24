@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Credit System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Credit System</h1>
+
+    <div class="card">
+        <h2>Current User Info</h2>
+        <div id="userInfo" class="info"></div>
+    </div>
+
+    <div class="card">
+        <h2>Credit Status</h2>
+        <div id="creditInfo" class="info"></div>
+        <button onclick="checkCredits()">🔄 Refresh Credits</button>
+    </div>
+
+    <div class="card">
+        <h2>Test Add Credits (Admin Simulation)</h2>
+        <input type="text" id="testUserId" placeholder="User ID (e.g., NB-ABC123)" style="padding: 8px; width: 200px;">
+        <input type="number" id="creditAmount" placeholder="Credit Amount" value="10" style="padding: 8px; width: 100px;">
+        <button onclick="addCredits()">➕ Add Credits</button>
+    </div>
+
+    <div class="card">
+        <h2>Test Use Credits</h2>
+        <input type="number" id="useAmount" placeholder="Amount to Use" value="1" style="padding: 8px; width: 100px;">
+        <button onclick="useCredits()">💳 Use Credits</button>
+    </div>
+
+    <div class="card">
+        <h2>Storage Debug</h2>
+        <button onclick="showAllStorage()">📦 Show All Storage</button>
+        <button onclick="clearUserCredits()">🗑️ Clear User Credits</button>
+        <div id="storageInfo" class="info" style="margin-top: 10px;"></div>
+    </div>
+
+    <script>
+        // Initialize or get user ID
+        function getUserId() {
+            let userId = localStorage.getItem('nano_user_id');
+            if (!userId) {
+                userId = 'NB-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+                localStorage.setItem('nano_user_id', userId);
+            }
+            return userId;
+        }
+
+        // Check credits
+        function checkCredits() {
+            const userId = getUserId();
+
+            // Check user-specific credits first
+            const userSpecificKey = `nano_credits_${userId}`;
+            const userSpecificCredits = localStorage.getItem(userSpecificKey);
+
+            // Check general credits
+            const generalCredits = localStorage.getItem('nano_credits');
+
+            let creditsToUse = 0;
+            let creditSource = '';
+
+            if (userSpecificCredits !== null) {
+                creditsToUse = parseInt(userSpecificCredits);
+                creditSource = 'User-specific credits';
+            } else if (generalCredits !== null) {
+                creditsToUse = parseInt(generalCredits);
+                creditSource = 'General credits';
+            } else {
+                creditsToUse = 0;
+                creditSource = 'No credits found (default: 0)';
+            }
+
+            document.getElementById('userInfo').innerHTML = `
+                <strong>User ID:</strong> ${userId}<br>
+                <strong>Timestamp:</strong> ${new Date().toLocaleString('th-TH')}
+            `;
+
+            document.getElementById('creditInfo').innerHTML = `
+                <strong>Credits:</strong> ${creditsToUse}<br>
+                <strong>Source:</strong> ${creditSource}<br>
+                <strong>User-specific key:</strong> ${userSpecificKey}<br>
+                <strong>User-specific value:</strong> ${userSpecificCredits || 'null'}<br>
+                <strong>General credits:</strong> ${generalCredits || 'null'}
+            `;
+        }
+
+        // Add credits (simulate admin adding)
+        function addCredits() {
+            const targetUserId = document.getElementById('testUserId').value || getUserId();
+            const amount = parseInt(document.getElementById('creditAmount').value) || 10;
+
+            const userCreditKey = `nano_credits_${targetUserId}`;
+            const currentCredits = parseInt(localStorage.getItem(userCreditKey) || '0');
+            const newCredits = currentCredits + amount;
+
+            localStorage.setItem(userCreditKey, newCredits.toString());
+
+            alert(`✅ Added ${amount} credits to ${targetUserId}\\nNew total: ${newCredits} credits`);
+            checkCredits();
+        }
+
+        // Use credits
+        function useCredits() {
+            const userId = getUserId();
+            const amount = parseInt(document.getElementById('useAmount').value) || 1;
+
+            const userCreditKey = `nano_credits_${userId}`;
+            let currentCredits = parseInt(localStorage.getItem(userCreditKey) || '0');
+
+            // If no user-specific credits, check general
+            if (currentCredits === 0) {
+                currentCredits = parseInt(localStorage.getItem('nano_credits') || '0');
+            }
+
+            if (currentCredits < amount) {
+                alert(`❌ Not enough credits! Have ${currentCredits}, need ${amount}`);
+                return;
+            }
+
+            const newCredits = currentCredits - amount;
+            localStorage.setItem(userCreditKey, newCredits.toString());
+
+            alert(`✅ Used ${amount} credits\\nRemaining: ${newCredits} credits`);
+            checkCredits();
+        }
+
+        // Show all storage
+        function showAllStorage() {
+            const allKeys = Object.keys(localStorage);
+            const creditKeys = allKeys.filter(key => key.includes('nano_credits') || key === 'nano_user_id');
+
+            let html = '<strong>All Credit-Related Storage:</strong><br>';
+            creditKeys.forEach(key => {
+                html += `${key}: ${localStorage.getItem(key)}<br>`;
+            });
+
+            if (creditKeys.length === 0) {
+                html += '<em>No credit-related data found</em>';
+            }
+
+            document.getElementById('storageInfo').innerHTML = html;
+        }
+
+        // Clear user credits
+        function clearUserCredits() {
+            if (confirm('Clear all credits for current user?')) {
+                const userId = getUserId();
+                localStorage.removeItem(`nano_credits_${userId}`);
+                localStorage.removeItem('nano_credits');
+                alert('✅ Credits cleared');
+                checkCredits();
+            }
+        }
+
+        // Initial load
+        checkCredits();
+    </script>
+</body>
+</html>

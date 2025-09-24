@@ -36,6 +36,12 @@ export default function ImageUploader() {
       setReadyToProcess(true)
       setShowAdvanced(true)
     }
+
+    // Load user-specific credits on mount using store's consistent method
+    const userId = localStorage.getItem('nano_user_id')
+    if (userId && useStore.getState().loadUserCredits) {
+      useStore.getState().loadUserCredits(userId)
+    }
   }, [uploadedImage])
 
   // Premium prompts
@@ -238,9 +244,7 @@ export default function ImageUploader() {
       // Deduct credits for normal users
       useCredits(numberOfImages)
 
-      // Save updated credits to localStorage
-      const newCredits = userCredits - numberOfImages
-      localStorage.setItem('nano_credits', newCredits.toString())
+      // Credits are handled by useCredits which now manages storage properly
     }
 
     if (uploadedImage) {

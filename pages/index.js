@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import ImageUploader from '../components/ImageUploader'
 import AdminSettings from '../components/AdminSettings'
@@ -18,8 +18,25 @@ export default function Home() {
     error,
     apiKeys,
     userPlan,
-    userCredits = 0
+    userCredits = 0,
+    setUserCredits,
+    loadUserCredits
   } = useStore()
+
+  // Load user-specific credits on mount
+  useEffect(() => {
+    // Get or create user ID
+    let storedUserId = localStorage.getItem('nano_user_id')
+    if (!storedUserId) {
+      storedUserId = 'NB-' + Math.random().toString(36).substr(2, 6).toUpperCase()
+      localStorage.setItem('nano_user_id', storedUserId)
+    }
+
+    // Use the store's loadUserCredits function for consistent loading
+    if (loadUserCredits) {
+      loadUserCredits(storedUserId)
+    }
+  }, [loadUserCredits])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50">

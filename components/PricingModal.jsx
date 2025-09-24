@@ -26,9 +26,11 @@ export default function PricingModal({ onClose }) {
     setGeneratedUserId(storedUserId)
     if (setUserId) setUserId(storedUserId)
 
-    // โหลดเครดิตจาก localStorage
-    const storedCredits = parseInt(localStorage.getItem('nano_credits') || '0')
-    if (setUserCredits) setUserCredits(storedCredits)
+    // Use store's loadUserCredits for consistent loading
+    const store = useStore.getState()
+    if (store.loadUserCredits) {
+      store.loadUserCredits(storedUserId)
+    }
   }, [])
 
   const packages = [
