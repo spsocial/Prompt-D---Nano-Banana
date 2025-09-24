@@ -63,8 +63,8 @@ export default function History() {
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-1">ยังไม่มีประวัติ</h3>
         <p className="text-gray-500">รูปภาพที่คุณสร้างจะแสดงที่นี่</p>
-        <p className="text-sm text-gray-400 mt-2">ระบบจะเก็บประวัติล่าสุด 100 รายการ</p>
-        <p className="text-xs text-gray-400 mt-1">หมายเหตุ: ภาพบางส่วนอาจถูกลบเพื่อประหยัดพื้นที่</p>
+        <p className="text-sm text-gray-400 mt-2">ระบบจะเก็บประวัติล่าสุด 15 รายการ</p>
+        <p className="text-xs text-gray-400 mt-1">กรุณาดาวน์โหลดรูปที่ต้องการเก็บไว้</p>
       </div>
     )
   }

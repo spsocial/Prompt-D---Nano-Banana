@@ -8,7 +8,7 @@ export default function ImageUploader() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [isCompressing, setIsCompressing] = useState(false)
-  const [numberOfImages, setNumberOfImages] = useState(4)
+  const [numberOfImages, setNumberOfImages] = useState(1) // เริ่มต้นที่ 1 ภาพเพื่อป้องกันการสร้างมากเกินไป
   const [readyToProcess, setReadyToProcess] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
   const [cameraError, setCameraError] = useState(null)
