@@ -321,6 +321,8 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Fix for mobile - ensure minimum height */
+  min-height: 300px;
 }
 
 .fullscreen-image-container img {
@@ -329,6 +331,25 @@ textarea:focus-visible {
   object-fit: contain;
   border-radius: 0.75rem;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  /* Ensure image is visible on all devices */
+  display: block;
+  width: auto;
+  height: auto;
+}
+
+/* Mobile-specific fixes for modal */
+@media (max-width: 768px) {
+  .fullscreen-image-container {
+    min-height: 200px;
+  }
+
+  .fullscreen-image-container img {
+    max-height: calc(100vh - 250px);
+    max-width: 85vw;
+    /* Fix for iOS Safari */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
 }
 
 /* Ensure modals are properly layered */
