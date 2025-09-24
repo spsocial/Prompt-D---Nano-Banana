@@ -43,7 +43,7 @@ export default function Home() {
                 Auto Nano Banana
               </h1>
               <span className="px-3 py-1 text-xs font-semibold bg-gradient-to-r from-yellow-400 to-yellow-500 text-white rounded-full shadow-md">
-                {userPlan === 'premium' ? 'พรีเมี่ยม' : 'ฟรี'}
+                {userPlan === 'premium' ? 'Premium' : 'V.Beta'}
               </span>
             </div>
 
