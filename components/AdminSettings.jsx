@@ -6,6 +6,7 @@ export default function AdminSettings() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
+  const [activeTab, setActiveTab] = useState('dashboard') // Add tab state
 
   // Credit Management States
   const [targetUserId, setTargetUserId] = useState('')
@@ -187,8 +188,6 @@ export default function AdminSettings() {
       </div>
     )
   }
-
-  const [activeTab, setActiveTab] = useState('dashboard') // Add tab state
 
   return (
     <div className="space-y-6">
