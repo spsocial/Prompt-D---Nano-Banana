@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import useStore from '../lib/store'
-import { Download, Maximize2, Copy, Check, X } from 'lucide-react'
+import { Download, Maximize2, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function ResultGallery() {
   const { results } = useStore()
   const [selectedImage, setSelectedImage] = useState(null)
-  const [copiedIndex, setCopiedIndex] = useState(null)
 
   const handleDownload = async (imageUrl, style) => {
     try {
@@ -38,11 +37,6 @@ export default function ResultGallery() {
     }
   }
 
-  const handleCopyPrompt = (prompt, index) => {
-    navigator.clipboard.writeText(prompt)
-    setCopiedIndex(index)
-    setTimeout(() => setCopiedIndex(null), 2000)
-  }
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -147,25 +141,8 @@ export default function ResultGallery() {
 
             {/* Bottom Info Bar */}
             <div className="p-3 bg-white/20 backdrop-blur-sm border-t border-white/20">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-center">
                 <span className="font-semibold text-gray-800">{result.style}</span>
-                <button
-                  onClick={() => handleCopyPrompt(result.prompt, index)}
-                  className="text-sm text-gray-700 hover:text-yellow-600 flex items-center space-x-1 font-medium"
-                  title="Copy prompt"
-                >
-                  {copiedIndex === index ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      <span>Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4" />
-                      <span>คัดลอก Prompt</span>
-                    </>
-                  )}
-                </button>
               </div>
             </div>
           </motion.div>
@@ -233,16 +210,6 @@ export default function ResultGallery() {
                   >
                     <Download className="h-4 w-4" />
                     <span>ดาวน์โหลดภาพ</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleCopyPrompt(selectedImage.prompt, -1)
-                    }}
-                    className="px-5 py-2.5 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-lg flex items-center justify-center space-x-2 transition-all font-medium shadow-lg text-sm"
-                  >
-                    <Copy className="h-4 w-4" />
-                    <span>คัดลอก Prompt</span>
                   </button>
                   <button
                     onClick={() => setSelectedImage(null)}

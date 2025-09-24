@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import useStore from '../lib/store'
-import { X, Download, Copy, Calendar, Image as ImageIcon } from 'lucide-react'
+import { X, Download, Calendar, Image as ImageIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function History() {
   const { history, removeFromHistory } = useStore()
   const [selectedImage, setSelectedImage] = useState(null)
-  const [copiedId, setCopiedId] = useState(null)
 
   const handleDownload = async (imageUrl, id) => {
     try {
@@ -44,11 +43,6 @@ export default function History() {
     }
   }
 
-  const handleCopyPrompt = (prompt, id) => {
-    navigator.clipboard.writeText(prompt)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
-  }
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
@@ -159,26 +153,10 @@ export default function History() {
 
               {/* Info Bar */}
               <div className="p-3 bg-white/20 backdrop-blur-sm border-t border-white/20">
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2">
                   <span className="text-sm font-semibold text-gray-800 line-clamp-1">
                     {item.style || 'ไม่มีชื่อ'}
                   </span>
-                  <button
-                    onClick={() => handleCopyPrompt(item.prompt, item.id)}
-                    className="text-xs text-gray-600 hover:text-yellow-600 flex items-center space-x-1"
-                    title="คัดลอก Prompt"
-                  >
-                    {copiedId === item.id ? (
-                      <>
-                        <span>Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3 w-3" />
-                        <span>คัดลอก</span>
-                      </>
-                    )}
-                  </button>
                 </div>
                 
                 <div className="flex items-center text-xs text-gray-500">
@@ -245,7 +223,7 @@ export default function History() {
                       <ImageIcon className="h-16 w-16 text-gray-500 mb-4" />
                       <h4 className="text-xl font-bold text-gray-300 mb-2">ภาพถูกลบเพื่อประหยัดพื้นที่</h4>
                       <p className="text-gray-400 max-w-md">
-                        ภาพนี้ถูกลบเพื่อประหยัดพื้นที่จัดเก็บ คุณยังสามารถคัดลอก Prompt ได้
+                        ภาพนี้ถูกลบเพื่อประหยัดพื้นที่จัดเก็บ
                       </p>
                       <p className="text-gray-500 text-sm mt-2">ระบบเก็บข้อมูลอื่นๆ ไว้เพื่อประหยัดพื้นที่</p>
                       <p className="text-gray-500 text-xs mt-1">แนะนำ: ดาวน์โหลดภาพเพื่อเก็บไว้ก่อนที่จะหายไป</p>
@@ -298,16 +276,6 @@ export default function History() {
                   >
                     <Download className="h-4 w-4" />
                     <span>ดาวน์โหลดภาพ</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleCopyPrompt(selectedImage.prompt, selectedImage.id)
-                    }}
-                    className="px-5 py-2.5 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-lg flex items-center justify-center space-x-2 transition-all font-medium shadow-lg text-sm"
-                  >
-                    <Copy className="h-4 w-4" />
-                    <span>คัดลอก Prompt</span>
                   </button>
                   <button
                     onClick={() => setSelectedImage(null)}
