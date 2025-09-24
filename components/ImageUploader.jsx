@@ -165,16 +165,26 @@ export default function ImageUploader() {
 
       const { results } = await generateResponse.json()
       setResults(results)
-      
-      // Add results to history (without storing full base64 images to save space)
-      results.forEach(result => {
-        useStore.getState().addToHistory({
-          ...result,
-          // Don't store the full base64 image data to save localStorage space
-          imageUrl: result.imageUrl, // Keep the URL/generated image
-          originalImage: undefined // Remove original image data to save space
-        })
-      })
+
+      // Add results to history with better error handling
+      try {
+        // Add each result separately with error handling
+        for (const result of results) {
+          try {
+            useStore.getState().addToHistory({
+              ...result,
+              imageUrl: result.imageUrl,
+              originalImage: undefined
+            })
+          } catch (historyError) {
+            console.error('Error adding to history:', historyError)
+            // Continue with other images even if one fails
+          }
+        }
+      } catch (error) {
+        console.error('Error saving to history:', error)
+        // Don't fail the whole operation if history save fails
+      }
       
       // Update stats
       useStore.getState().incrementGenerated()
