@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Head from 'next/head'
 import ImageUploader from '../components/ImageUploader'
-import APIKeyManager from '../components/APIKeyManager'
+import AdminSettings from '../components/AdminSettings'
 import ResultGallery from '../components/ResultGallery'
 import ProcessingModal from '../components/ProcessingModal'
 import PricingModal from '../components/PricingModal'
@@ -82,21 +82,17 @@ export default function Home() {
         </div>
       </header>
 
-      {/* API Settings Modal */}
+      {/* Admin Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 shadow-2xl max-w-md w-full p-6 relative">
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative">
             <button
               onClick={() => setShowSettings(false)}
               className="absolute top-4 right-4 p-1 rounded-lg hover:bg-gray-200 transition-colors"
             >
               <X className="h-5 w-5 text-gray-500" />
             </button>
-            <div className="mb-4">
-              <h2 className="text-xl font-bold text-gray-800">ตั้งค่า API Keys</h2>
-              <p className="text-sm text-gray-600">จัดการคีย์ API สำหรับระบบ</p>
-            </div>
-            <APIKeyManager />
+            <AdminSettings />
           </div>
         </div>
       )}
