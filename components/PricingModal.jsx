@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Copy, Check, Loader2, QrCode, CreditCard, Wallet } from 'lucide-react'
 import useStore from '../lib/store'
-import { trackPayment } from '../lib/analytics'
+import { trackPayment } from '../lib/analytics-client'
 
 export default function PricingModal({ onClose }) {
   const { userCredits, setUserCredits, userId, setUserId } = useStore()

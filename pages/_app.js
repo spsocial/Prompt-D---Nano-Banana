@@ -1,7 +1,7 @@
 import '../styles/globals.css'
 import { useEffect } from 'react'
 import useStore from '../lib/store'
-import { trackUser } from '../lib/analytics'
+import { trackUser } from '../lib/analytics-client'
 
 export default function App({ Component, pageProps }) {
   const { loadUserCredits, loadHistory } = useStore()

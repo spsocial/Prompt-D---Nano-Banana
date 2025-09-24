@@ -1,4 +1,5 @@
 // API endpoint for analytics operations
+// Use server-side analytics for production
 import {
   trackUser,
   trackPayment,
@@ -6,7 +7,7 @@ import {
   getAnalyticsSummary,
   getDetailedStats,
   exportAnalyticsData
-} from '../../lib/analytics';
+} from '../../lib/analytics-server';
 
 export default async function handler(req, res) {
   const { method } = req;

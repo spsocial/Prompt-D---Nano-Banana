@@ -4,7 +4,7 @@ import {
   Calendar, Activity, Award, RefreshCw,
   Download, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { getAnalyticsSummary, getDetailedStats, exportAnalyticsData } from '../lib/analytics';
+import { getAnalyticsSummary, getDetailedStats, exportAnalyticsData } from '../lib/analytics-client';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -31,7 +31,7 @@ export default function AdminDashboard() {
   const loadStats = async () => {
     try {
       setLoading(true);
-      const summary = getAnalyticsSummary();
+      const summary = await getAnalyticsSummary(); // Add await since it's now async
       setStats(summary);
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -40,15 +40,17 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleExport = () => {
-    const data = exportAnalyticsData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `analytics-export-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleExport = async () => {
+    const data = await exportAnalyticsData(); // Add await since it's now async
+    if (data) {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   };
 
   const toggleSection = (section) => {

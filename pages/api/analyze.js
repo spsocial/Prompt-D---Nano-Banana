@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai"
-import { trackImageGeneration } from '../../lib/analytics'
+// Don't import analytics here to avoid client-side dependencies
 
 export const config = {
   api: {
@@ -119,11 +119,32 @@ export default async function handler(req, res) {
       prompt: premiumBasePrompt
     }))
 
-    // Track image generation for analytics (track each style)
+    // Track image generation via API call instead of direct import
     if (req.body.userId) {
-      prompts.forEach(p => {
-        trackImageGeneration(req.body.userId, p.style || selectedStyle || 'premium')
-      })
+      // Make internal API call to track analytics
+      try {
+        const baseUrl = process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}`
+          : process.env.RAILWAY_STATIC_URL
+          ? `https://${process.env.RAILWAY_STATIC_URL}`
+          : 'http://localhost:3000';
+
+        for (const p of prompts) {
+          await fetch(`${baseUrl}/api/analytics`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'trackImage',
+              data: {
+                userId: req.body.userId,
+                style: p.style || selectedStyle || 'premium'
+              }
+            })
+          }).catch(err => console.log('Analytics tracking failed:', err));
+        }
+      } catch (error) {
+        console.log('Analytics tracking error:', error);
+      }
     }
 
     res.status(200).json({
