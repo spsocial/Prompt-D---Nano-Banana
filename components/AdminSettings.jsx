@@ -6,7 +6,7 @@ export default function AdminSettings() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
-  const [activeTab, setActiveTab] = useState('dashboard') // Add tab state
+  const [activeTab, setActiveTab] = useState('credits') // Default to credits tab
 
   // Credit Management States
   const [targetUserId, setTargetUserId] = useState('')
@@ -242,17 +242,6 @@ export default function AdminSettings() {
         {/* Tab Navigation */}
         <div className="flex space-x-2 mb-6">
           <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center ${
-              activeTab === 'dashboard'
-                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
-                : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-            }`}
-          >
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Dashboard สถิติ
-          </button>
-          <button
             onClick={() => setActiveTab('credits')}
             className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center ${
               activeTab === 'credits'
@@ -263,12 +252,21 @@ export default function AdminSettings() {
             <Gift className="h-4 w-4 mr-2" />
             จัดการเครดิต
           </button>
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center ${
+              activeTab === 'dashboard'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+            }`}
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Dashboard สถิติ
+          </button>
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'dashboard' ? (
-          <AdminDashboard />
-        ) : (
+        {activeTab === 'credits' ? (
           <div>
 
         {/* Credit Management Section */}
@@ -410,6 +408,8 @@ export default function AdminSettings() {
           </div>
         </div>
           </div>
+        ) : (
+          <AdminDashboard />
         )}
       </div>
     </div>
