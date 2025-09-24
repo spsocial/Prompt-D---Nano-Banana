@@ -89,6 +89,13 @@ export default async function handler(req, res) {
         "โทนภาพ Moody - สไตล์ 3",
         "โทนภาพ Moody - สไตล์ 4"
       ]
+    } else if (selectedStyle === 'cinematic') {
+      styleNames = [
+        "3D Cinematic - สไตล์ 1",
+        "3D Cinematic - สไตล์ 2",
+        "3D Cinematic - สไตล์ 3",
+        "3D Cinematic - สไตล์ 4"
+      ]
     } else if (selectedStyle === 'custom') {
       styleNames = [
         "Custom - สไตล์ 1",
