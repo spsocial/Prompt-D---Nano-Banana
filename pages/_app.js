@@ -1,6 +1,7 @@
 import '../styles/globals.css'
 import { useEffect } from 'react'
 import useStore from '../lib/store'
+import { trackUser } from '../lib/analytics'
 
 export default function App({ Component, pageProps }) {
   const { loadUserCredits, loadHistory } = useStore()
@@ -26,15 +27,16 @@ export default function App({ Component, pageProps }) {
     loadHistory()
 
     // Load user ID and credits from localStorage on startup
-    const userId = localStorage.getItem('nano_user_id')
+    let userId = localStorage.getItem('nano_user_id')
     if (!userId) {
       // Generate new user ID if none exists
-      const newUserId = 'NB-' + Math.random().toString(36).substr(2, 6).toUpperCase()
-      localStorage.setItem('nano_user_id', newUserId)
-      loadUserCredits(newUserId)
-    } else {
-      loadUserCredits(userId)
+      userId = 'NB-' + Math.random().toString(36).substr(2, 6).toUpperCase()
+      localStorage.setItem('nano_user_id', userId)
     }
+
+    // Track user for analytics
+    trackUser(userId)
+    loadUserCredits(userId)
   }, [loadUserCredits, loadHistory])
 
   return <Component {...pageProps} />

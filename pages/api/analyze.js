@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai"
+import { trackImageGeneration } from '../../lib/analytics'
 
 export const config = {
   api: {
@@ -117,6 +118,13 @@ export default async function handler(req, res) {
       style: styleName,
       prompt: premiumBasePrompt
     }))
+
+    // Track image generation for analytics (track each style)
+    if (req.body.userId) {
+      prompts.forEach(p => {
+        trackImageGeneration(req.body.userId, p.style || selectedStyle || 'premium')
+      })
+    }
 
     res.status(200).json({
       analysis,

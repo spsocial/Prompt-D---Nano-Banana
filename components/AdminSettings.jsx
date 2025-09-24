@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Shield, LogOut, Gift, UserPlus, Search } from 'lucide-react'
+import { Shield, LogOut, Gift, UserPlus, Search, BarChart3 } from 'lucide-react'
+import AdminDashboard from './AdminDashboard'
 
 export default function AdminSettings() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -187,6 +188,8 @@ export default function AdminSettings() {
     )
   }
 
+  const [activeTab, setActiveTab] = useState('dashboard') // Add tab state
+
   return (
     <div className="space-y-6">
       <div>
@@ -203,7 +206,7 @@ export default function AdminSettings() {
                 ✅ Admin Mode Active
               </p>
               <p className="text-xs text-green-600 mt-1">
-                จัดการเครดิตผู้ใช้งาน
+                จัดการระบบและดูสถิติ
               </p>
             </div>
             <button
@@ -215,6 +218,38 @@ export default function AdminSettings() {
             </button>
           </div>
         </div>
+
+        {/* Tab Navigation */}
+        <div className="flex space-x-2 mb-6">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center ${
+              activeTab === 'dashboard'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+            }`}
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Dashboard สถิติ
+          </button>
+          <button
+            onClick={() => setActiveTab('credits')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center ${
+              activeTab === 'credits'
+                ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+            }`}
+          >
+            <Gift className="h-4 w-4 mr-2" />
+            จัดการเครดิต
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'dashboard' ? (
+          <AdminDashboard />
+        ) : (
+          <div>
 
         {/* Credit Management Section */}
         <div className="mt-6 p-6 bg-gradient-to-r from-purple-50/50 to-pink-50/50 backdrop-blur-sm rounded-xl border border-purple-200/50">
@@ -321,6 +356,8 @@ export default function AdminSettings() {
             </div>
           </div>
         </div>
+          </div>
+        )}
       </div>
     </div>
   )

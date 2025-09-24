@@ -132,7 +132,8 @@ export default function ImageUploader() {
           image: compressedImage,
           apiKey: userPlan === 'free' ? apiKeys.gemini : null,
           customPrompt: promptToUse,
-          selectedStyle: selectedPromptStyle
+          selectedStyle: selectedPromptStyle,
+          userId: localStorage.getItem('nano_user_id') // Add userId for tracking
         }),
       })
 

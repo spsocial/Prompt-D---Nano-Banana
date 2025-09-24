@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Copy, Check, Loader2, QrCode, CreditCard, Wallet } from 'lucide-react'
 import useStore from '../lib/store'
+import { trackPayment } from '../lib/analytics'
 
 export default function PricingModal({ onClose }) {
   const { userCredits, setUserCredits, userId, setUserId } = useStore()
@@ -110,6 +111,14 @@ export default function PricingModal({ onClose }) {
           const newCredits = (userCredits || 0) + selectedPackage.credits
           localStorage.setItem('nano_credits', newCredits.toString())
           if (setUserCredits) setUserCredits(newCredits)
+
+          // Track payment for analytics
+          trackPayment(
+            generatedUserId,
+            selectedPackage.price,
+            selectedPackage.name,
+            result.transactionId || `TXN-${Date.now()}`
+          )
 
           setVerificationResult({
             success: true,
