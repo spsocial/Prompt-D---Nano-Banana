@@ -364,7 +364,7 @@ export default function AdminDashboard() {
                   <tr className="text-left text-sm text-gray-600">
                     <th className="pb-2">User ID</th>
                     <th className="pb-2">ภาพที่สร้าง</th>
-                    <th className="pb-2">ยอดใช้จ่าย</th>
+                    <th className="pb-2">เครดิตที่ใช้</th>
                     <th className="pb-2">ใช้งานล่าสุด</th>
                   </tr>
                 </thead>
@@ -380,7 +380,7 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       <td className="py-2">{user.generated}</td>
-                      <td className="py-2">{formatCurrency(user.spent)}</td>
+                      <td className="py-2">{user.spent} เครดิต</td>
                       <td className="py-2 text-sm text-gray-600">
                         {formatDate(user.lastActive)}
                       </td>
