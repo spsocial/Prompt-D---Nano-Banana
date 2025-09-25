@@ -33,18 +33,39 @@ export default function AdminDashboard() {
       setLoading(true);
       const summary = await getAnalyticsSummary(); // This fetches from database via API
 
-      // Credit statistics are now included in the summary from database
-      // No need to use localStorage anymore
       if (summary) {
-        // Calculate credit stats from transaction data if available
-        const totalCreditsAdded = summary.recentTransactions?.reduce((sum, t) => {
-          return sum + (t.amount || 0);
-        }, 0) || 0;
+        // Get manual credit statistics from API
+        try {
+          const response = await fetch('/api/credits/stats');
+          if (response.ok) {
+            const creditData = await response.json();
+            summary.manualCredits = creditData;
+          } else {
+            // Fallback: calculate from transactions
+            const todayTransactions = summary.recentTransactions?.filter(t => {
+              const transDate = new Date(t.timestamp || t.createdAt);
+              const today = new Date();
+              return transDate.toDateString() === today.toDateString();
+            }) || [];
 
-        summary.creditStats = {
-          totalCredits: totalCreditsAdded,
-          description: 'สถิติเครดิตจากฐานข้อมูล'
-        };
+            const totalManualCredits = todayTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+
+            summary.manualCredits = {
+              todayTotal: totalManualCredits,
+              todayCount: todayTransactions.length,
+              freeCredits: 0, // Will be tracked separately in future
+              paidCredits: totalManualCredits
+            };
+          }
+        } catch (error) {
+          console.log('Could not fetch credit stats:', error);
+          summary.manualCredits = {
+            todayTotal: 0,
+            todayCount: 0,
+            freeCredits: 0,
+            paidCredits: 0
+          };
+        }
       }
 
       setStats(summary);
@@ -197,12 +218,12 @@ export default function AdminDashboard() {
         <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-6 rounded-2xl text-white shadow-lg">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-indigo-100 text-sm">ยอดขายวันนี้</p>
+              <p className="text-indigo-100 text-sm">เครดิตที่เติม (Manual)</p>
               <p className="text-2xl font-bold mt-1">
-                {formatCurrency(stats.revenue?.today || 0)}
+                {stats.manualCredits?.todayTotal || 0} <span className="text-sm">เครดิต</span>
               </p>
               <p className="text-indigo-100 text-xs mt-2">
-                {stats.revenue?.transactionsToday || 0} รายการ
+                ฟรี: {stats.manualCredits?.freeCredits || 0} | จ่าย: {stats.manualCredits?.paidCredits || 0}
               </p>
             </div>
             <Award className="h-8 w-8 text-indigo-200" />

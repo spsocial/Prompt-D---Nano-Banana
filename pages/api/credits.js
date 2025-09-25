@@ -104,18 +104,16 @@ export default async function handler(req, res) {
           }
         });
 
-        // Track transaction if type is 'paid'
-        if (type === 'paid') {
-          await prisma.transaction.create({
-            data: {
-              transactionId: `MANUAL-${Date.now()}`,
-              userId: targetUserId,
-              amount: 0, // Manual adds don't have payment amount
-              packageName: `Manual Add - ${amount} credits (${type})`,
-              status: 'completed'
-            }
-          });
-        }
+        // Track all manual credit additions as transactions
+        await prisma.transaction.create({
+          data: {
+            transactionId: `MANUAL-${Date.now()}`,
+            userId: targetUserId,
+            amount: amount, // Store the credit amount for statistics
+            packageName: type === 'free' ? `เครดิตฟรี - ${amount} เครดิต` : `เติมเงินแมนนวล - ${amount} เครดิต`,
+            status: 'completed'
+          }
+        });
 
         console.log(`[API] Added ${amount} credits to ${targetUserId}, new total: ${updatedUser.credits}`);
 
