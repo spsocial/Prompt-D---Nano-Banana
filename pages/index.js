@@ -12,6 +12,7 @@ import { Sparkles, Settings, Banana, Wallet, X, History } from 'lucide-react'
 export default function Home() {
   const [showSettings, setShowSettings] = useState(false)
   const [showPricing, setShowPricing] = useState(false)
+  const [userId, setUserId] = useState('')
   const {
     isProcessing,
     results,
@@ -31,6 +32,7 @@ export default function Home() {
       storedUserId = 'NB-' + Math.random().toString(36).substr(2, 6).toUpperCase()
       localStorage.setItem('nano_user_id', storedUserId)
     }
+    setUserId(storedUserId)
 
     // Function to reload credits
     const reloadCredits = () => {
@@ -297,6 +299,12 @@ export default function Home() {
               <p className="text-sm text-gray-600 mt-2">
                 Specialist in AI-Powered Solutions
               </p>
+              {userId && (
+                <div className="mt-4 p-3 bg-white/50 rounded-lg inline-block">
+                  <p className="text-xs text-gray-500">Your User ID:</p>
+                  <p className="text-sm font-mono font-bold text-gray-700">{userId}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
