@@ -134,7 +134,8 @@ export default function ImageUploader() {
           apiKey: userPlan === 'free' ? apiKeys.gemini : null,
           customPrompt: promptToUse,
           selectedStyle: selectedPromptStyle,
-          userId: localStorage.getItem('nano_user_id') // Add userId for tracking
+          userId: localStorage.getItem('nano_user_id'), // Add userId for tracking
+          numberOfImages: numberOfImages // Pass the actual number of images
         }),
       })
 
