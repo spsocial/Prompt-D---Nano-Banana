@@ -4,7 +4,7 @@ import useStore from '../lib/store'
 import { trackPayment } from '../lib/analytics-client'
 
 export default function PricingModal({ onClose }) {
-  const { userCredits, setUserCredits, userId, setUserId } = useStore()
+  const { userCredits, setUserCredits, userId, setUserId, loadUserCredits } = useStore()
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [showPayment, setShowPayment] = useState(false)
   const [slipFile, setSlipFile] = useState(null)
@@ -93,32 +93,46 @@ export default function PricingModal({ onClose }) {
       reader.onloadend = async () => {
         const base64 = reader.result.split(',')[1]
 
-        // เรียก EasySlip API
+        // เรียก EasySlip API พร้อมข้อมูลแพ็คเกจ
         const response = await fetch('/api/verify-slip', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             slipImage: base64,
             expectedAmount: selectedPackage.price,
-            userId: generatedUserId
+            userId: generatedUserId,
+            packageName: selectedPackage.name,
+            credits: selectedPackage.credits
           })
         })
 
         const result = await response.json()
 
         if (result.success) {
-          // เพิ่มเครดิต
-          const newCredits = (userCredits || 0) + selectedPackage.credits
+          // Use the new balance from the database
+          const newCredits = result.data?.newBalance || ((userCredits || 0) + selectedPackage.credits)
+
+          // Update localStorage and state with database value
           localStorage.setItem('nano_credits', newCredits.toString())
           if (setUserCredits) setUserCredits(newCredits)
 
-          // Track payment for analytics
-          trackPayment(
-            generatedUserId,
-            selectedPackage.price,
-            selectedPackage.name,
-            result.transactionId || `TXN-${Date.now()}`
-          )
+          // Sync with database to ensure consistency
+          try {
+            const creditResponse = await fetch('/api/credits?userId=' + generatedUserId)
+            if (creditResponse.ok) {
+              const creditData = await creditResponse.json()
+              const dbCredits = creditData.credits || newCredits
+              localStorage.setItem('nano_credits', dbCredits.toString())
+              if (setUserCredits) setUserCredits(dbCredits)
+
+              // Also call the store's loadUserCredits function for proper sync
+              if (loadUserCredits) {
+                await loadUserCredits(generatedUserId)
+              }
+            }
+          } catch (error) {
+            console.error('Error syncing credits:', error)
+          }
 
           setVerificationResult({
             success: true,
