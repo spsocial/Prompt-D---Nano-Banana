@@ -116,19 +116,8 @@ export default function AdminSettings() {
         setTargetUserId('')
         setCreditAmount('')
 
-        // Update local statistics for display
-        const creditStatsKey = 'nano_admin_credit_stats'
-        const stats = JSON.parse(localStorage.getItem(creditStatsKey) || '{}')
-        const today = new Date().toISOString().split('T')[0]
-        if (!stats[today]) {
-          stats[today] = { free: 0, paid: 0 }
-        }
-        if (creditType === 'free') {
-          stats[today].free += credits
-        } else {
-          stats[today].paid += credits
-        }
-        localStorage.setItem(creditStatsKey, JSON.stringify(stats))
+        // Statistics are now tracked in database via the API
+        // No need to update localStorage - dashboard will fetch from database
 
         setTimeout(() => setCreditMessage(''), 5000)
       } else {
