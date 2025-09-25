@@ -35,20 +35,11 @@ export default function Home() {
     }
     setUserId(storedUserId)
 
-    // Function to reload credits with debugging
-    const reloadCredits = () => {
+    // Function to reload credits from database
+    const reloadCredits = async () => {
       if (loadUserCredits) {
-        // Check what's in localStorage
-        const creditKey = `nano_credits_${storedUserId}`
-        const storedCredits = localStorage.getItem(creditKey)
-        const allKeys = Object.keys(localStorage).filter(k => k.includes('nano_credits'))
-
-        // Load credits through store
-        const loadedCredits = loadUserCredits(storedUserId)
-
-        // Debug info
-        const debug = `User: ${storedUserId}\nStored: ${storedCredits}\nLoaded: ${loadedCredits}\nKeys: ${allKeys.join(', ')}`
-        setDebugInfo(debug)
+        // Load credits from API
+        await loadUserCredits(storedUserId)
       }
     }
 

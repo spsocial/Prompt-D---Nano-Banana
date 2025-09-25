@@ -52,7 +52,7 @@ export default function AdminSettings() {
     sessionStorage.removeItem('admin_authenticated')
   }
 
-  const handleCheckCredits = () => {
+  const handleCheckCredits = async () => {
     if (!checkUserId) {
       setCheckResult({ type: 'error', message: 'กรุณากรอก User ID' })
       setTimeout(() => setCheckResult(null), 3000)
@@ -60,30 +60,18 @@ export default function AdminSettings() {
     }
 
     try {
-      // Check credits from localStorage with user-specific key
-      const userCreditKey = `nano_credits_${checkUserId}`
-      const specificCredits = localStorage.getItem(userCreditKey)
+      // Check credits from database via API
+      const response = await fetch(`/api/credits?userId=${checkUserId}`)
+      const data = await response.json()
 
-      // Also check general credits
-      const generalCredits = localStorage.getItem('nano_credits')
-
-      // Get transaction log
-      const transactionKey = `nano_credit_log_${checkUserId}`
-      const transactionLog = JSON.parse(localStorage.getItem(transactionKey) || '[]')
-
-      let message = ''
-      if (specificCredits !== null) {
-        message = `👤 User ID: ${checkUserId}\n💳 เครดิตคงเหลือ: ${specificCredits} เครดิต`
-        if (transactionLog.length > 0) {
-          const lastTransaction = transactionLog[transactionLog.length - 1]
-          message += `\n📅 รายการล่าสุด: ${new Date(lastTransaction.timestamp).toLocaleString('th-TH')}`
-        }
+      if (data.success) {
+        const message = `👤 User ID: ${checkUserId}\n💳 เครดิตคงเหลือ: ${data.credits} เครดิต\n📊 ใช้ไปแล้ว: ${data.totalGenerated} ภาพ`
+        setCheckResult({ type: 'success', message })
       } else {
-        message = `❌ ไม่พบข้อมูล User ID: ${checkUserId}\n💡 ผู้ใช้ใหม่จะเริ่มต้นด้วย 0 เครดิต`
+        setCheckResult({ type: 'error', message: `❌ เกิดข้อผิดพลาด: ${data.message}` })
       }
-
-      setCheckResult({ type: 'success', message })
     } catch (error) {
+      console.error('Error checking credits:', error)
       setCheckResult({ type: 'error', message: 'เกิดข้อผิดพลาดในการเช็คเครดิต' })
     }
   }
@@ -105,61 +93,51 @@ export default function AdminSettings() {
     }
 
     try {
-      // Store credits directly in localStorage with user-specific key
-      const userCreditKey = `nano_credits_${targetUserId}`
-      // Parse as int with fallback to 0 if null or NaN
-      const storedValue = localStorage.getItem(userCreditKey)
-      const currentCredits = storedValue !== null ? parseInt(storedValue) || 0 : 0
-      const newCredits = currentCredits + credits
-
-      // Save to localStorage
-      localStorage.setItem(userCreditKey, newCredits.toString())
-
-      // Track credit addition separately from payment
-      // Store credit statistics in localStorage
-      const creditStatsKey = 'nano_admin_credit_stats'
-      const stats = JSON.parse(localStorage.getItem(creditStatsKey) || '{}')
-
-      const today = new Date().toISOString().split('T')[0]
-      if (!stats[today]) {
-        stats[today] = { free: 0, paid: 0 }
-      }
-
-      if (creditType === 'free') {
-        stats[today].free += credits
-      } else {
-        stats[today].paid += credits
-      }
-
-      localStorage.setItem(creditStatsKey, JSON.stringify(stats))
-
-      // Also save a transaction log
-      const transactionKey = `nano_credit_log_${targetUserId}`
-      const existingLog = JSON.parse(localStorage.getItem(transactionKey) || '[]')
-      existingLog.push({
-        type: creditType === 'free' ? 'admin_add_free' : 'admin_add_paid',
-        amount: credits,
-        balance: newCredits,
-        timestamp: new Date().toISOString(),
-        adminId: 'admin'
+      // Add credits via API
+      const response = await fetch('/api/credits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          targetUserId,
+          amount: credits,
+          type: creditType,
+          adminKey: 'nano-admin-2024' // In production, get this from environment
+        })
       })
-      localStorage.setItem(transactionKey, JSON.stringify(existingLog))
 
-      // Track free credits separately for statistics
-      if (creditType === 'free') {
-        const freeCreditsKey = 'nano_total_free_credits'
-        const totalFree = parseInt(localStorage.getItem(freeCreditsKey) || '0')
-        localStorage.setItem(freeCreditsKey, (totalFree + credits).toString())
+      const data = await response.json()
+
+      if (data.success) {
+        const creditTypeText = creditType === 'free' ? '(ฟรีทดลอง)' : '(ชำระเงินแล้ว)'
+        setCreditMessage(`✅ เพิ่ม ${credits} เครดิต ${creditTypeText} ให้ User ID: ${targetUserId} สำเร็จ (รวม: ${data.credits} เครดิต)`)
+        setCreditMessageType('success')
+        setTargetUserId('')
+        setCreditAmount('')
+
+        // Update local statistics for display
+        const creditStatsKey = 'nano_admin_credit_stats'
+        const stats = JSON.parse(localStorage.getItem(creditStatsKey) || '{}')
+        const today = new Date().toISOString().split('T')[0]
+        if (!stats[today]) {
+          stats[today] = { free: 0, paid: 0 }
+        }
+        if (creditType === 'free') {
+          stats[today].free += credits
+        } else {
+          stats[today].paid += credits
+        }
+        localStorage.setItem(creditStatsKey, JSON.stringify(stats))
+
+        setTimeout(() => setCreditMessage(''), 5000)
+      } else {
+        setCreditMessage(`เกิดข้อผิดพลาด: ${data.message}`)
+        setCreditMessageType('error')
+        setTimeout(() => setCreditMessage(''), 3000)
       }
-
-      const creditTypeText = creditType === 'free' ? '(ฟรีทดลอง)' : '(ชำระเงินแล้ว)'
-      setCreditMessage(`✅ เพิ่ม ${credits} เครดิต ${creditTypeText} ให้ User ID: ${targetUserId} สำเร็จ (รวม: ${newCredits} เครดิต)`)
-      setCreditMessageType('success')
-      setTargetUserId('')
-      setCreditAmount('')
-
-      setTimeout(() => setCreditMessage(''), 5000)
     } catch (error) {
+      console.error('Error adding credits:', error)
       setCreditMessage('เกิดข้อผิดพลาดในการเพิ่มเครดิต: ' + error.message)
       setCreditMessageType('error')
       setTimeout(() => setCreditMessage(''), 3000)

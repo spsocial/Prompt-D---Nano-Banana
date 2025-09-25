@@ -18,6 +18,7 @@ model User {
   lastActive    DateTime @updatedAt
   totalGenerated Int     @default(0)
   totalSpent    Float   @default(0)
+  credits       Int      @default(0)  // User's current credits
 
   // Relations
   transactions  Transaction[]
