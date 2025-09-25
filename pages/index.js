@@ -13,6 +13,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false)
   const [showPricing, setShowPricing] = useState(false)
   const [userId, setUserId] = useState('')
+  const [debugInfo, setDebugInfo] = useState('')
   const {
     isProcessing,
     results,
@@ -34,10 +35,20 @@ export default function Home() {
     }
     setUserId(storedUserId)
 
-    // Function to reload credits
+    // Function to reload credits with debugging
     const reloadCredits = () => {
       if (loadUserCredits) {
-        loadUserCredits(storedUserId)
+        // Check what's in localStorage
+        const creditKey = `nano_credits_${storedUserId}`
+        const storedCredits = localStorage.getItem(creditKey)
+        const allKeys = Object.keys(localStorage).filter(k => k.includes('nano_credits'))
+
+        // Load credits through store
+        const loadedCredits = loadUserCredits(storedUserId)
+
+        // Debug info
+        const debug = `User: ${storedUserId}\nStored: ${storedCredits}\nLoaded: ${loadedCredits}\nKeys: ${allKeys.join(', ')}`
+        setDebugInfo(debug)
       }
     }
 
@@ -90,7 +101,17 @@ export default function Home() {
               </Link>
 
               {/* Credits Display */}
-              <div className="px-4 py-2 bg-gradient-to-r from-white/40 to-white/20 backdrop-blur-lg rounded-xl border border-white/30 shadow-lg">
+              <div
+                className="px-4 py-2 bg-gradient-to-r from-white/40 to-white/20 backdrop-blur-lg rounded-xl border border-white/30 shadow-lg cursor-pointer"
+                onClick={() => {
+                  // Force reload credits when clicked
+                  const uid = localStorage.getItem('nano_user_id')
+                  if (uid && loadUserCredits) {
+                    loadUserCredits(uid)
+                  }
+                }}
+                title="คลิกเพื่อรีเฟรชเครดิต"
+              >
                 <span className="text-sm font-semibold text-gray-800">
                   💳 {userPlan === 'premium' ? 'ไม่จำกัด' : `${userCredits} เครดิต`}
                 </span>
@@ -303,6 +324,16 @@ export default function Home() {
                 <div className="mt-4 p-3 bg-white/50 rounded-lg inline-block">
                   <p className="text-xs text-gray-500">Your User ID:</p>
                   <p className="text-sm font-mono font-bold text-gray-700">{userId}</p>
+                  <button
+                    onClick={() => {
+                      const creditKey = `nano_credits_${userId}`
+                      const storedCredits = localStorage.getItem(creditKey)
+                      alert(`Debug Info:\n\nUser ID: ${userId}\nCredit Key: ${creditKey}\nStored Credits: ${storedCredits}\nCurrent Credits (State): ${userCredits}\n\nAll Credit Keys:\n${Object.keys(localStorage).filter(k => k.includes('nano_credits')).map(k => `${k}: ${localStorage.getItem(k)}`).join('\n')}`)
+                    }}
+                    className="ml-2 px-2 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                  >
+                    Debug
+                  </button>
                 </div>
               )}
             </div>
