@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import ImageUploader from '../components/ImageUploader'
-import AdminSettings from '../components/AdminSettings'
 import ResultGallery from '../components/ResultGallery'
 import ProcessingModal from '../components/ProcessingModal'
 import PricingModal from '../components/PricingModal'
 import useStore from '../lib/store'
 import Link from 'next/link'
-import { Sparkles, Settings, Banana, Wallet, X, History } from 'lucide-react'
+import { Sparkles, Banana, Wallet, X, History } from 'lucide-react'
 
 export default function Home() {
-  const [showSettings, setShowSettings] = useState(false)
   const [showPricing, setShowPricing] = useState(false)
   const [userId, setUserId] = useState('')
   const [debugInfo, setDebugInfo] = useState('')
@@ -116,34 +114,10 @@ export default function Home() {
               >
                 <Wallet className="h-5 w-5 text-yellow-600" />
               </button>
-
-              {/* Settings Button */}
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className="p-3 rounded-xl hover:bg-white/20 transition-all duration-300 backdrop-blur-sm border border-white/20 shadow-md hover:shadow-lg"
-                title="ตั้งค่า Admin"
-              >
-                <Settings className="h-5 w-5 text-gray-700" />
-              </button>
             </div>
           </div>
         </div>
       </header>
-
-      {/* Admin Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative">
-            <button
-              onClick={() => setShowSettings(false)}
-              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              <X className="h-5 w-5 text-gray-500" />
-            </button>
-            <AdminSettings />
-          </div>
-        </div>
-      )}
 
       {/* Pricing Modal */}
       {showPricing && (

@@ -72,7 +72,11 @@ export default async function handler(req, res) {
     const premiumBasePrompt = customPrompt || `สร้างภาพโฆษณาสินค้าจากภาพต้นฉบับ ในบรรยากาศที่หรูหราและทรงพลัง ถ่ายทอดความรู้สึกระดับพรีเมียมอย่างชัดเจน ออกแบบการจัดวางองค์ประกอบภาพอย่างพิถีพิถันเหมือนงานโฆษณามืออาชีพ จัดแสงเงาให้โดดเด่นและเสริมความงามของตัวสินค้า พร้อมเลือกฉากหลังที่มีความหรูหรา กลมกลืน และสื่อถึงคุณค่าของแบรนด์
 ภาพที่ได้ต้องคมชัดในระดับไฮเปอร์เรียลลิสติก รายละเอียดสมจริงทุกมุมมอง โทนสีเน้นความมีระดับ สะท้อนภาพลักษณ์ที่น่าเชื่อถือ ดูทันสมัย และสร้างแรงดึงดูดให้ผู้ชมรู้สึกว่าผลิตภัณฑ์นี้มีคุณค่าเหนือกว่าใคร`
 
-    // Create 4 style variations based on selected style
+    // Premium generates 2 images with 2 variations each = 4 total for display
+    // But we count it as 2 images for tracking
+    const actualImageCount = 2; // Premium package generates 2 actual images
+
+    // Create 4 style variations for display (2 main styles x 2 variations)
     let styleNames = []
 
     // Determine style names based on selected prompt style
@@ -129,7 +133,7 @@ export default async function handler(req, res) {
           ? `https://${process.env.RAILWAY_STATIC_URL}`
           : 'http://localhost:3000';
 
-        // Track once per generation, not per style variation
+        // Track the ACTUAL number of images (2 for premium, not 4 style variations)
         const mainStyle = selectedStyle || 'premium';
         await fetch(`${baseUrl}/api/analytics`, {
           method: 'POST',
@@ -139,7 +143,7 @@ export default async function handler(req, res) {
             data: {
               userId: req.body.userId,
               style: mainStyle, // Use main style only
-              prompt: `Generated ${prompts.length} images`
+              prompt: `Generated ${actualImageCount} images` // Track 2, not 4
             }
           })
         }).catch(err => console.log('Analytics tracking failed:', err));
