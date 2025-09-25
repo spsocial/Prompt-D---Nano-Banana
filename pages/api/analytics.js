@@ -1,5 +1,5 @@
 // API endpoint for analytics operations
-// Use server-side analytics for production
+// Use database analytics for production
 import {
   trackUser,
   trackPayment,
@@ -7,7 +7,7 @@ import {
   getAnalyticsSummary,
   getDetailedStats,
   exportAnalyticsData
-} from '../../lib/analytics-server';
+} from '../../lib/analytics-db';
 
 export default async function handler(req, res) {
   const { method } = req;
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
 
         switch (action) {
           case 'trackUser':
-            const totalUsers = trackUser(data.userId);
+            const totalUsers = await trackUser(data.userId);
             return res.status(200).json({
               success: true,
               totalUsers,
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
             });
 
           case 'trackPayment':
-            const transaction = trackPayment(
+            const transaction = await trackPayment(
               data.userId,
               data.amount,
               data.package,
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
             });
 
           case 'trackImage':
-            const tracked = trackImageGeneration(data.userId, data.style);
+            const tracked = await trackImageGeneration(data.userId, data.style, data.prompt);
             return res.status(200).json({
               success: true,
               tracked,
@@ -82,7 +82,7 @@ export default async function handler(req, res) {
 
         switch (type) {
           case 'summary':
-            const summary = getAnalyticsSummary();
+            const summary = await getAnalyticsSummary();
             return res.status(200).json({
               success: true,
               data: summary
@@ -95,14 +95,14 @@ export default async function handler(req, res) {
                 message: 'Start and end dates required'
               });
             }
-            const detailed = getDetailedStats(startDate, endDate);
+            const detailed = await getDetailedStats(startDate, endDate);
             return res.status(200).json({
               success: true,
               data: detailed
             });
 
           case 'export':
-            const exportData = exportAnalyticsData();
+            const exportData = await exportAnalyticsData();
             return res.status(200).json({
               success: true,
               data: exportData
