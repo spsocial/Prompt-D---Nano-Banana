@@ -69,6 +69,20 @@ export default function ImageUploader() {
 
 สำคัญมาก: อย่าใส่ตัวหนังสือภาษาไทยที่คุณคิดขึ้นเองลงในภาพ ห้ามใส่ข้อความภาษาไทย แต่สามารถใส่ข้อความภาษาอังกฤษที่เกี่ยวข้องกับแบรนด์หรือสินค้าได้`
 
+  const productHeroPrompt = `Transform this product photo into a professional advertising image.
+Keep the original product shape, logo, and text exactly as in the reference.
+Make it look high-quality, sharp, and realistic.
+
+Focus on:
+- Hero shot of the product in the center, well-lit with cinematic lighting
+- Add realistic environment and props related to the product theme
+  (e.g. beach + seafood for snacks, fresh fruits for soap, coffee beans for Nescafe)
+- Enhance textures: condensation drops, fresh ingredients, splashes, or glowing highlights
+- Depth of field with natural background blur
+- Vibrant, commercial-grade color grading
+- Maintain readability of the product's label and brand
+- Style: modern product advertising photography, professional, high impact`
+
   const [mainPrompt, setMainPrompt] = useState(premiumPrompt)
   const [selectedPromptStyle, setSelectedPromptStyle] = useState('premium')
 
@@ -780,6 +794,30 @@ export default function ImageUploader() {
                     <div className="text-center">
                       <div className="font-bold text-gray-800">3D Cinematic</div>
                       <div className="text-xs mt-1 text-gray-600">ภาพระเบิดพลัง</div>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setSelectedPromptStyle('productHero')
+                    setMainPrompt(productHeroPrompt)
+                    setCustomPrompt(productHeroPrompt)
+                    setUseCustomPrompt(false) // Reset custom prompt toggle
+                  }}
+                  className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
+                    selectedPromptStyle === 'productHero' && !useCustomPrompt
+                      ? 'border-orange-500 bg-gradient-to-r from-orange-100/50 to-red-100/50 shadow-lg'
+                      : 'border-white/30 bg-white/20 hover:border-orange-300/50 hover:bg-white/30'
+                  }`}
+                >
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <div className="mb-2 p-2 bg-gradient-to-r from-orange-400 to-orange-500 rounded-lg">
+                      <span className="text-white font-bold text-xl">🏆</span>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-gray-800">Product Hero</div>
+                      <div className="text-xs mt-1 text-gray-600">Hero shot สไตล์โปร</div>
                     </div>
                   </div>
                 </button>

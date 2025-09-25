@@ -95,6 +95,13 @@ export default async function handler(req, res) {
         "3D Cinematic - สไตล์ 3",
         "3D Cinematic - สไตล์ 4"
       ]
+    } else if (selectedStyle === 'productHero') {
+      styleNames = [
+        "Product Hero - สไตล์ 1",
+        "Product Hero - สไตล์ 2",
+        "Product Hero - สไตล์ 3",
+        "Product Hero - สไตล์ 4"
+      ]
     } else if (selectedStyle === 'custom') {
       styleNames = [
         "Custom - สไตล์ 1",

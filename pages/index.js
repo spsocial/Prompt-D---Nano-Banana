@@ -4,6 +4,7 @@ import ImageUploader from '../components/ImageUploader'
 import ResultGallery from '../components/ResultGallery'
 import ProcessingModal from '../components/ProcessingModal'
 import PricingModal from '../components/PricingModal'
+import FabButton from '../components/FabButton'
 import useStore from '../lib/store'
 import Link from 'next/link'
 import { Sparkles, Banana, Wallet, X, History } from 'lucide-react'
@@ -305,6 +306,9 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* FAB Button */}
+      <FabButton />
     </div>
   )
 }
