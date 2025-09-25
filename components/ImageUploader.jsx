@@ -1,13 +1,15 @@
 import { useCallback, useState, useRef, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import useStore from '../lib/store'
-import { Upload, Image, Loader2, Wand2, RefreshCw, AlertCircle, X, Camera } from 'lucide-react'
+import { Upload, Image, Loader2, Wand2, RefreshCw, AlertCircle, X, Camera, Brain } from 'lucide-react'
 
 export default function ImageUploader() {
   const [preview, setPreview] = useState(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [isCompressing, setIsCompressing] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [openaiApiKey, setOpenaiApiKey] = useState('')
   const [numberOfImages, setNumberOfImages] = useState(1) // เริ่มต้นที่ 1 ภาพเพื่อป้องกันการสร้างมากเกินไป
   const [readyToProcess, setReadyToProcess] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
@@ -816,13 +818,67 @@ export default function ImageUploader() {
                 <label className="block text-sm font-bold text-gray-800 mb-3">
                   ปรับแต่ง Prompt เพิ่มเติม:
                 </label>
-                <textarea
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  placeholder="เขียน Prompt ของคุณเองที่นี่..."
-                  className="w-full px-4 py-3 bg-white/30 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all duration-300 resize-none modern-textarea"
-                  rows={5}
-                />
+                <div className="relative">
+                  <textarea
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder="เขียน Prompt ของคุณเองที่นี่ หรือกดปุ่มวิเคราะห์ด้วย AI..."
+                    className="w-full px-4 py-3 pr-32 bg-white/30 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all duration-300 resize-none modern-textarea"
+                    rows={5}
+                  />
+                  {/* AI Analyze Button */}
+                  {preview && (
+                    <button
+                      onClick={async () => {
+                        if (!preview) {
+                          setError('กรุณาอัพโหลดรูปก่อนวิเคราะห์')
+                          return
+                        }
+
+                        // Check for OpenAI API key
+                        const apiKey = openaiApiKey || localStorage.getItem('openai_api_key')
+                        if (!apiKey) {
+                          const key = prompt('กรุณาใส่ OpenAI API Key:')
+                          if (key) {
+                            setOpenaiApiKey(key)
+                            localStorage.setItem('openai_api_key', key)
+                          } else {
+                            setError('ต้องใช้ OpenAI API Key สำหรับวิเคราะห์ด้วย AI')
+                            return
+                          }
+                        }
+
+                        setIsAnalyzing(true)
+                        try {
+                          const response = await fetch('/api/analyze-prompt', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              image: preview,
+                              apiKey: apiKey || openaiApiKey
+                            })
+                          })
+
+                          const data = await response.json()
+                          if (data.success) {
+                            setCustomPrompt(data.prompt)
+                          } else {
+                            setError(data.error || 'ไม่สามารถวิเคราะห์ได้')
+                          }
+                        } catch (error) {
+                          setError('เกิดข้อผิดพลาดในการวิเคราะห์: ' + error.message)
+                        } finally {
+                          setIsAnalyzing(false)
+                        }
+                      }}
+                      disabled={isAnalyzing || !preview}
+                      className="absolute bottom-3 right-3 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-sm rounded-lg font-medium shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      <Brain className="h-4 w-4" />
+                      {isAnalyzing ? 'กำลังวิเคราะห์...' : 'วิเคราะห์ด้วย AI'}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
