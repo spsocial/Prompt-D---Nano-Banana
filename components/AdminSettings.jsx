@@ -30,7 +30,7 @@ export default function AdminSettings() {
   const handlePasswordSubmit = (e) => {
     e.preventDefault()
     // Admin password - ควรเก็บใน environment variable จริงๆ
-    const ADMIN_PASSWORD = 'nano2024' // เปลี่ยนเป็นรหัสที่คุณต้องการ
+    const ADMIN_PASSWORD = 'nano@admin2024' // รหัสผ่านแอดมิน
 
     if (password === ADMIN_PASSWORD) {
       setIsAuthenticated(true)
