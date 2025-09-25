@@ -9,31 +9,80 @@ export default function ResultGallery() {
 
   const handleDownload = async (imageUrl, style) => {
     try {
+      // Check if it's mobile device
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
       // If it's a base64 image, convert to blob
       if (imageUrl.startsWith('data:')) {
         const response = await fetch(imageUrl)
         const blob = await response.blob()
+
+        // For mobile devices, try using share API first
+        if (isMobile && navigator.share && navigator.canShare) {
+          const file = new File([blob], `nano-banana-${style.toLowerCase().replace(/\s+/g, '-')}.png`, {
+            type: 'image/png'
+          })
+
+          if (navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                files: [file],
+                title: 'Nano Banana Image',
+                text: `Image: ${style}`
+              })
+              return
+            } catch (shareError) {
+              console.log('Share cancelled or failed:', shareError)
+            }
+          }
+        }
+
+        // Fallback to blob URL download
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
         link.download = `nano-banana-${style.toLowerCase().replace(/\s+/g, '-')}.png`
+        link.style.display = 'none'
         document.body.appendChild(link)
         link.click()
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
+
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+        }, 100)
+
+        // For mobile, also open in new tab as fallback
+        if (isMobile) {
+          setTimeout(() => {
+            window.open(url, '_blank')
+          }, 200)
+        }
       } else {
         // For regular URLs
         const link = document.createElement('a')
         link.href = imageUrl
         link.download = `nano-banana-${style.toLowerCase().replace(/\s+/g, '-')}.png`
         link.target = '_blank'
+        link.style.display = 'none'
         document.body.appendChild(link)
         link.click()
-        document.body.removeChild(link)
+
+        setTimeout(() => {
+          document.body.removeChild(link)
+        }, 100)
+
+        // For mobile, also open in new tab
+        if (isMobile) {
+          window.open(imageUrl, '_blank')
+        }
       }
     } catch (error) {
       console.error('Download error:', error)
-      alert('ไม่สามารถดาวน์โหลดได้')
+
+      // If all else fails, open image in new tab
+      window.open(imageUrl, '_blank')
+      alert('กดค้างที่รูปภาพและเลือก "บันทึกรูปภาพ" เพื่อดาวน์โหลด')
     }
   }
 
@@ -83,8 +132,26 @@ export default function ResultGallery() {
                 loading="lazy"
               />
 
-              {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              {/* Mobile Download Button - Always visible on mobile */}
+              <div className="md:hidden absolute top-2 right-2 flex gap-2">
+                <button
+                  onClick={() => setSelectedImage(result)}
+                  className="p-2.5 bg-black/60 backdrop-blur-sm rounded-lg text-white shadow-lg"
+                  title="View fullscreen"
+                >
+                  <Maximize2 className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => handleDownload(result.imageUrl, result.style)}
+                  className="p-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 backdrop-blur-sm rounded-lg text-white shadow-lg"
+                  title="Download"
+                >
+                  <Download className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Hover Overlay - Desktop only */}
+              <div className="hidden md:flex absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
                   <div className="text-white">
                     <p className="font-bold mb-1">{result.style}</p>

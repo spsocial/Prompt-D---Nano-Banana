@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import useStore from '../lib/store'
-import { X, Download, Calendar, Image as ImageIcon } from 'lucide-react'
+import { X, Download, Calendar, Image as ImageIcon, Maximize2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function History() {
@@ -21,32 +21,85 @@ export default function History() {
         alert('ไม่สามารถดาวน์โหลดภาพนี้ได้ (ข้อมูลภาพถูกลบเพื่อประหยัดพื้นที่)')
         return
       }
-      
+
+      // Check if it's mobile device
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
       // If it's a base64 image, convert to blob
       if (imageUrl.startsWith('data:')) {
         const response = await fetch(imageUrl)
         const blob = await response.blob()
+
+        // For mobile devices, try using share API first
+        if (isMobile && navigator.share && navigator.canShare) {
+          const file = new File([blob], `nano-banana-history-${id}.png`, {
+            type: 'image/png'
+          })
+
+          if (navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                files: [file],
+                title: 'Nano Banana History',
+                text: `History Image ${id}`
+              })
+              return
+            } catch (shareError) {
+              console.log('Share cancelled or failed:', shareError)
+            }
+          }
+        }
+
+        // Fallback to blob URL download
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
         link.download = `nano-banana-history-${id}.png`
+        link.style.display = 'none'
         document.body.appendChild(link)
         link.click()
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(url)
+
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+        }, 100)
+
+        // For mobile, also open in new tab as fallback
+        if (isMobile) {
+          setTimeout(() => {
+            window.open(url, '_blank')
+          }, 200)
+        }
       } else {
         // For regular URLs
         const link = document.createElement('a')
         link.href = imageUrl
         link.download = `nano-banana-history-${id}.png`
         link.target = '_blank'
+        link.style.display = 'none'
         document.body.appendChild(link)
         link.click()
-        document.body.removeChild(link)
+
+        setTimeout(() => {
+          document.body.removeChild(link)
+        }, 100)
+
+        // For mobile, also open in new tab
+        if (isMobile) {
+          window.open(imageUrl, '_blank')
+        }
       }
     } catch (error) {
       console.error('Download error:', error)
-      alert('ไม่สามารถดาวน์โหลดได้')
+
+      // If all else fails, open image in new tab
+      if (imageUrl && !imageUrl.includes('base64_image_stripped')) {
+        window.open(imageUrl, '_blank')
+        alert('กดค้างที่รูปภาพและเลือก "บันทึกรูปภาพ" เพื่อดาวน์โหลด')
+      } else {
+        alert('ไม่สามารถดาวน์โหลดได้')
+      }
     }
   }
 
@@ -107,29 +160,51 @@ export default function History() {
                     </div>
                   </div>
                 ) : (
-                  <img
-                    src={item.imageUrl}
-                    alt={item.style || 'Generated image'}
-                    className="w-full h-full object-contain bg-white/80 backdrop-blur-sm cursor-pointer"
-                    onClick={() => setSelectedImage(item)}
-                    onError={(e) => {
-                      // Handle broken image links
-                      e.target.onerror = null;
-                      e.target.parentElement.innerHTML = `
-                        <div class="w-full h-full flex items-center justify-center bg-gray-200/50">
-                          <div class="text-center p-4">
-                            <ImageIcon class="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                            <p class="text-gray-500 text-sm">ไม่สามารถโหลดภาพได้</p>
+                  <>
+                    <img
+                      src={item.imageUrl}
+                      alt={item.style || 'Generated image'}
+                      className="w-full h-full object-contain bg-white/80 backdrop-blur-sm cursor-pointer"
+                      onClick={() => setSelectedImage(item)}
+                      onError={(e) => {
+                        // Handle broken image links
+                        e.target.onerror = null;
+                        e.target.parentElement.innerHTML = `
+                          <div class="w-full h-full flex items-center justify-center bg-gray-200/50">
+                            <div class="text-center p-4">
+                              <ImageIcon class="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                              <p class="text-gray-500 text-sm">ไม่สามารถโหลดภาพได้</p>
+                            </div>
                           </div>
-                        </div>
-                      `;
-                    }}
-                    loading="lazy"
-                  />
+                        `;
+                      }}
+                      loading="lazy"
+                    />
+
+                    {/* Mobile Download Button - Always visible on mobile */}
+                    {item.imageUrl && item.imageUrl !== 'base64_image_stripped' && (
+                      <div className="md:hidden absolute top-2 right-2 flex gap-2">
+                        <button
+                          onClick={() => setSelectedImage(item)}
+                          className="p-2.5 bg-black/60 backdrop-blur-sm rounded-lg text-white shadow-lg"
+                          title="View fullscreen"
+                        >
+                          <Maximize2 className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDownload(item.imageUrl, item.id)}
+                          className="p-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 backdrop-blur-sm rounded-lg text-white shadow-lg"
+                          title="Download"
+                        >
+                          <Download className="h-5 w-5" />
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
 
-                {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {/* Hover Overlay - Desktop only */}
+                <div className="hidden md:flex absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="absolute bottom-0 left-0 right-0 p-3 flex justify-between items-end">
                     <div className="text-white">
                       <p className="text-xs font-medium mb-1 line-clamp-1">
