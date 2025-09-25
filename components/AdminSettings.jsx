@@ -79,7 +79,7 @@ export default function AdminSettings() {
           message += `\n📅 รายการล่าสุด: ${new Date(lastTransaction.timestamp).toLocaleString('th-TH')}`
         }
       } else {
-        message = `❌ ไม่พบข้อมูล User ID: ${checkUserId}\n💡 ใช้เครดิตทั่วไป: ${generalCredits || 100} เครดิต`
+        message = `❌ ไม่พบข้อมูล User ID: ${checkUserId}\n💡 ผู้ใช้ใหม่จะเริ่มต้นด้วย 0 เครดิต`
       }
 
       setCheckResult({ type: 'success', message })
@@ -107,7 +107,9 @@ export default function AdminSettings() {
     try {
       // Store credits directly in localStorage with user-specific key
       const userCreditKey = `nano_credits_${targetUserId}`
-      const currentCredits = parseInt(localStorage.getItem(userCreditKey) || '0')
+      // Parse as int with fallback to 0 if null or NaN
+      const storedValue = localStorage.getItem(userCreditKey)
+      const currentCredits = storedValue !== null ? parseInt(storedValue) || 0 : 0
       const newCredits = currentCredits + credits
 
       // Save to localStorage

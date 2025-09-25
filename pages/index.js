@@ -23,7 +23,7 @@ export default function Home() {
     loadUserCredits
   } = useStore()
 
-  // Load user-specific credits on mount
+  // Load user-specific credits on mount and refresh periodically
   useEffect(() => {
     // Get or create user ID
     let storedUserId = localStorage.getItem('nano_user_id')
@@ -32,9 +32,26 @@ export default function Home() {
       localStorage.setItem('nano_user_id', storedUserId)
     }
 
-    // Use the store's loadUserCredits function for consistent loading
-    if (loadUserCredits) {
-      loadUserCredits(storedUserId)
+    // Function to reload credits
+    const reloadCredits = () => {
+      if (loadUserCredits) {
+        loadUserCredits(storedUserId)
+      }
+    }
+
+    // Load initially
+    reloadCredits()
+
+    // Reload every 5 seconds to catch admin updates
+    const interval = setInterval(reloadCredits, 5000)
+
+    // Also reload when window gets focus
+    const handleFocus = () => reloadCredits()
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', handleFocus)
     }
   }, [loadUserCredits])
 
