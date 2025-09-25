@@ -129,19 +129,20 @@ export default async function handler(req, res) {
           ? `https://${process.env.RAILWAY_STATIC_URL}`
           : 'http://localhost:3000';
 
-        for (const p of prompts) {
-          await fetch(`${baseUrl}/api/analytics`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'trackImage',
-              data: {
-                userId: req.body.userId,
-                style: p.style || selectedStyle || 'premium'
-              }
-            })
-          }).catch(err => console.log('Analytics tracking failed:', err));
-        }
+        // Track once per generation, not per style variation
+        const mainStyle = selectedStyle || 'premium';
+        await fetch(`${baseUrl}/api/analytics`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'trackImage',
+            data: {
+              userId: req.body.userId,
+              style: mainStyle, // Use main style only
+              prompt: `Generated ${prompts.length} images`
+            }
+          })
+        }).catch(err => console.log('Analytics tracking failed:', err));
       } catch (error) {
         console.log('Analytics tracking error:', error);
       }
