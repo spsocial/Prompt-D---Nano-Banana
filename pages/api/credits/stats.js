@@ -24,19 +24,23 @@ export default async function handler(req, res) {
       }
     });
 
-    // Separate free and paid credits based on package name or amount
+    // Separate free and paid credits based on package name
     let freeCredits = 0;
     let paidCredits = 0;
+    let todayRevenue = 0; // Actual money revenue (not free credits)
 
     todayTransactions.forEach(transaction => {
-      // Assume transactions with "ฟรี" or "free" in package name are free credits
-      // Or transactions with amount 0 are free
-      if (transaction.packageName?.toLowerCase().includes('free') ||
-          transaction.packageName?.includes('ฟรี') ||
-          transaction.amount === 0) {
-        freeCredits += transaction.amount;
+      // Check if it's a free credit transaction
+      const isFreeCredit = transaction.packageName?.toLowerCase().includes('free') ||
+                           transaction.packageName?.includes('ฟรี');
+
+      if (isFreeCredit) {
+        freeCredits += transaction.amount; // Count as free credits
+        // Don't add to revenue
       } else {
-        paidCredits += transaction.amount;
+        paidCredits += transaction.amount; // Count as paid credits
+        // Only paid credits count as revenue
+        todayRevenue += transaction.amount;
       }
     });
 
@@ -59,14 +63,17 @@ export default async function handler(req, res) {
 
     let weekFreeCredits = 0;
     let weekPaidCredits = 0;
+    let weekRevenue = 0;
 
     weekTransactions.forEach(transaction => {
-      if (transaction.packageName?.toLowerCase().includes('free') ||
-          transaction.packageName?.includes('ฟรี') ||
-          transaction.amount === 0) {
+      const isFreeCredit = transaction.packageName?.toLowerCase().includes('free') ||
+                           transaction.packageName?.includes('ฟรี');
+
+      if (isFreeCredit) {
         weekFreeCredits += transaction.amount;
       } else {
         weekPaidCredits += transaction.amount;
+        weekRevenue += transaction.amount;
       }
     });
 
@@ -75,9 +82,11 @@ export default async function handler(req, res) {
       todayCount: todayTransactions.length,
       freeCredits,
       paidCredits,
+      todayRevenue,  // Actual revenue (paid credits only)
       weekTotal: weekFreeCredits + weekPaidCredits,
       weekFreeCredits,
       weekPaidCredits,
+      weekRevenue,    // Week revenue (paid credits only)
       allTimeTotal: allTransactions._sum.amount || 0
     });
 
