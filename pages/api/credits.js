@@ -33,30 +33,22 @@ export default async function handler(req, res) {
           });
         }
 
-        // Get or create user
-        let user = await prisma.user.findUnique({
-          where: { userId }
+        // Get or create user using upsert to avoid duplicate errors
+        const user = await prisma.user.upsert({
+          where: { userId },
+          update: {
+            lastActive: new Date()
+          },
+          create: {
+            userId,
+            firstSeen: new Date(),
+            lastActive: new Date(),
+            totalGenerated: 0,
+            totalSpent: 0,
+            credits: 0,
+            creditsUsed: 0
+          }
         });
-
-        if (!user) {
-          // Create new user with 0 credits
-          user = await prisma.user.create({
-            data: {
-              userId,
-              firstSeen: new Date(),
-              lastActive: new Date(),
-              totalGenerated: 0,
-              totalSpent: 0,
-              credits: 0
-            }
-          });
-        } else {
-          // Update last active
-          await prisma.user.update({
-            where: { userId },
-            data: { lastActive: new Date() }
-          });
-        }
 
         return res.status(200).json({
           success: true,
