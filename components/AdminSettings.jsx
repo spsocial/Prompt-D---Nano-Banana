@@ -115,17 +115,23 @@ export default function AdminSettings() {
       // Save to localStorage
       localStorage.setItem(userCreditKey, newCredits.toString())
 
-      // Track payment for analytics (only for paid credits)
-      if (creditType === 'paid') {
-        // Track as real revenue
-        const { trackPayment } = await import('../lib/analytics-client')
-        await trackPayment(
-          targetUserId,
-          credits * 1.65, // Assume average price per credit
-          'Manual Add (Paid)',
-          `MANUAL-${Date.now()}`
-        )
+      // Track credit addition separately from payment
+      // Store credit statistics in localStorage
+      const creditStatsKey = 'nano_admin_credit_stats'
+      const stats = JSON.parse(localStorage.getItem(creditStatsKey) || '{}')
+
+      const today = new Date().toISOString().split('T')[0]
+      if (!stats[today]) {
+        stats[today] = { free: 0, paid: 0 }
       }
+
+      if (creditType === 'free') {
+        stats[today].free += credits
+      } else {
+        stats[today].paid += credits
+      }
+
+      localStorage.setItem(creditStatsKey, JSON.stringify(stats))
 
       // Also save a transaction log
       const transactionKey = `nano_credit_log_${targetUserId}`

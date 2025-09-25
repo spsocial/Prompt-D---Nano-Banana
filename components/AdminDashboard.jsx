@@ -33,13 +33,24 @@ export default function AdminDashboard() {
       setLoading(true);
       const summary = await getAnalyticsSummary(); // Add await since it's now async
 
-      // Add free credits statistics from localStorage
-      const totalFreeCredits = parseInt(localStorage.getItem('nano_total_free_credits') || '0');
+      // Add credit statistics from localStorage
+      const creditStatsKey = 'nano_admin_credit_stats';
+      const creditStats = JSON.parse(localStorage.getItem(creditStatsKey) || '{}');
+
+      let totalFreeCredits = 0;
+      let totalPaidCredits = 0;
+
+      Object.values(creditStats).forEach(day => {
+        totalFreeCredits += day.free || 0;
+        totalPaidCredits += day.paid || 0;
+      });
 
       if (summary) {
-        summary.freeCredits = {
-          total: totalFreeCredits,
-          description: 'เครดิตฟรีที่แจกทั้งหมด'
+        summary.creditStats = {
+          freeCredits: totalFreeCredits,
+          paidCredits: totalPaidCredits,
+          totalCredits: totalFreeCredits + totalPaidCredits,
+          description: 'สถิติเครดิตที่เพิ่มแบบ manual'
         };
       }
 
@@ -189,14 +200,16 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Free Credits Card */}
+        {/* Manual Credits Card */}
         <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-6 rounded-2xl text-white shadow-lg">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-indigo-100 text-sm">เครดิตฟรีที่แจก</p>
-              <p className="text-3xl font-bold mt-1">{stats.freeCredits?.total || 0}</p>
+              <p className="text-indigo-100 text-sm">เครดิตที่เพิ่ม (Manual)</p>
+              <p className="text-2xl font-bold mt-1">
+                {stats.creditStats?.totalCredits || 0} <span className="text-sm">เครดิต</span>
+              </p>
               <p className="text-indigo-100 text-xs mt-2">
-                ทดลองใช้ (ไม่นับรายได้)
+                ฟรี: {stats.creditStats?.freeCredits || 0} | จ่าย: {stats.creditStats?.paidCredits || 0}
               </p>
             </div>
             <Award className="h-8 w-8 text-indigo-200" />
