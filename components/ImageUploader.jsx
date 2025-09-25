@@ -8,8 +8,6 @@ export default function ImageUploader() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [isCompressing, setIsCompressing] = useState(false)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [openaiApiKey, setOpenaiApiKey] = useState('')
   const [numberOfImages, setNumberOfImages] = useState(1) // เริ่มต้นที่ 1 ภาพเพื่อป้องกันการสร้างมากเกินไป
   const [readyToProcess, setReadyToProcess] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
@@ -826,57 +824,17 @@ export default function ImageUploader() {
                     className="w-full px-4 py-3 pr-32 bg-white/30 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all duration-300 resize-none modern-textarea"
                     rows={5}
                   />
-                  {/* AI Analyze Button */}
+                  {/* AI Analyze Button - Opens External Link */}
                   {preview && (
-                    <button
-                      onClick={async () => {
-                        if (!preview) {
-                          setError('กรุณาอัพโหลดรูปก่อนวิเคราะห์')
-                          return
-                        }
-
-                        // Check for OpenAI API key
-                        const apiKey = openaiApiKey || localStorage.getItem('openai_api_key')
-                        if (!apiKey) {
-                          const key = prompt('กรุณาใส่ OpenAI API Key:')
-                          if (key) {
-                            setOpenaiApiKey(key)
-                            localStorage.setItem('openai_api_key', key)
-                          } else {
-                            setError('ต้องใช้ OpenAI API Key สำหรับวิเคราะห์ด้วย AI')
-                            return
-                          }
-                        }
-
-                        setIsAnalyzing(true)
-                        try {
-                          const response = await fetch('/api/analyze-prompt', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              image: preview,
-                              apiKey: apiKey || openaiApiKey
-                            })
-                          })
-
-                          const data = await response.json()
-                          if (data.success) {
-                            setCustomPrompt(data.prompt)
-                          } else {
-                            setError(data.error || 'ไม่สามารถวิเคราะห์ได้')
-                          }
-                        } catch (error) {
-                          setError('เกิดข้อผิดพลาดในการวิเคราะห์: ' + error.message)
-                        } finally {
-                          setIsAnalyzing(false)
-                        }
-                      }}
-                      disabled={isAnalyzing || !preview}
-                      className="absolute bottom-3 right-3 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-sm rounded-lg font-medium shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    <a
+                      href="https://chatgpt.com/g/g-68d4b28a81148191b1fe407432225d34-kh-prompt-aichthmaaphaaphsinkhaaopset-rkhaay-prompt-d"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute bottom-3 right-3 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-sm rounded-lg font-medium shadow-lg transition-all duration-300 flex items-center gap-2 no-underline"
                     >
                       <Brain className="h-4 w-4" />
-                      {isAnalyzing ? 'กำลังวิเคราะห์...' : 'วิเคราะห์ด้วย AI'}
-                    </button>
+                      วิเคราะห์ด้วย AI
+                    </a>
                   )}
                 </div>
               </div>
