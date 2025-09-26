@@ -109,35 +109,47 @@ export default function PricingModal({ onClose }) {
         const result = await response.json()
 
         if (result.success) {
-          // Use the new balance from the database
-          const newCredits = result.data?.newBalance || ((userCredits || 0) + selectedPackage.credits)
+          // Wait a bit to ensure database is updated
+          await new Promise(resolve => setTimeout(resolve, 500))
 
-          // Update localStorage and state with database value
-          localStorage.setItem('nano_credits', newCredits.toString())
-          if (setUserCredits) setUserCredits(newCredits)
+          // Sync with database multiple times to ensure consistency
+          let finalCredits = result.data?.newBalance || ((userCredits || 0) + selectedPackage.credits)
 
-          // Sync with database to ensure consistency
+          // First sync attempt
           try {
             const creditResponse = await fetch('/api/credits?userId=' + generatedUserId)
             if (creditResponse.ok) {
               const creditData = await creditResponse.json()
-              const dbCredits = creditData.credits || newCredits
-              localStorage.setItem('nano_credits', dbCredits.toString())
-              if (setUserCredits) setUserCredits(dbCredits)
-
-              // Also call the store's loadUserCredits function for proper sync
-              if (loadUserCredits) {
-                await loadUserCredits(generatedUserId)
+              if (creditData.success && creditData.credits !== undefined) {
+                finalCredits = creditData.credits
+                console.log('Credits from DB:', finalCredits)
               }
             }
           } catch (error) {
             console.error('Error syncing credits:', error)
           }
 
+          // Update localStorage and state with verified database value
+          localStorage.setItem('nano_credits', finalCredits.toString())
+          localStorage.setItem(`nano_credits_${generatedUserId}`, finalCredits.toString())
+          if (setUserCredits) setUserCredits(finalCredits)
+
+          // Also call the store's loadUserCredits function for proper sync
+          if (loadUserCredits) {
+            await loadUserCredits(generatedUserId)
+          }
+
           setVerificationResult({
             success: true,
-            message: `✅ ยืนยันการชำระเงิน ${selectedPackage.price} บาทสำเร็จ! ได้รับ ${selectedPackage.credits} เครดิต`
+            message: `✅ ยืนยันการชำระเงิน ${selectedPackage.price} บาทสำเร็จ! ได้รับ ${selectedPackage.credits} เครดิต (รวม ${finalCredits} เครดิต)`
           })
+
+          // Double-check sync after showing success message
+          setTimeout(async () => {
+            if (loadUserCredits) {
+              await loadUserCredits(generatedUserId)
+            }
+          }, 1000)
 
           // ปิด modal หลังจาก 3 วินาที
           setTimeout(() => {

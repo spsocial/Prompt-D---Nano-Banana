@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 // Don't import analytics here to avoid client-side dependencies
 
 export const config = {
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     const geminiApiKey = apiKey || process.env.GEMINI_API_KEY || 'AIzaSyCaUEO45dTltA6huicctEvJEOT0GC4Qzsg'
 
     // Initialize with correct package
-    const ai = new GoogleGenAI({ apiKey: geminiApiKey })
+    const genAI = new GoogleGenerativeAI(geminiApiKey)
 
     // Convert base64 to proper format
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '')
@@ -40,32 +40,24 @@ export default async function handler(req, res) {
 
     ตอบเป็นภาษาไทยแบบกระชับและชัดเจน`
 
-    // Use text generation model for analysis
-    const analysisResponse = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: [
-        {
-          text: analysisPrompt
-        },
-        {
-          inlineData: {
-            mimeType: "image/jpeg",
-            data: base64Data
-          }
-        }
-      ]
-    })
+    // Get the model
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
-    let analysis = ''
-    if (analysisResponse.candidates && analysisResponse.candidates[0]) {
-      const parts = analysisResponse.candidates[0].content.parts
-      if (parts) {
-        for (const part of parts) {
-          if (part.text) {
-            analysis += part.text
-          }
+    // Use text generation model for analysis
+    const analysisResponse = await model.generateContent([
+      analysisPrompt,
+      {
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: base64Data
         }
       }
+    ])
+
+    let analysis = ''
+    const result = analysisResponse.response
+    if (result && result.text) {
+      analysis = result.text()
     }
 
     // Premium base prompt
