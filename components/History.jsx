@@ -273,11 +273,11 @@ export default function History() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              className="relative w-full h-full max-w-7xl max-h-[95vh] flex flex-col bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-2xl rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
+              className="relative max-w-7xl max-h-[90vh] w-full flex flex-col bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/90 to-transparent p-4 z-10 rounded-t-2xl">
+              <div className="bg-gradient-to-b from-black/90 to-transparent p-4 rounded-t-2xl">
                 <div className="flex justify-between items-start">
                   <div className="text-white max-w-[80%]">
                     <h3 className="text-xl md:text-2xl font-bold truncate">{selectedImage.style || 'ไม่มีชื่อ'}</h3>
@@ -297,7 +297,7 @@ export default function History() {
               </div>
 
               {/* Image Container - Responsive to aspect ratio */}
-              <div className="flex-1 flex items-center justify-center p-4 pt-20 pb-24 overflow-auto">
+              <div className="flex-1 flex items-center justify-center p-4 min-h-0 overflow-auto">
                 {/* Handle missing image data */}
                 {selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl ? (
                   <div className="flex flex-col items-center justify-center text-center p-8 bg-gray-800/50 rounded-xl">
@@ -344,7 +344,7 @@ export default function History() {
               </div>
 
               {/* Modal Footer */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 rounded-b-2xl">
+              <div className="bg-gradient-to-t from-black/90 to-transparent p-4 rounded-b-2xl">
                 <div className="flex flex-col sm:flex-row justify-center gap-3">
                   <button
                     onClick={(e) => {
