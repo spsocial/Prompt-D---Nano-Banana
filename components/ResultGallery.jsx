@@ -255,14 +255,16 @@ export default function ResultGallery() {
               </div>
 
               {/* Image Container - Responsive to aspect ratio */}
-              <div className="flex-1 flex items-center justify-center p-4 pt-20 pb-24 overflow-hidden">
-                <div className="fullscreen-image-container">
-                  <img
-                    src={selectedImage.imageUrl}
-                    alt={selectedImage.style}
-                    className="max-h-full max-w-full object-contain rounded-xl shadow-2xl"
-                  />
-                </div>
+              <div className="flex-1 flex items-center justify-center p-4 pt-20 pb-24 overflow-auto">
+                <img
+                  src={selectedImage.imageUrl}
+                  alt={selectedImage.style}
+                  className="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                  style={{
+                    maxHeight: 'calc(100% - 2rem)',
+                    maxWidth: 'calc(100% - 2rem)'
+                  }}
+                />
               </div>
 
               {/* Modal Footer */}

@@ -297,48 +297,50 @@ export default function History() {
               </div>
 
               {/* Image Container - Responsive to aspect ratio */}
-              <div className="flex-1 flex items-center justify-center p-4 pt-20 pb-24 overflow-hidden">
-                <div className="fullscreen-image-container">
-                  {/* Handle missing image data */}
-                  {selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl ? (
-                    <div className="flex flex-col items-center justify-center text-center p-8 bg-gray-800/50 rounded-xl">
-                      <ImageIcon className="h-16 w-16 text-gray-500 mb-4" />
-                      <h4 className="text-xl font-bold text-gray-300 mb-2">ภาพถูกลบเพื่อประหยัดพื้นที่</h4>
-                      <p className="text-gray-400 max-w-md">
-                        ภาพนี้ถูกลบเพื่อประหยัดพื้นที่จัดเก็บ
-                      </p>
-                      <p className="text-gray-500 text-sm mt-2">ระบบเก็บข้อมูลอื่นๆ ไว้เพื่อประหยัดพื้นที่</p>
-                      <p className="text-gray-500 text-xs mt-1">แนะนำ: ดาวน์โหลดภาพเพื่อเก็บไว้ก่อนที่จะหายไป</p>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDownload(selectedImage.imageUrl, selectedImage.id)
-                        }}
-                        disabled
-                        className="mt-4 px-4 py-2 text-sm bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed"
-                      >
-                        ดาวน์โหลดไม่ได้
-                      </button>
-                    </div>
-                  ) : (
-                    <img
-                      src={selectedImage.imageUrl}
-                      alt={selectedImage.style || 'Generated image'}
-                      className="max-h-full max-w-full object-contain rounded-xl shadow-2xl"
-                      onError={(e) => {
-                        // Handle broken image links
-                        e.target.onerror = null;
-                        e.target.parentElement.innerHTML = `
-                          <div class="flex flex-col items-center justify-center text-center p-8 bg-gray-800/50 rounded-xl">
-                            <ImageIcon class="h-16 w-16 text-gray-500 mb-4" />
-                            <h4 class="text-xl font-bold text-gray-300 mb-2">ไม่สามารถโหลดภาพได้</h4>
-                            <p class="text-gray-400">ภาพนี้อาจไม่สามารถเข้าถึงได้อีกต่อไป</p>
-                          </div>
-                        `;
+              <div className="flex-1 flex items-center justify-center p-4 pt-20 pb-24 overflow-auto">
+                {/* Handle missing image data */}
+                {selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl ? (
+                  <div className="flex flex-col items-center justify-center text-center p-8 bg-gray-800/50 rounded-xl">
+                    <ImageIcon className="h-16 w-16 text-gray-500 mb-4" />
+                    <h4 className="text-xl font-bold text-gray-300 mb-2">ภาพถูกลบเพื่อประหยัดพื้นที่</h4>
+                    <p className="text-gray-400 max-w-md">
+                      ภาพนี้ถูกลบเพื่อประหยัดพื้นที่จัดเก็บ
+                    </p>
+                    <p className="text-gray-500 text-sm mt-2">ระบบเก็บข้อมูลอื่นๆ ไว้เพื่อประหยัดพื้นที่</p>
+                    <p className="text-gray-500 text-xs mt-1">แนะนำ: ดาวน์โหลดภาพเพื่อเก็บไว้ก่อนที่จะหายไป</p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDownload(selectedImage.imageUrl, selectedImage.id)
                       }}
-                    />
-                  )}
-                </div>
+                      disabled
+                      className="mt-4 px-4 py-2 text-sm bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed"
+                    >
+                      ดาวน์โหลดไม่ได้
+                    </button>
+                  </div>
+                ) : (
+                  <img
+                    src={selectedImage.imageUrl}
+                    alt={selectedImage.style || 'Generated image'}
+                    className="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                    style={{
+                      maxHeight: 'calc(100% - 2rem)',
+                      maxWidth: 'calc(100% - 2rem)'
+                    }}
+                    onError={(e) => {
+                      // Handle broken image links
+                      e.target.onerror = null;
+                      e.target.parentElement.innerHTML = `
+                        <div class="flex flex-col items-center justify-center text-center p-8 bg-gray-800/50 rounded-xl">
+                          <ImageIcon class="h-16 w-16 text-gray-500 mb-4" />
+                          <h4 class="text-xl font-bold text-gray-300 mb-2">ไม่สามารถโหลดภาพได้</h4>
+                          <p class="text-gray-400">ภาพนี้อาจไม่สามารถเข้าถึงได้อีกต่อไป</p>
+                        </div>
+                      `;
+                    }}
+                  />
+                )}
               </div>
 
               {/* Modal Footer */}
