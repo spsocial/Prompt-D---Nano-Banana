@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
 // Don't import analytics here to avoid client-side dependencies
 
 export const config = {
@@ -24,13 +23,10 @@ export default async function handler(req, res) {
     // Use Gemini API key
     const geminiApiKey = apiKey || process.env.GEMINI_API_KEY || 'AIzaSyCaUEO45dTltA6huicctEvJEOT0GC4Qzsg'
 
-    // Initialize with correct package
-    const genAI = new GoogleGenerativeAI(geminiApiKey)
-
     // Convert base64 to proper format
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '')
 
-    // Analyze image with Gemini
+    // Analyze image with Gemini using direct API call
     const analysisPrompt = `วิเคราะห์ภาพสินค้านี้และระบุรายละเอียดต่อไปนี้:
     1. ประเภทและหมวดหมู่ของสินค้า
     2. ลักษณะเด่นของสินค้า (สี, พื้นผิว, วัสดุ)
@@ -40,24 +36,47 @@ export default async function handler(req, res) {
 
     ตอบเป็นภาษาไทยแบบกระชับและชัดเจน`
 
-    // Get the model
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+    // Call Gemini API directly with fetch - use gemini-2.0-flash-exp for vision
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`
 
-    // Use text generation model for analysis
-    const analysisResponse = await model.generateContent([
-      analysisPrompt,
-      {
-        inlineData: {
-          mimeType: "image/jpeg",
-          data: base64Data
-        }
-      }
-    ])
+    const requestBody = {
+      contents: [{
+        parts: [
+          { text: analysisPrompt },
+          {
+            inline_data: {
+              mime_type: "image/jpeg",
+              data: base64Data
+            }
+          }
+        ]
+      }]
+    }
+
+    const analysisResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
+    })
+
+    if (!analysisResponse.ok) {
+      throw new Error(`Gemini API error: ${analysisResponse.status} ${analysisResponse.statusText}`)
+    }
+
+    const analysisResult = await analysisResponse.json()
 
     let analysis = ''
-    const result = analysisResponse.response
-    if (result && result.text) {
-      analysis = result.text()
+    if (analysisResult.candidates && analysisResult.candidates[0]) {
+      const parts = analysisResult.candidates[0].content?.parts
+      if (parts) {
+        for (const part of parts) {
+          if (part.text) {
+            analysis += part.text
+          }
+        }
+      }
     }
 
     // Premium base prompt
