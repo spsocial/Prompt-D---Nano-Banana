@@ -36,8 +36,8 @@ export default async function handler(req, res) {
 
     ตอบเป็นภาษาไทยแบบกระชับและชัดเจน`
 
-    // Call Gemini API directly with fetch - use gemini-2.0-flash-exp for vision
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`
+    // Call Gemini API directly with fetch - use gemini-2.5-flash-image-preview for vision
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${geminiApiKey}`
 
     const requestBody = {
       contents: [{
