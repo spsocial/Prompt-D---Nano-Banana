@@ -266,14 +266,14 @@ export default function History() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/95 backdrop-blur-lg z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
             onClick={() => setSelectedImage(null)}
           >
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
+              initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              className="relative max-w-7xl max-h-[90vh] w-full flex flex-col bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl"
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-7xl h-[90vh] sm:h-[85vh] flex flex-col bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-md rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
@@ -297,7 +297,7 @@ export default function History() {
               </div>
 
               {/* Image Container - Responsive to aspect ratio */}
-              <div className="flex-1 flex items-center justify-center p-4 min-h-0 overflow-auto">
+              <div className="flex-1 flex items-center justify-center p-2 sm:p-4 min-h-0 overflow-auto">
                 {/* Handle missing image data */}
                 {selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl ? (
                   <div className="flex flex-col items-center justify-center text-center p-8 bg-gray-800/50 rounded-xl">
@@ -323,10 +323,12 @@ export default function History() {
                   <img
                     src={selectedImage.imageUrl}
                     alt={selectedImage.style || 'Generated image'}
-                    className="w-auto h-auto max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                    className="object-contain rounded-xl shadow-2xl"
                     style={{
-                      maxHeight: 'calc(100% - 2rem)',
-                      maxWidth: 'calc(100% - 2rem)'
+                      maxHeight: 'calc(100vh - 12rem)',
+                      maxWidth: '100%',
+                      width: 'auto',
+                      height: 'auto'
                     }}
                     onError={(e) => {
                       // Handle broken image links
