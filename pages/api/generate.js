@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prompts, apiKey, replicateApiKey, originalImage } = req.body
+    const { prompts, apiKey, replicateApiKey, originalImage, aspectRatio = '1:1' } = req.body
 
     if (!prompts || !Array.isArray(prompts)) {
       return res.status(400).json({ error: 'No prompts provided' })
@@ -109,7 +109,10 @@ Requirements:
                 temperature: 0.4,
                 topK: 32,
                 topP: 1,
-                maxOutputTokens: 8192
+                maxOutputTokens: 8192,
+                imageConfig: {
+                  aspectRatio: aspectRatio
+                }
               }
             }
           } else {
@@ -127,7 +130,10 @@ ${promptData.style} style with premium quality`
                 temperature: 0.4,
                 topK: 32,
                 topP: 1,
-                maxOutputTokens: 8192
+                maxOutputTokens: 8192,
+                imageConfig: {
+                  aspectRatio: aspectRatio
+                }
               }
             }
           }

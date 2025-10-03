@@ -9,6 +9,7 @@ export default function ImageUploader() {
   const [customPrompt, setCustomPrompt] = useState('')
   const [isCompressing, setIsCompressing] = useState(false)
   const [numberOfImages, setNumberOfImages] = useState(1) // เริ่มต้นที่ 1 ภาพเพื่อป้องกันการสร้างมากเกินไป
+  const [aspectRatio, setAspectRatio] = useState('1:1') // Default aspect ratio
   const [readyToProcess, setReadyToProcess] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
   const [cameraError, setCameraError] = useState(null)
@@ -149,7 +150,8 @@ Focus on:
           customPrompt: promptToUse,
           selectedStyle: selectedPromptStyle,
           userId: localStorage.getItem('nano_user_id'), // Add userId for tracking
-          numberOfImages: numberOfImages // Pass the actual number of images
+          numberOfImages: numberOfImages, // Pass the actual number of images
+          aspectRatio: aspectRatio // Pass selected aspect ratio
         }),
       })
 
@@ -180,7 +182,8 @@ Focus on:
           prompts,
           apiKey: userPlan === 'free' ? apiKeys.gemini : null,
           replicateApiKey: userPlan === 'free' ? apiKeys.replicate : null,
-          originalImage: compressedImage // ส่งภาพที่บีบอัดแล้ว
+          originalImage: compressedImage, // ส่งภาพที่บีบอัดแล้ว
+          aspectRatio: aspectRatio // Pass selected aspect ratio
         }),
       })
 
@@ -643,6 +646,35 @@ Focus on:
                   }`}
                 >
                   {num} ภาพ
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
+              ขนาดรูปภาพ (Aspect Ratio): <span className="text-yellow-600">{aspectRatio}</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { ratio: '1:1', label: 'จตุรัส 1:1', icon: '⬛' },
+                { ratio: '16:9', label: 'แนวนอน 16:9', icon: '▭' },
+                { ratio: '9:16', label: 'แนวตั้ง 9:16', icon: '▯' },
+                { ratio: '4:3', label: 'แนวนอน 4:3', icon: '▬' },
+                { ratio: '3:4', label: 'แนวตั้ง 3:4', icon: '▮' },
+                { ratio: '21:9', label: 'ไวด์ 21:9', icon: '▬' }
+              ].map(({ ratio, label, icon }) => (
+                <button
+                  key={ratio}
+                  onClick={() => setAspectRatio(ratio)}
+                  className={`px-3 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
+                    aspectRatio === ratio
+                      ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
+                      : 'bg-white/50 backdrop-blur-sm text-gray-700 border border-white/30 hover:bg-white/70'
+                  }`}
+                >
+                  <div className="text-xl mb-1">{icon}</div>
+                  <div className="text-xs">{label}</div>
                 </button>
               ))}
             </div>
