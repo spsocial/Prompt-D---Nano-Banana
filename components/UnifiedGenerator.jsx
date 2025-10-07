@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sparkles, Film, Image as ImageIcon, Upload, Wand2 } from 'lucide-react'
 import ImageUploader from './ImageUploader'
 import VideoGenerator from './VideoGenerator'
@@ -70,6 +70,30 @@ export default function UnifiedGenerator() {
 
   const models = mode === 'image' ? IMAGE_MODELS : VIDEO_MODELS
   const currentModel = models[selectedModel]
+
+  // Check if user wants to create video from image (from ResultGallery)
+  useEffect(() => {
+    const pendingVideoGen = localStorage.getItem('nano_pending_video_gen')
+    if (pendingVideoGen === 'true') {
+      // Switch to video mode
+      setMode('video')
+      setSelectedModel('sora-2')
+
+      // Clear the flag
+      localStorage.removeItem('nano_pending_video_gen')
+
+      // Show a notification
+      setTimeout(() => {
+        const notification = document.createElement('div')
+        notification.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 animate-bounce'
+        notification.innerHTML = '✅ เลือกโมเดล AI สำหรับสร้างวิดีโอด้านล่าง'
+        document.body.appendChild(notification)
+        setTimeout(() => {
+          notification.remove()
+        }, 4000)
+      }, 500)
+    }
+  }, [])
 
   return (
     <div className="space-y-6">

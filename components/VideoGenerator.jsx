@@ -6,15 +6,69 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
   const [mode, setMode] = useState(sourceImage ? 'image' : 'text')
   const [uploadedImage, setUploadedImage] = useState(sourceImage)
   const [prompt, setPrompt] = useState(sourcePrompt)
-  const [duration, setDuration] = useState(5)
+  const [duration, setDuration] = useState(model === 'veo3-fast' ? 8 : 5)
   const [resolution, setResolution] = useState('720p')
   const [aspectRatio, setAspectRatio] = useState('16:9')
   const [isGenerating, setIsGenerating] = useState(false)
   const [videoResult, setVideoResult] = useState(null)
   const [error, setError] = useState(null)
-  const [showSettings, setShowSettings] = useState(true) // เปิดแสดง settings ตั้งแต่แรก
+  const [showSettings, setShowSettings] = useState(true)
 
   const { apiKeys, userPlan } = useStore()
+
+  // Model-specific configurations
+  const modelConfig = {
+    'veo3-fast': {
+      name: 'Veo 3 Fast',
+      durations: [8], // Fixed 8 seconds only
+      resolutions: {
+        '16:9': ['720p', '1080p'],
+        '9:16': ['720p'],
+        '1:1': ['720p']
+      },
+      aspectRatios: ['16:9', '9:16', '1:1']
+    },
+    'sora-2': {
+      name: 'Sora 2',
+      durations: [5, 10, 15, 20],
+      resolutions: {
+        '16:9': ['480p', '720p', '1080p'],
+        '9:16': ['480p', '720p', '1080p'],
+        '1:1': ['480p', '720p', '1080p'],
+        '4:3': ['480p', '720p', '1080p'],
+        '3:4': ['480p', '720p', '1080p'],
+        '21:9': ['480p', '720p', '1080p']
+      },
+      aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9']
+    },
+    'sora-2-hd': {
+      name: 'Sora 2 HD',
+      durations: [5, 10, 15, 20],
+      resolutions: {
+        '16:9': ['720p', '1080p'],
+        '9:16': ['720p', '1080p'],
+        '1:1': ['720p', '1080p'],
+        '4:3': ['720p', '1080p'],
+        '3:4': ['720p', '1080p'],
+        '21:9': ['720p', '1080p']
+      },
+      aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9']
+    }
+  }
+
+  const currentConfig = modelConfig[model] || modelConfig['sora-2']
+
+  // Get available resolutions for current aspect ratio
+  const availableResolutions = currentConfig.resolutions[aspectRatio] || ['720p']
+
+  // Auto-adjust resolution if not available for selected aspect ratio
+  const handleAspectRatioChange = (newAspectRatio) => {
+    setAspectRatio(newAspectRatio)
+    const availableRes = currentConfig.resolutions[newAspectRatio] || ['720p']
+    if (!availableRes.includes(resolution)) {
+      setResolution(availableRes[0]) // Set to first available resolution
+    }
+  }
 
   // Handle image upload
   const handleImageUpload = (e) => {
@@ -265,8 +319,8 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             <label className="block text-sm font-bold text-gray-800 mb-2">
               ความยาววิดีโอ: <span className="text-red-600">{duration} วินาที</span>
             </label>
-            <div className="grid grid-cols-4 gap-2">
-              {[5, 10, 15, 20].map(sec => (
+            <div className={`grid gap-2 ${currentConfig.durations.length === 1 ? 'grid-cols-1' : 'grid-cols-4'}`}>
+              {currentConfig.durations.map(sec => (
                 <button
                   key={sec}
                   onClick={() => setDuration(sec)}
@@ -287,8 +341,8 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             <label className="block text-sm font-bold text-gray-800 mb-2">
               ความละเอียด: <span className="text-red-600">{resolution}</span>
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {['480p', '720p', '1080p'].map(res => (
+            <div className={`grid gap-2 ${availableResolutions.length === 1 ? 'grid-cols-1' : 'grid-cols-3'}`}>
+              {availableResolutions.map(res => (
                 <button
                   key={res}
                   onClick={() => setResolution(res)}
@@ -310,24 +364,30 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
               อัตราส่วนภาพ: <span className="text-red-600">{aspectRatio}</span>
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {[
-                { ratio: '16:9', label: 'แนวนอน' },
-                { ratio: '9:16', label: 'แนวตั้ง' },
-                { ratio: '1:1', label: 'จตุรัส' }
-              ].map(({ ratio, label }) => (
-                <button
-                  key={ratio}
-                  onClick={() => setAspectRatio(ratio)}
-                  className={`px-4 py-2 rounded-lg font-bold transition-all ${
-                    aspectRatio === ratio
-                      ? 'bg-red-500 text-white shadow-lg'
-                      : 'bg-white text-gray-700 hover:bg-red-100'
-                  }`}
-                >
-                  {ratio}
-                  <div className="text-xs font-normal">{label}</div>
-                </button>
-              ))}
+              {currentConfig.aspectRatios.map(ratio => {
+                const labels = {
+                  '16:9': 'แนวนอน',
+                  '9:16': 'แนวตั้ง',
+                  '1:1': 'จตุรัส',
+                  '4:3': 'แนวนอน 4:3',
+                  '3:4': 'แนวตั้ง 3:4',
+                  '21:9': 'ภาพกว้าง'
+                }
+                return (
+                  <button
+                    key={ratio}
+                    onClick={() => handleAspectRatioChange(ratio)}
+                    className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                      aspectRatio === ratio
+                        ? 'bg-red-500 text-white shadow-lg'
+                        : 'bg-white text-gray-700 hover:bg-red-100'
+                    }`}
+                  >
+                    {ratio}
+                    <div className="text-xs font-normal">{labels[ratio]}</div>
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>

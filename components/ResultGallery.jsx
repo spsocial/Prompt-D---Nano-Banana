@@ -2,12 +2,22 @@ import { useState } from 'react'
 import useStore from '../lib/store'
 import { Download, Maximize2, X, Film } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import VideoGenerator from './VideoGenerator'
 
 export default function ResultGallery() {
-  const { results } = useStore()
+  const { results, setUploadedImage } = useStore()
   const [selectedImage, setSelectedImage] = useState(null)
-  const [videoGenImage, setVideoGenImage] = useState(null)
+
+  // Handle creating video from image
+  const handleCreateVideo = (result) => {
+    // Save image to store for video generation
+    setUploadedImage(result.imageUrl)
+
+    // Scroll to top where UnifiedGenerator is
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    // Store mode preference in localStorage for UnifiedGenerator to read
+    localStorage.setItem('nano_pending_video_gen', 'true')
+  }
 
   const handleDownload = async (imageUrl, style) => {
     try {
@@ -137,7 +147,7 @@ export default function ResultGallery() {
               {/* Mobile Buttons - Always visible on mobile */}
               <div className="md:hidden absolute top-2 right-2 flex gap-2">
                 <button
-                  onClick={() => setVideoGenImage(result)}
+                  onClick={() => handleCreateVideo(result)}
                   className="p-2.5 bg-red-500/90 backdrop-blur-sm rounded-lg text-white shadow-lg"
                   title="สร้างวิดีโอ"
                 >
@@ -174,7 +184,7 @@ export default function ResultGallery() {
                   {/* Action Buttons */}
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => setVideoGenImage(result)}
+                      onClick={() => handleCreateVideo(result)}
                       className="p-2 bg-red-500/80 backdrop-blur-sm rounded-lg hover:bg-red-600/90 transition-colors"
                       title="สร้างวิดีโอ"
                     >
@@ -249,10 +259,19 @@ export default function ResultGallery() {
               className="relative w-full max-w-7xl h-[90vh] sm:h-[85vh] flex flex-col bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-md rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Close Button - Large and Prominent */}
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-500 hover:bg-red-600 text-white rounded-full w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-all shadow-2xl z-30 flex-shrink-0 ring-4 ring-white/20"
+                title="ปิด (กดที่ไหนก็ได้เพื่อปิด)"
+              >
+                <X className="h-6 w-6 sm:h-7 sm:w-7" />
+              </button>
+
               {/* Modal Header */}
               <div className="bg-gradient-to-b from-black/90 to-transparent p-4 rounded-t-2xl">
-                <div className="flex justify-between items-start">
-                  <div className="text-white max-w-[80%]">
+                <div className="pr-12">
+                  <div className="text-white">
                     <h3 className="text-xl md:text-2xl font-bold truncate">{selectedImage.style}</h3>
                     {selectedImage.description && (
                       <p className="text-sm opacity-80 mt-1 line-clamp-2">
@@ -260,13 +279,6 @@ export default function ResultGallery() {
                       </p>
                     )}
                   </div>
-                  <button
-                    onClick={() => setSelectedImage(null)}
-                    className="bg-red-500/90 hover:bg-red-500 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors shadow-lg z-20 flex-shrink-0"
-                    title="ปิด"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
                 </div>
               </div>
 
@@ -305,43 +317,6 @@ export default function ResultGallery() {
                     ปิด
                   </button>
                 </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Video Generator Modal */}
-      <AnimatePresence>
-        {videoGenImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
-            onClick={() => setVideoGenImage(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-4xl bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl my-8"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Close Button */}
-              <button
-                onClick={() => setVideoGenImage(null)}
-                className="absolute top-4 right-4 z-10 bg-red-500 hover:bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors shadow-lg"
-              >
-                <X className="h-5 w-5" />
-              </button>
-
-              {/* Content */}
-              <div className="p-6 md:p-8">
-                <VideoGenerator
-                  sourceImage={videoGenImage.imageUrl}
-                  sourcePrompt={videoGenImage.prompt || `Create an animated video from this ${videoGenImage.style} style product image`}
-                />
               </div>
             </motion.div>
           </motion.div>
