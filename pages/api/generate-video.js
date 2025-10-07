@@ -40,30 +40,19 @@ export default async function handler(req, res) {
     console.log(`📝 Mode: ${image ? 'Image to Video' : 'Text to Video'}`)
     console.log(`⏱️ Duration: ${duration}s, Resolution: ${resolution}, Aspect: ${aspectRatio}`)
 
-    // CometAPI model format: sora-{aspect}-{resolution}-{duration}s
-    // Aspect ratio format: use ":" instead of "/"
-    const aspectMap = {
-      '16:9': '16:9',
-      '9:16': '9:16',
-      '1:1': '1:1',
-      '4:3': '16:9', // fallback
-      '3:4': '9:16', // fallback
-      '21:9': '16:9' // fallback
-    }
-
-    const mappedAspect = aspectMap[aspectRatio] || '1:1'
-    const mappedResolution = resolution || '720p'
-    const mappedDuration = duration || 5
-
-    const modelName = `sora-${mappedAspect}-${mappedResolution}-${mappedDuration}s`
+    // CometAPI uses model: sora-1.0-turbo or Sora
+    const modelName = 'sora-1.0-turbo'
 
     console.log(`🎯 Using model: ${modelName}`)
 
-    // Build prompt with image description if provided
+    // Build prompt with specifications
     let fullPrompt = prompt || 'Create a cinematic video'
 
+    // Add specifications to prompt
+    fullPrompt = `${fullPrompt}. Video specifications: ${duration} seconds duration, ${resolution} resolution, ${aspectRatio} aspect ratio.`
+
     if (image) {
-      fullPrompt = `${fullPrompt}. Create a dynamic video with smooth camera movements and cinematic effects.`
+      fullPrompt = `Create a dynamic video with smooth camera movements and cinematic effects. ${fullPrompt}`
     }
 
     // Create request using CometAPI format (OpenAI-compatible)
@@ -81,8 +70,8 @@ export default async function handler(req, res) {
     console.log('🚀 Sending request to CometAPI...')
     console.log('📦 Request payload:', JSON.stringify(requestPayload, null, 2))
 
-    // Call CometAPI Sora endpoint
-    const createResponse = await fetch('https://api.comet.com/sora/v1/videos', {
+    // Call CometAPI using OpenAI-compatible endpoint
+    const createResponse = await fetch('https://api.cometapi.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${cometApiKey}`,
