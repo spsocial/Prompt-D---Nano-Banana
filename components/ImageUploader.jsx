@@ -1,16 +1,25 @@
 import { useCallback, useState, useRef, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import useStore from '../lib/store'
-import { Upload, Image, Loader2, Wand2, RefreshCw, AlertCircle, X, Camera, Brain } from 'lucide-react'
+import { Upload, Image, Loader2, Wand2, RefreshCw, AlertCircle, X, Camera, Brain, Film, Play, Download } from 'lucide-react'
 
 export default function ImageUploader() {
   const [preview, setPreview] = useState(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [isCompressing, setIsCompressing] = useState(false)
+  const [outputMode, setOutputMode] = useState('image') // 'image' or 'video'
   const [numberOfImages, setNumberOfImages] = useState(1) // เริ่มต้นที่ 1 ภาพเพื่อป้องกันการสร้างมากเกินไป
   const [aspectRatio, setAspectRatio] = useState('1:1') // Default aspect ratio
   const [readyToProcess, setReadyToProcess] = useState(false)
+
+  // Video-specific states
+  const [videoPrompt, setVideoPrompt] = useState('')
+  const [videoDuration, setVideoDuration] = useState(5)
+  const [videoResolution, setVideoResolution] = useState('720p')
+  const [videoAspectRatio, setVideoAspectRatio] = useState('16:9')
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false)
+  const [videoResult, setVideoResult] = useState(null)
   const [showCamera, setShowCamera] = useState(false)
   const [cameraError, setCameraError] = useState(null)
   const [useCustomPrompt, setUseCustomPrompt] = useState(false) // New state for custom prompt toggle
@@ -276,6 +285,74 @@ Focus on:
   })
 
   const isProcessing = useStore((state) => state.isProcessing)
+
+  // Handle video generation
+  const handleGenerateVideo = async () => {
+    if (!videoPrompt) {
+      setError('กรุณาใส่ prompt สำหรับสร้างวิดีโอ')
+      return
+    }
+
+    if (!uploadedImage) {
+      setError('กรุณาอัพโหลดรูปภาพก่อน')
+      return
+    }
+
+    setIsGeneratingVideo(true)
+    setError(null)
+    setVideoResult(null)
+
+    try {
+      console.log('🎬 Starting video generation from ImageUploader...')
+
+      const response = await fetch('/api/generate-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: videoPrompt,
+          image: uploadedImage,
+          apiKey: apiKeys.openai || null,
+          duration: videoDuration,
+          resolution: videoResolution,
+          aspectRatio: videoAspectRatio
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate video')
+      }
+
+      const data = await response.json()
+      console.log('✅ Video generated:', data)
+
+      setVideoResult(data)
+
+      // Save to history
+      try {
+        useStore.getState().addVideoToHistory({
+          videoUrl: data.videoUrl,
+          prompt: videoPrompt,
+          mode: 'image-to-video',
+          duration: data.duration,
+          resolution: data.resolution,
+          aspectRatio: data.aspectRatio,
+          sourceImage: uploadedImage,
+          timestamp: new Date().toISOString()
+        })
+      } catch (historyError) {
+        console.error('Error saving to history:', historyError)
+      }
+
+    } catch (error) {
+      console.error('❌ Video generation error:', error)
+      setError(error.message)
+    } finally {
+      setIsGeneratingVideo(false)
+    }
+  }
 
   // Handle process button click
   const handleProcess = () => {
@@ -628,12 +705,48 @@ Focus on:
       {/* Process Controls */}
       {readyToProcess && (
         <div className="mt-5 p-5 bg-gradient-to-r from-yellow-100/50 to-amber-100/50 backdrop-blur-sm border-2 border-yellow-300/50 rounded-2xl shadow-lg">
-          <h3 className="font-bold text-gray-800 mb-4 text-lg">ตั้งค่าการสร้างภาพ</h3>
-
+          {/* Output Mode Selection */}
           <div className="mb-5">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              จำนวนภาพที่ต้องการสร้าง: <span className="text-yellow-600">{numberOfImages}</span>
-            </label>
+            <h3 className="font-bold text-gray-800 mb-3 text-lg">เลือกประเภทผลลัพธ์:</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setOutputMode('image')}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  outputMode === 'image'
+                    ? 'border-yellow-500 bg-yellow-50 shadow-lg'
+                    : 'border-gray-300 hover:border-yellow-300 bg-white'
+                }`}
+              >
+                <Image className="h-6 w-6 mx-auto mb-2 text-yellow-600" />
+                <div className="font-bold text-gray-800">สร้างภาพโฆษณา</div>
+                <div className="text-xs text-gray-600 mt-1">1-4 ภาพ, หลายสไตล์</div>
+              </button>
+              <button
+                onClick={() => setOutputMode('video')}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  outputMode === 'video'
+                    ? 'border-red-500 bg-red-50 shadow-lg'
+                    : 'border-gray-300 hover:border-red-300 bg-white'
+                }`}
+              >
+                <Film className="h-6 w-6 mx-auto mb-2 text-red-600" />
+                <div className="font-bold text-gray-800">สร้างวิดีโอ</div>
+                <div className="text-xs text-gray-600 mt-1">Sora 2, 5-20 วินาที</div>
+              </button>
+            </div>
+          </div>
+
+          <h3 className="font-bold text-gray-800 mb-4 text-lg">
+            {outputMode === 'image' ? 'ตั้งค่าการสร้างภาพ' : 'ตั้งค่าการสร้างวิดีโอ'}
+          </h3>
+
+          {/* Image Mode Settings */}
+          {outputMode === 'image' && (
+            <>
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  จำนวนภาพที่ต้องการสร้าง: <span className="text-yellow-600">{numberOfImages}</span>
+                </label>
             <div className="grid grid-cols-4 gap-2">
               {[1, 2, 3, 4].map(num => (
                 <button
@@ -680,32 +793,213 @@ Focus on:
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={handleProcess}
-              disabled={isProcessing}
-              className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-bold py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] shadow-lg"
-            >
-              {isProcessing ? (
-                <span className="flex items-center justify-center">
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  กำลังประมวลผล...
-                </span>
-              ) : (
-                <span className="flex items-center justify-center">
-                  <Wand2 className="h-5 w-5 mr-2" />
-                  สร้างภาพโฆษณา ({numberOfImages} ภาพ)
-                </span>
-              )}
-            </button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handleProcess}
+                  disabled={isProcessing}
+                  className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-bold py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] shadow-lg"
+                >
+                  {isProcessing ? (
+                    <span className="flex items-center justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      กำลังประมวลผล...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      <Wand2 className="h-5 w-5 mr-2" />
+                      สร้างภาพโฆษณา ({numberOfImages} ภาพ)
+                    </span>
+                  )}
+                </button>
 
-            <button
-              onClick={handleReset}
-              className="px-6 py-4 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700 font-bold rounded-xl transition-all transform hover:scale-105 shadow-md"
-            >
-              <RefreshCw className="h-5 w-5" />
-            </button>
-          </div>
+                <button
+                  onClick={handleReset}
+                  className="px-6 py-4 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700 font-bold rounded-xl transition-all transform hover:scale-105 shadow-md"
+                >
+                  <RefreshCw className="h-5 w-5" />
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Video Mode Settings */}
+          {outputMode === 'video' && (
+            <>
+              {/* Video Prompt */}
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Prompt สำหรับวิดีโอ (อธิบายการเคลื่อนไหว, บรรยากาศ):
+                </label>
+                <textarea
+                  value={videoPrompt}
+                  onChange={(e) => setVideoPrompt(e.target.value)}
+                  placeholder="เช่น: Camera slowly zooms in on the product, soft lighting creates a warm atmosphere, product rotates 360 degrees smoothly, cinematic feel with dramatic shadows"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none"
+                  rows={4}
+                />
+              </div>
+
+              {/* Duration */}
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  ความยาววิดีโอ: <span className="text-red-600">{videoDuration} วินาที</span>
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[5, 10, 15, 20].map(sec => (
+                    <button
+                      key={sec}
+                      onClick={() => setVideoDuration(sec)}
+                      className={`px-4 py-3 rounded-xl font-bold transition-all ${
+                        videoDuration === sec
+                          ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
+                          : 'bg-white/50 backdrop-blur-sm text-gray-700 border border-white/30 hover:bg-white/70'
+                      }`}
+                    >
+                      {sec}s
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Resolution */}
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  ความละเอียด: <span className="text-red-600">{videoResolution}</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['480p', '720p', '1080p'].map(res => (
+                    <button
+                      key={res}
+                      onClick={() => setVideoResolution(res)}
+                      className={`px-4 py-3 rounded-xl font-bold transition-all ${
+                        videoResolution === res
+                          ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
+                          : 'bg-white/50 backdrop-blur-sm text-gray-700 border border-white/30 hover:bg-white/70'
+                      }`}
+                    >
+                      {res}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Aspect Ratio */}
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  อัตราส่วนภาพ: <span className="text-red-600">{videoAspectRatio}</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { ratio: '16:9', label: 'แนวนอน', icon: '▭' },
+                    { ratio: '9:16', label: 'แนวตั้ง', icon: '▯' },
+                    { ratio: '1:1', label: 'จตุรัส', icon: '⬛' }
+                  ].map(({ ratio, label, icon }) => (
+                    <button
+                      key={ratio}
+                      onClick={() => setVideoAspectRatio(ratio)}
+                      className={`px-3 py-3 rounded-xl font-medium transition-all ${
+                        videoAspectRatio === ratio
+                          ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg'
+                          : 'bg-white/50 backdrop-blur-sm text-gray-700 border border-white/30 hover:bg-white/70'
+                      }`}
+                    >
+                      <div className="text-xl mb-1">{icon}</div>
+                      <div className="text-xs">{label} {ratio}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handleGenerateVideo}
+                  disabled={isGeneratingVideo || !videoPrompt}
+                  className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-bold py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] shadow-lg"
+                >
+                  {isGeneratingVideo ? (
+                    <span className="flex items-center justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      กำลังสร้างวิดีโอ... (1-3 นาที)
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      <Film className="h-5 w-5 mr-2" />
+                      สร้างวิดีโอด้วย Sora 2
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleReset}
+                  className="px-6 py-4 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700 font-bold rounded-xl transition-all transform hover:scale-105 shadow-md"
+                >
+                  <RefreshCw className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Video Result */}
+              {videoResult && (
+                <div className="mt-6 p-6 bg-gradient-to-br from-white to-gray-50 rounded-2xl border-2 border-red-200 shadow-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-gray-900 flex items-center">
+                      <Play className="h-5 w-5 mr-2 text-red-500" />
+                      วิดีโอที่สร้างเสร็จแล้ว
+                    </h3>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(videoResult.videoUrl)
+                          const blob = await response.blob()
+                          const url = window.URL.createObjectURL(blob)
+                          const a = document.createElement('a')
+                          a.href = url
+                          a.download = `sora-video-${Date.now()}.mp4`
+                          document.body.appendChild(a)
+                          a.click()
+                          window.URL.revokeObjectURL(url)
+                          document.body.removeChild(a)
+                        } catch (error) {
+                          console.error('Download error:', error)
+                        }
+                      }}
+                      className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold flex items-center space-x-2 transition-all"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>ดาวน์โหลด</span>
+                    </button>
+                  </div>
+
+                  <video
+                    src={videoResult.videoUrl}
+                    controls
+                    className="w-full rounded-xl border-2 border-gray-200 shadow-lg"
+                  />
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-gray-600">
+                    <div className="p-2 bg-white rounded-lg">
+                      <span className="font-bold">ความยาว:</span> {videoResult.duration}s
+                    </div>
+                    <div className="p-2 bg-white rounded-lg">
+                      <span className="font-bold">ความละเอียด:</span> {videoResult.resolution}
+                    </div>
+                    <div className="p-2 bg-white rounded-lg">
+                      <span className="font-bold">อัตราส่วน:</span> {videoResult.aspectRatio}
+                    </div>
+                    <div className="p-2 bg-white rounded-lg">
+                      <span className="font-bold">โหมด:</span> Image→Video
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Info Box */}
+              <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <span className="font-bold">💡 เคล็ดลับ:</span> อธิบายการเคลื่อนไหว มุมกล้อง และบรรยากาศที่ต้องการให้ละเอียด เพื่อผลลัพธ์ที่ดีที่สุด
+                </p>
+              </div>
+            </>
+          )}
         </div>
       )}
 
