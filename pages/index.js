@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
-import ImageUploader from '../components/ImageUploader'
+import UnifiedGenerator from '../components/UnifiedGenerator'
 import ResultGallery from '../components/ResultGallery'
 import ProcessingModal from '../components/ProcessingModal'
 import PricingModal from '../components/PricingModal'
@@ -188,47 +188,28 @@ export default function Home() {
         )}
 
         {/* Main Content Area */}
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Upload Section */}
+        <div className="max-w-5xl mx-auto">
+          {/* Unified Generator */}
           <div className="card-modern">
-            <div className="p-6">
-              <h3 className="text-2xl font-bold mb-5 flex items-center">
-                <span className="mr-3 p-2 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg text-white">
-                  📸
-                </span>
-                อัพโหลดรูปสินค้า
-              </h3>
-              <ImageUploader />
+            <div className="p-8">
+              <UnifiedGenerator />
             </div>
           </div>
 
           {/* Results Section */}
-          <div className="card-modern">
-            <div className="p-6 min-h-[500px]">
-              <h3 className="text-2xl font-bold mb-5 flex items-center">
-                <span className="mr-3 p-2 bg-gradient-to-r from-purple-400 to-purple-500 rounded-lg text-white">
-                  ✨
-                </span>
-                ภาพโฆษณาที่สร้างแล้ว
-              </h3>
-              {results.length > 0 ? (
+          {results.length > 0 && (
+            <div className="card-modern mt-8">
+              <div className="p-6">
+                <h3 className="text-2xl font-bold mb-5 flex items-center">
+                  <span className="mr-3 p-2 bg-gradient-to-r from-purple-400 to-purple-500 rounded-lg text-white">
+                    ✨
+                  </span>
+                  ภาพโฆษณาที่สร้างแล้ว
+                </h3>
                 <ResultGallery />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-[400px] text-gray-500">
-                  <div className="p-5 bg-gradient-to-r from-purple-100/50 to-pink-100/50 rounded-full mb-6">
-                    <Film className="h-16 w-16 text-purple-500 opacity-70" />
-                  </div>
-                  <p className="text-center text-lg font-medium">
-                    อัพโหลดรูปสินค้าเพื่อสร้าง<br />
-                    ภาพและวิดีโอโฆษณาด้วย AI
-                  </p>
-                  <p className="text-center text-sm mt-2 text-gray-400">
-                    ระบบจะสร้างเนื้อหาที่สวยงามและทันสมัย
-                  </p>
-                </div>
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Features Section */}
