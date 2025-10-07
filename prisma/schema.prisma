@@ -12,16 +12,25 @@ datasource db {
 
 // User model for tracking unique users
 model User {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  firstSeen     DateTime @default(now())
-  lastActive    DateTime @updatedAt
-  totalGenerated Int     @default(0)
-  totalSpent    Float   @default(0)
+  id            String    @id @default(cuid())
+  userId        String    @unique
+
+  // NextAuth fields
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  firstSeen     DateTime  @default(now())
+  lastActive    DateTime  @updatedAt
+  totalGenerated Int      @default(0)
+  totalSpent    Float    @default(0)
   credits       Int      @default(0)  // User's current credits
   creditsUsed   Int      @default(0)  // Total credits used
 
   // Relations
+  accounts      Account[]
+  sessions      Session[]
   transactions  Transaction[]
   images        ImageGeneration[]
 
@@ -29,7 +38,49 @@ model User {
   updatedAt     DateTime @updatedAt
 
   @@index([userId])
+  @@index([email])
   @@index([lastActive])
+}
+
+// NextAuth Account model
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// NextAuth Session model
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// NextAuth Verification Token model
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 // Transaction model for payment tracking

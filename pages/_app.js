@@ -1,10 +1,12 @@
 import '../styles/globals.css'
 import { useEffect } from 'react'
+import { SessionProvider, useSession } from 'next-auth/react'
 import useStore from '../lib/store'
 import { trackUser } from '../lib/analytics-client'
 
-export default function App({ Component, pageProps }) {
-  const { loadUserCredits, loadHistory } = useStore()
+function AppContent({ Component, pageProps }) {
+  const { loadUserCredits, loadHistory, setUserId } = useStore()
+  const { data: session, status } = useSession()
 
   useEffect(() => {
     // Clean up old history from localStorage if it exists (one-time migration)
@@ -26,18 +28,39 @@ export default function App({ Component, pageProps }) {
     // Load history from IndexedDB
     loadHistory()
 
-    // Load user ID and credits from localStorage on startup
-    let userId = localStorage.getItem('nano_user_id')
-    if (!userId) {
-      // Generate new user ID if none exists
-      userId = 'NB-' + Math.random().toString(36).substr(2, 6).toUpperCase()
-      localStorage.setItem('nano_user_id', userId)
-    }
+    // Handle user authentication
+    if (status === 'authenticated' && session?.user) {
+      // User is logged in with Google
+      const userId = session.user.userId || session.user.email
 
-    // Track user for analytics
-    trackUser(userId)
-    loadUserCredits(userId)
-  }, [loadUserCredits, loadHistory])
+      console.log('🔐 Authenticated user:', userId)
+
+      // Update store with session user ID
+      setUserId(userId)
+
+      // Track user for analytics
+      trackUser(userId)
+
+      // Load credits from database (session already has credits)
+      loadUserCredits(userId)
+
+      // Store in localStorage for backward compatibility
+      localStorage.setItem('nano_user_id', userId)
+    } else if (status === 'unauthenticated') {
+      // User is not logged in - clear old data
+      console.log('⚠️ User not authenticated - please login')
+      setUserId(null)
+      localStorage.removeItem('nano_user_id')
+    }
+  }, [session, status, loadUserCredits, loadHistory, setUserId])
 
   return <Component {...pageProps} />
+}
+
+export default function App({ Component, pageProps }) {
+  return (
+    <SessionProvider session={pageProps.session}>
+      <AppContent Component={Component} pageProps={pageProps} />
+    </SessionProvider>
+  )
 }

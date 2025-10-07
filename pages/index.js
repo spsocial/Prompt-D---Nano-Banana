@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
+import { useSession, signIn, signOut } from 'next-auth/react'
 import UnifiedGenerator from '../components/UnifiedGenerator'
 import ResultGallery from '../components/ResultGallery'
 import ProcessingModal from '../components/ProcessingModal'
@@ -7,9 +8,10 @@ import PricingModal from '../components/PricingModal'
 import FabButton from '../components/FabButton'
 import useStore from '../lib/store'
 import Link from 'next/link'
-import { Sparkles, Film, Wallet, X, History } from 'lucide-react'
+import { Sparkles, Film, Wallet, X, History, LogIn, LogOut, User } from 'lucide-react'
 
 export default function Home() {
+  const { data: session, status } = useSession()
   const [showPricing, setShowPricing] = useState(false)
   const [userId, setUserId] = useState('')
   const [debugInfo, setDebugInfo] = useState('')
@@ -85,37 +87,74 @@ export default function Home() {
               </span>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              {/* User Profile or Login Button */}
+              {status === 'authenticated' && session?.user ? (
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  {/* User Info */}
+                  <div className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-white/40 to-white/20 backdrop-blur-lg rounded-xl border border-white/30 shadow-md">
+                    {session.user.image && (
+                      <img src={session.user.image} alt={session.user.name} className="w-6 h-6 rounded-full" />
+                    )}
+                    <span className="text-sm font-medium text-gray-800">{session.user.name?.split(' ')[0]}</span>
+                  </div>
+                </div>
+              ) : status === 'unauthenticated' ? (
+                <button
+                  onClick={() => signIn('google')}
+                  className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all duration-300 shadow-md hover:shadow-lg font-medium text-sm"
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span className="hidden sm:inline">เข้าสู่ระบบ</span>
+                  <span className="sm:hidden">Login</span>
+                </button>
+              ) : null}
+
               {/* History Button */}
               <Link href="/history" className="p-3 rounded-xl hover:bg-white/20 transition-all duration-300 backdrop-blur-sm border border-white/20 shadow-md hover:shadow-lg" title="ประวัติ">
                 <History className="h-5 w-5 text-gray-700" />
               </Link>
 
               {/* Credits Display */}
-              <div
-                className="px-4 py-2 bg-gradient-to-r from-white/40 to-white/20 backdrop-blur-lg rounded-xl border border-white/30 shadow-lg cursor-pointer"
-                onClick={() => {
-                  // Force reload credits when clicked
-                  const uid = localStorage.getItem('nano_user_id')
-                  if (uid && loadUserCredits) {
-                    loadUserCredits(uid)
-                  }
-                }}
-                title="คลิกเพื่อรีเฟรชเครดิต"
-              >
-                <span className="text-sm font-semibold text-gray-800">
-                  💳 {userPlan === 'premium' ? 'ไม่จำกัด' : `${userCredits} เครดิต`}
-                </span>
-              </div>
+              {status === 'authenticated' && (
+                <div
+                  className="px-3 sm:px-4 py-2 bg-gradient-to-r from-white/40 to-white/20 backdrop-blur-lg rounded-xl border border-white/30 shadow-lg cursor-pointer"
+                  onClick={() => {
+                    // Force reload credits when clicked
+                    const uid = localStorage.getItem('nano_user_id')
+                    if (uid && loadUserCredits) {
+                      loadUserCredits(uid)
+                    }
+                  }}
+                  title="คลิกเพื่อรีเฟรชเครดิต"
+                >
+                  <span className="text-sm font-semibold text-gray-800">
+                    💳 {userPlan === 'premium' ? 'ไม่จำกัด' : `${userCredits} เครดิต`}
+                  </span>
+                </div>
+              )}
 
               {/* Pricing Button */}
-              <button
-                onClick={() => setShowPricing(!showPricing)}
-                className="p-3 rounded-xl hover:bg-white/20 transition-all duration-300 backdrop-blur-sm border border-white/20 shadow-md hover:shadow-lg"
-                title="ซื้อเครดิต"
-              >
-                <Wallet className="h-5 w-5 text-yellow-600" />
-              </button>
+              {status === 'authenticated' && (
+                <button
+                  onClick={() => setShowPricing(!showPricing)}
+                  className="p-3 rounded-xl hover:bg-white/20 transition-all duration-300 backdrop-blur-sm border border-white/20 shadow-md hover:shadow-lg"
+                  title="ซื้อเครดิต"
+                >
+                  <Wallet className="h-5 w-5 text-yellow-600" />
+                </button>
+              )}
+
+              {/* Logout Button */}
+              {status === 'authenticated' && (
+                <button
+                  onClick={() => signOut()}
+                  className="p-3 rounded-xl hover:bg-red-50 transition-all duration-300 backdrop-blur-sm border border-white/20 shadow-md hover:shadow-lg"
+                  title="ออกจากระบบ"
+                >
+                  <LogOut className="h-5 w-5 text-red-600" />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -127,28 +166,79 @@ export default function Home() {
       )}
 
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Hero Section */}
-        <div className="text-center mb-12 animate-fade-in">
-          <div className="inline-flex items-center space-x-2 mb-6 px-5 py-2 bg-gradient-to-r from-purple-400/20 to-pink-400/20 backdrop-blur-sm rounded-full border border-white/30 shadow-lg">
-            <Sparkles className="h-5 w-5 text-purple-600 animate-pulse" />
-            <span className="text-sm font-semibold text-purple-800">
-              สร้างภาพและวิดีโอด้วย AI โดย Prompt D
-            </span>
+        {/* Login Required Gate */}
+        {status === 'unauthenticated' && (
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="max-w-2xl w-full text-center p-8 bg-white/50 backdrop-blur-lg rounded-3xl border-2 border-white/50 shadow-2xl">
+              <div className="mb-6 flex justify-center">
+                <div className="p-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-2xl">
+                  <Sparkles className="h-16 w-16 text-white" />
+                </div>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+                ยินดีต้อนรับสู่ Prompt D Studio
+              </h2>
+              <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+                สร้างภาพและวิดีโอโฆษณาคุณภาพสูงด้วย AI<br />
+                <span className="font-semibold text-purple-600">เข้าสู่ระบบด้วย Google เพื่อเริ่มใช้งาน</span>
+              </p>
+
+              <button
+                onClick={() => signIn('google')}
+                className="inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl font-bold text-lg transform hover:scale-105"
+              >
+                <LogIn className="h-6 w-6" />
+                <span>เข้าสู่ระบบด้วย Google</span>
+              </button>
+
+              <div className="mt-8 pt-8 border-t border-gray-200">
+                <h3 className="font-bold text-gray-800 mb-4">✨ คุณสมบัติพิเศษ</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-700">
+                  <div className="p-4 bg-white/30 rounded-xl">
+                    <div className="font-bold text-purple-600 mb-1">🎁 เครดิตฟรี</div>
+                    รับ 10 เครดิตทันทีเมื่อสมัคร
+                  </div>
+                  <div className="p-4 bg-white/30 rounded-xl">
+                    <div className="font-bold text-purple-600 mb-1">☁️ Sync ข้อมูล</div>
+                    ใช้งานได้ทุกอุปกรณ์
+                  </div>
+                  <div className="p-4 bg-white/30 rounded-xl">
+                    <div className="font-bold text-purple-600 mb-1">📊 ประวัติการใช้งาน</div>
+                    เก็บประวัติไว้ให้อัตโนมัติ
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            แปลงรูปสินค้าให้เป็น
-            <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-              {" "}ภาพและวิดีโอโฆษณา
-            </span>
-          </h2>
-          <p className="text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
-            อัพโหลดรูปสินค้าของคุณ เลือก AI Model ที่ต้องการ
-            แล้วสร้างภาพโฆษณาและวิดีโอคุณภาพสูงได้ในที่เดียว
-          </p>
-        </div>
+        )}
+
+        {/* Main Content - Only show when authenticated */}
+        {status === 'authenticated' && (
+          <>
+            {/* Hero Section */}
+            <div className="text-center mb-12 animate-fade-in">
+              <div className="inline-flex items-center space-x-2 mb-6 px-5 py-2 bg-gradient-to-r from-purple-400/20 to-pink-400/20 backdrop-blur-sm rounded-full border border-white/30 shadow-lg">
+                <Sparkles className="h-5 w-5 text-purple-600 animate-pulse" />
+                <span className="text-sm font-semibold text-purple-800">
+                  สร้างภาพและวิดีโอด้วย AI โดย Prompt D
+                </span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                แปลงรูปสินค้าให้เป็น
+                <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+                  {" "}ภาพและวิดีโอโฆษณา
+                </span>
+              </h2>
+              <p className="text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
+                อัพโหลดรูปสินค้าของคุณ เลือก AI Model ที่ต้องการ
+                แล้วสร้างภาพโฆษณาและวิดีโอคุณภาพสูงได้ในที่เดียว
+              </p>
+            </div>
+          </>
+        )}
 
         {/* Simple Notice if no credits (not for admin) */}
-        {userCredits === 0 && userPlan !== 'premium' && (
+        {status === 'authenticated' && userCredits === 0 && userPlan !== 'premium' && (
           <div className="mb-8 p-5 bg-gradient-to-r from-yellow-100/50 to-amber-100/50 backdrop-blur-sm border border-yellow-200/50 rounded-2xl shadow-lg animate-slide-in">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-start">
@@ -173,7 +263,7 @@ export default function Home() {
         )}
 
         {/* Error Display */}
-        {error && (
+        {status === 'authenticated' && error && (
           <div className="mb-8 p-5 bg-gradient-to-r from-red-100/50 to-pink-100/50 backdrop-blur-sm border border-red-200/50 rounded-2xl shadow-lg animate-slide-in">
             <div className="flex items-start">
               <div className="mr-3 mt-1 p-2 bg-red-500 rounded-lg">
@@ -188,32 +278,34 @@ export default function Home() {
         )}
 
         {/* Main Content Area */}
-        <div className="max-w-5xl mx-auto">
-          {/* Unified Generator */}
-          <div className="card-modern">
-            <div className="p-8">
-              <UnifiedGenerator />
-            </div>
-          </div>
-
-          {/* Results Section */}
-          {results.length > 0 && (
-            <div className="card-modern mt-8">
-              <div className="p-6">
-                <h3 className="text-2xl font-bold mb-5 flex items-center">
-                  <span className="mr-3 p-2 bg-gradient-to-r from-purple-400 to-purple-500 rounded-lg text-white">
-                    ✨
-                  </span>
-                  ภาพโฆษณาที่สร้างแล้ว
-                </h3>
-                <ResultGallery />
+        {status === 'authenticated' && (
+          <>
+            <div className="max-w-5xl mx-auto">
+              {/* Unified Generator */}
+              <div className="card-modern">
+                <div className="p-8">
+                  <UnifiedGenerator />
+                </div>
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* Features Section */}
-        <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Results Section */}
+              {results.length > 0 && (
+                <div className="card-modern mt-8">
+                  <div className="p-6">
+                    <h3 className="text-2xl font-bold mb-5 flex items-center">
+                      <span className="mr-3 p-2 bg-gradient-to-r from-purple-400 to-purple-500 rounded-lg text-white">
+                        ✨
+                      </span>
+                      ภาพโฆษณาที่สร้างแล้ว
+                    </h3>
+                    <ResultGallery />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Features Section */}
+            <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-white/40 to-white/20 backdrop-blur-lg rounded-2xl border border-white/30 p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <div className="text-3xl mb-3 bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">🤖</div>
             <h4 className="font-bold text-gray-800">วิเคราะห์ด้วย AI</h4>
@@ -244,8 +336,10 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Processing Modal */}
-        {isProcessing && <ProcessingModal />}
+            {/* Processing Modal */}
+            {isProcessing && <ProcessingModal />}
+          </>
+        )}
       </main>
 
       {/* Footer */}

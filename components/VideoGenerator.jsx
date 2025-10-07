@@ -123,7 +123,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     // Calculate required credits based on model
     const requiredCredits =
       model === 'sora-2-hd' ? 15 :     // Sora-2 HD: 15 credits
-      model === 'veo3-fast' ? 20 :     // Veo3-fast: 20 credits ($0.40/video)
+      model === 'veo3-fast' ? 15 :     // Veo3-fast: 15 credits (updated)
       10                                // Sora-2: 10 credits
 
     // Check if user has enough credits
@@ -507,7 +507,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         ) : (
           <span className="flex items-center justify-center">
             <Film className="h-5 w-5 mr-2" />
-            สร้างวิดีโอด้วย AI (ใช้ {model === 'sora-2-hd' ? '15' : model === 'veo3-fast' ? '20' : '10'} เครดิต)
+            สร้างวิดีโอด้วย AI (ใช้ {model === 'sora-2-hd' ? '15' : model === 'veo3-fast' ? '15' : '10'} เครดิต)
           </span>
         )}
       </button>
@@ -582,7 +582,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             <span className="font-bold">💳 ใช้เครดิต:</span>
             {' '}
             <span className="text-lg font-bold text-blue-600">
-              {model === 'sora-2-hd' ? '15' : model === 'veo3-fast' ? '20' : '10'} เครดิต
+              {model === 'sora-2-hd' ? '15' : model === 'veo3-fast' ? '15' : '10'} เครดิต
             </span>
             {' '}
             / วิดีโอ (คุณมี {userCredits} เครดิต)
