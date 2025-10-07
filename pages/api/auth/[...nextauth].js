@@ -1,12 +1,10 @@
 import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
-import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
 export const authOptions = {
-  adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -60,30 +58,30 @@ export const authOptions = {
 
       return true
     },
-    async session({ session, user }) {
-      // Add user ID and credits to session
-      if (session?.user) {
+    async jwt({ token, user, account, profile }) {
+      // First time login - save user info to token
+      if (account && profile) {
+        // Get or create user in database
         const dbUser = await prisma.user.findUnique({
-          where: { email: user.email }
+          where: { email: profile.email }
         })
 
         if (dbUser) {
-          session.user.id = dbUser.id
-          session.user.userId = dbUser.userId
-          session.user.credits = dbUser.credits
-        }
-      }
-      return session
-    },
-    async jwt({ token, user, account }) {
-      // Initial sign in
-      if (account && user) {
-        return {
-          ...token,
-          userId: user.userId,
+          token.userId = dbUser.userId
+          token.dbId = dbUser.id
+          token.credits = dbUser.credits
         }
       }
       return token
+    },
+    async session({ session, token }) {
+      // Add user info from token to session
+      if (session?.user && token) {
+        session.user.userId = token.userId
+        session.user.id = token.dbId
+        session.user.credits = token.credits
+      }
+      return session
     }
   },
   pages: {
@@ -91,7 +89,7 @@ export const authOptions = {
     error: '/', // Error page
   },
   session: {
-    strategy: "database",
+    strategy: "jwt", // Changed from database to jwt
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
