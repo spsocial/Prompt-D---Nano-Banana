@@ -36,34 +36,20 @@ export default async function handler(req, res) {
       })
     }
 
-    console.log(`🎬 Starting Sora video generation via CometAPI...`)
+    console.log(`🎬 Starting Sora 2 video generation via CometAPI...`)
     console.log(`📝 Mode: ${image ? 'Image to Video' : 'Text to Video'}`)
     console.log(`⏱️ Duration: ${duration}s, Resolution: ${resolution}, Aspect: ${aspectRatio}`)
 
-    // Map resolution and aspect ratio to CometAPI model format
-    // Format: sora-[aspectRatio]-[resolution]-[duration]s
-    const aspectMap = {
-      '16:9': '16:9',
-      '9:16': '9:16',
-      '1:1': '1:1',
-      '4:3': '16:9', // fallback to 16:9
-      '3:4': '9:16', // fallback to 9:16
-      '21:9': '16:9' // fallback to 16:9
-    }
-
-    const mappedAspect = aspectMap[aspectRatio] || '16:9'
-    const mappedResolution = resolution || '720p'
-    const mappedDuration = duration || 5
-
-    const modelName = `sora-${mappedAspect}-${mappedResolution}-${mappedDuration}s`
+    // CometAPI uses simple model name: "sora-2"
+    const modelName = 'sora-2'
 
     console.log(`🎯 Using model: ${modelName}`)
 
     // Build prompt with image description if provided
-    let fullPrompt = prompt || 'Create a video based on this image'
+    let fullPrompt = prompt || 'Create a cinematic video'
 
     if (image) {
-      fullPrompt = `Create a video animation from this image: ${fullPrompt}. Make it dynamic and cinematic with smooth camera movements.`
+      fullPrompt = `${fullPrompt}. Create a dynamic video with smooth camera movements and cinematic effects.`
     }
 
     // Create request using CometAPI format (OpenAI-compatible)
@@ -79,6 +65,7 @@ export default async function handler(req, res) {
     }
 
     console.log('🚀 Sending request to CometAPI...')
+    console.log('📦 Request payload:', JSON.stringify(requestPayload, null, 2))
 
     // Call CometAPI
     const createResponse = await fetch('https://api.cometapi.com/v1/chat/completions', {
@@ -92,7 +79,8 @@ export default async function handler(req, res) {
 
     if (!createResponse.ok) {
       const errorText = await createResponse.text()
-      console.error('❌ CometAPI Error:', errorText)
+      console.error('❌ CometAPI Error Response:', errorText)
+      console.error('❌ Status Code:', createResponse.status)
 
       let errorMessage = 'Failed to generate video via CometAPI'
       try {
@@ -107,6 +95,7 @@ export default async function handler(req, res) {
 
     const responseData = await createResponse.json()
     console.log('✅ CometAPI Response received')
+    console.log('📦 Full Response:', JSON.stringify(responseData, null, 2))
 
     // Extract video URL from CometAPI response
     // Format: response.choices[0].message.content contains video URL
