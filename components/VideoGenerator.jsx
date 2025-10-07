@@ -213,8 +213,8 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             <Film className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Sora 2 Video Generation</h2>
-            <p className="text-sm text-gray-600">สร้างวิดีโอด้วย AI จากข้อความหรือรูปภาพ</p>
+            <h2 className="text-2xl font-bold text-gray-900">AI Video Generation</h2>
+            <p className="text-sm text-gray-600">สร้างวิดีโอคุณภาพสูงด้วย AI จากข้อความหรือรูปภาพ</p>
           </div>
         </div>
       </div>

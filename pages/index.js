@@ -62,8 +62,8 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50">
       <Head>
         <title>Prompt D Studio - สร้างภาพและวิดีโอด้วย AI</title>
-        <meta name="description" content="สร้างภาพโฆษณาและวิดีโอคุณภาพสูงด้วย AI | Prompt D Studio - AI Image & Video Generator" />
-        <meta name="keywords" content="AI, Image Generator, Video Generator, Sora, Gemini, Prompt D, โฆษณา, วิดีโอ AI" />
+        <meta name="description" content="แพลตฟอร์ม AI ครบวงจร สร้างภาพและวิดีโอโฆษณาคุณภาพสูง | Prompt D Studio - All-in-One AI Creative Platform" />
+        <meta name="keywords" content="AI, Image Generator, Video Generator, AI Platform, Prompt D, โฆษณา, วิดีโอ AI, All-in-One" />
         <link rel="icon" href="/favicon.ico" />
         {/* Inter font */}
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -142,8 +142,8 @@ export default function Home() {
             </span>
           </h2>
           <p className="text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
-            อัพโหลดรูปสินค้าของคุณ แล้วให้ AI สร้างภาพโฆษณาและวิดีโอที่สวยงาม
-            ด้วยเทคโนโลยี Gemini AI และ Sora 2
+            อัพโหลดรูปสินค้าของคุณ เลือก AI Model ที่ต้องการ
+            แล้วสร้างภาพโฆษณาและวิดีโอคุณภาพสูงได้ในที่เดียว
           </p>
         </div>
 
@@ -259,7 +259,7 @@ export default function Home() {
               </h3>
             </div>
             <p className="mb-4 text-gray-700 max-w-2xl mx-auto">
-              ✨ สร้างภาพและวิดีโอโฆษณาด้วย AI ใช้เทคโนโลยี Gemini AI และ Sora 2 สำหรับการสร้างเนื้อหาคุณภาพสูง
+              ✨ แพลตฟอร์ม AI ครบวงจร สร้างภาพและวิดีโอโฆษณาคุณภาพสูง เลือกใช้ AI Model ที่เหมาะกับงานของคุณได้ในที่เดียว
             </p>
             <div className="pt-6 border-t border-white/20">
               <p className="text-lg font-bold text-purple-600">
