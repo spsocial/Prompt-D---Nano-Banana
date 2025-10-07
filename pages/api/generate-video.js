@@ -40,8 +40,12 @@ export default async function handler(req, res) {
     console.log(`📝 Mode: ${image ? 'Image to Video' : 'Text to Video'}`)
     console.log(`⏱️ Duration: ${duration}s, Resolution: ${resolution}, Aspect: ${aspectRatio}`)
 
-    // CometAPI uses model: sora-1.0-turbo or Sora
-    const modelName = 'sora-1.0-turbo'
+    // CometAPI model options - try multiple model names
+    // Based on CometAPI docs, available models might be:
+    // - "sora-2" (latest)
+    // - "Sora" (generic)
+    // - "sora-1.0-turbo"
+    const modelName = 'sora-2'
 
     console.log(`🎯 Using model: ${modelName}`)
 
