@@ -3,6 +3,7 @@ export const config = {
     bodyParser: {
       sizeLimit: '50mb',
     },
+    responseLimit: false,
   },
   maxDuration: 300, // 5 minutes timeout for video generation
 }
@@ -160,13 +161,20 @@ export default async function handler(req, res) {
                                error.message.includes('not valid JSON') ||
                                error.message.includes('Unexpected token')
 
+    // Check for timeout errors
+    const isTimeout = error.message.includes('504') ||
+                     error.message.includes('Gateway Timeout') ||
+                     error.message.includes('timed out')
+
     res.status(500).json({
       error: error.message || 'Failed to generate video',
       details: error.toString(),
-      suggestion: isApiNotAvailable
+      suggestion: isTimeout
+        ? '⏱️ การสร้างวิดีโอใช้เวลานาน (1-3 นาที) แต่ API timeout ก่อน กรุณาติดต่อ CometAPI Support: https://discord.gg/HMpuV6FCrG หรือลองใหม่อีกครั้ง'
+        : isApiNotAvailable
         ? '⚠️ Sora API ยังไม่เปิดให้ใช้งานทั่วไป - กรุณาตรวจสอบสถานะที่ https://platform.openai.com/docs หรือรอ OpenAI เปิดให้ใช้งาน'
-        : 'ตรวจสอบ OpenAI API key และสิทธิ์การเข้าถึง Sora API',
-      apiStatus: isApiNotAvailable ? 'not_available' : 'unknown_error'
+        : 'ตรวจสอบ API key และสิทธิ์การเข้าถึง Sora API',
+      apiStatus: isTimeout ? 'timeout' : isApiNotAvailable ? 'not_available' : 'unknown_error'
     })
   }
 }
