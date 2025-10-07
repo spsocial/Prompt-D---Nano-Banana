@@ -36,12 +36,26 @@ export default async function handler(req, res) {
       })
     }
 
-    console.log(`🎬 Starting Sora 2 video generation via CometAPI...`)
+    console.log(`🎬 Starting Sora video generation via CometAPI...`)
     console.log(`📝 Mode: ${image ? 'Image to Video' : 'Text to Video'}`)
     console.log(`⏱️ Duration: ${duration}s, Resolution: ${resolution}, Aspect: ${aspectRatio}`)
 
-    // CometAPI uses simple model name: "sora-2"
-    const modelName = 'sora-2'
+    // CometAPI model format: sora-{aspect}-{resolution}-{duration}s
+    // Aspect ratio format: use ":" instead of "/"
+    const aspectMap = {
+      '16:9': '16:9',
+      '9:16': '9:16',
+      '1:1': '1:1',
+      '4:3': '16:9', // fallback
+      '3:4': '9:16', // fallback
+      '21:9': '16:9' // fallback
+    }
+
+    const mappedAspect = aspectMap[aspectRatio] || '1:1'
+    const mappedResolution = resolution || '720p'
+    const mappedDuration = duration || 5
+
+    const modelName = `sora-${mappedAspect}-${mappedResolution}-${mappedDuration}s`
 
     console.log(`🎯 Using model: ${modelName}`)
 
@@ -67,8 +81,8 @@ export default async function handler(req, res) {
     console.log('🚀 Sending request to CometAPI...')
     console.log('📦 Request payload:', JSON.stringify(requestPayload, null, 2))
 
-    // Call CometAPI
-    const createResponse = await fetch('https://api.cometapi.com/v1/chat/completions', {
+    // Call CometAPI Sora endpoint
+    const createResponse = await fetch('https://api.comet.com/sora/v1/videos', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${cometApiKey}`,
