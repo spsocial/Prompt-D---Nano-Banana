@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Film, Loader2, Play, Download, X, Image as ImageIcon, Type } from 'lucide-react'
 import useStore from '../lib/store'
 
@@ -14,7 +14,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
   const [error, setError] = useState(null)
   const [showSettings, setShowSettings] = useState(true)
 
-  const { apiKeys, userPlan } = useStore()
+  const { apiKeys, userPlan, setIsGeneratingVideo } = useStore()
 
   // Model-specific configurations
   const modelConfig = {
@@ -112,6 +112,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     }
 
     setIsGenerating(true)
+    setIsGeneratingVideo(true) // Lock mode switching
     setError(null)
     setVideoResult(null)
 
@@ -139,7 +140,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
           resolution: resolution,
           aspectRatio: aspectRatio,
           model: model
-        }),
+        })
       })
 
       if (!response.ok) {
@@ -179,6 +180,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       }
     } finally {
       setIsGenerating(false)
+      setIsGeneratingVideo(false) // Unlock mode switching
     }
   }
 

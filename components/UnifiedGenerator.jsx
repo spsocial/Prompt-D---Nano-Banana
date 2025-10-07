@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Sparkles, Film, Image as ImageIcon, Upload, Wand2 } from 'lucide-react'
+import { Sparkles, Film, Image as ImageIcon, Upload, Wand2, Lock } from 'lucide-react'
 import ImageUploader from './ImageUploader'
 import VideoGenerator from './VideoGenerator'
+import useStore from '../lib/store'
 
 // Model configurations
 const IMAGE_MODELS = {
@@ -68,6 +69,8 @@ export default function UnifiedGenerator() {
   const [mode, setMode] = useState('image') // 'image' or 'video'
   const [selectedModel, setSelectedModel] = useState('banana')
 
+  const { isGeneratingVideo } = useStore()
+
   const models = mode === 'image' ? IMAGE_MODELS : VIDEO_MODELS
   const currentModel = models[selectedModel]
 
@@ -101,15 +104,25 @@ export default function UnifiedGenerator() {
       <div className="flex gap-3">
         <button
           onClick={() => {
-            setMode('image')
-            setSelectedModel('banana')
+            if (!isGeneratingVideo) {
+              setMode('image')
+              setSelectedModel('banana')
+            }
           }}
-          className={`flex-1 p-6 rounded-2xl border-2 transition-all ${
+          disabled={isGeneratingVideo}
+          className={`flex-1 p-6 rounded-2xl border-2 transition-all relative ${
             mode === 'image'
               ? 'border-yellow-500 bg-gradient-to-br from-yellow-50 to-amber-50 shadow-lg'
+              : isGeneratingVideo
+              ? 'border-gray-300 bg-gray-100 opacity-50 cursor-not-allowed'
               : 'border-gray-300 hover:border-yellow-300 bg-white'
           }`}
         >
+          {isGeneratingVideo && mode === 'video' && (
+            <div className="absolute top-2 right-2">
+              <Lock className="h-4 w-4 text-red-500" />
+            </div>
+          )}
           <ImageIcon className={`h-8 w-8 mx-auto mb-3 ${
             mode === 'image' ? 'text-yellow-600' : 'text-gray-400'
           }`} />
@@ -125,15 +138,25 @@ export default function UnifiedGenerator() {
 
         <button
           onClick={() => {
-            setMode('video')
-            setSelectedModel('sora-2')
+            if (!isGeneratingVideo) {
+              setMode('video')
+              setSelectedModel('sora-2')
+            }
           }}
-          className={`flex-1 p-6 rounded-2xl border-2 transition-all ${
+          disabled={isGeneratingVideo}
+          className={`flex-1 p-6 rounded-2xl border-2 transition-all relative ${
             mode === 'video'
               ? 'border-red-500 bg-gradient-to-br from-red-50 to-pink-50 shadow-lg'
+              : isGeneratingVideo
+              ? 'border-gray-300 bg-gray-100 opacity-50 cursor-not-allowed'
               : 'border-gray-300 hover:border-red-300 bg-white'
           }`}
         >
+          {isGeneratingVideo && mode === 'video' && (
+            <div className="absolute top-2 right-2">
+              <Lock className="h-4 w-4 text-green-500 animate-pulse" />
+            </div>
+          )}
           <Film className={`h-8 w-8 mx-auto mb-3 ${
             mode === 'video' ? 'text-red-600' : 'text-gray-400'
           }`} />
@@ -145,8 +168,26 @@ export default function UnifiedGenerator() {
           <div className="text-xs text-gray-500 mt-1">
             Video Generation
           </div>
+          {isGeneratingVideo && mode === 'video' && (
+            <div className="text-xs text-green-600 mt-2 font-semibold">
+              ⏳ กำลังสร้างวิดีโอ...
+            </div>
+          )}
         </button>
       </div>
+
+      {/* Notice when video is generating */}
+      {isGeneratingVideo && (
+        <div className="p-4 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300 rounded-xl shadow-lg animate-pulse">
+          <div className="flex items-center space-x-3">
+            <Lock className="h-5 w-5 text-green-600" />
+            <div>
+              <div className="font-bold text-green-900">กำลังสร้างวิดีโออยู่</div>
+              <div className="text-sm text-green-700">ไม่สามารถสลับโหมดได้จนกว่าจะสร้างเสร็จ</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Model Selector */}
       <div>
