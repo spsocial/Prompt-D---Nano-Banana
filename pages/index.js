@@ -7,7 +7,7 @@ import PricingModal from '../components/PricingModal'
 import FabButton from '../components/FabButton'
 import useStore from '../lib/store'
 import Link from 'next/link'
-import { Sparkles, Banana, Wallet, X, History } from 'lucide-react'
+import { Sparkles, Film, Wallet, X, History } from 'lucide-react'
 
 export default function Home() {
   const [showPricing, setShowPricing] = useState(false)
@@ -61,8 +61,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50">
       <Head>
-        <title>Auto Nano Banana - สร้างโฆษณาสินค้าด้วย AI | พัฒนาโดย Prompt D</title>
-        <meta name="description" content="แปลงรูปสินค้าเป็นโฆษณาระดับพรีเมี่ยมด้วย AI | Developed by Prompt D" />
+        <title>Prompt D Studio - สร้างภาพและวิดีโอด้วย AI</title>
+        <meta name="description" content="สร้างภาพโฆษณาและวิดีโอคุณภาพสูงด้วย AI | Prompt D Studio - AI Image & Video Generator" />
+        <meta name="keywords" content="AI, Image Generator, Video Generator, Sora, Gemini, Prompt D, โฆษณา, วิดีโอ AI" />
         <link rel="icon" href="/favicon.ico" />
         {/* Inter font */}
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -73,13 +74,13 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-xl shadow-lg">
-                <Banana className="h-8 w-8 text-white" />
+              <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                <Sparkles className="h-8 w-8 text-white" />
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
-                Auto Nano Banana
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Prompt D Studio
               </h1>
-              <span className="px-3 py-1 text-xs font-semibold bg-gradient-to-r from-yellow-400 to-yellow-500 text-white rounded-full shadow-md">
+              <span className="px-3 py-1 text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shadow-md">
                 {userPlan === 'premium' ? 'Premium' : 'V.Beta'}
               </span>
             </div>
@@ -128,21 +129,21 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Hero Section */}
         <div className="text-center mb-12 animate-fade-in">
-          <div className="inline-flex items-center space-x-2 mb-6 px-5 py-2 bg-gradient-to-r from-yellow-400/20 to-amber-400/20 backdrop-blur-sm rounded-full border border-white/30 shadow-lg">
-            <Sparkles className="h-5 w-5 text-yellow-600 animate-pulse" />
-            <span className="text-sm font-semibold text-yellow-800">
-              สร้างโฆษณาสินค้าด้วย AI โดย Prompt D
+          <div className="inline-flex items-center space-x-2 mb-6 px-5 py-2 bg-gradient-to-r from-purple-400/20 to-pink-400/20 backdrop-blur-sm rounded-full border border-white/30 shadow-lg">
+            <Sparkles className="h-5 w-5 text-purple-600 animate-pulse" />
+            <span className="text-sm font-semibold text-purple-800">
+              สร้างภาพและวิดีโอด้วย AI โดย Prompt D
             </span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
             แปลงรูปสินค้าให้เป็น
-            <span className="bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-transparent">
-              {" "}โฆษณาระดับพรีเมี่ยม
+            <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+              {" "}ภาพและวิดีโอโฆษณา
             </span>
           </h2>
           <p className="text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
-            อัพโหลดรูปสินค้าของคุณ แล้วให้ AI สร้างโฆษณาที่สวยงามหลากหลายสไตล์
-            ด้วยเทคโนโลยี Vision Analysis และ Gemini AI รุ่นล่าสุด
+            อัพโหลดรูปสินค้าของคุณ แล้วให้ AI สร้างภาพโฆษณาและวิดีโอที่สวยงาม
+            ด้วยเทคโนโลยี Gemini AI และ Sora 2
           </p>
         </div>
 
@@ -214,15 +215,15 @@ export default function Home() {
                 <ResultGallery />
               ) : (
                 <div className="flex flex-col items-center justify-center h-[400px] text-gray-500">
-                  <div className="p-5 bg-gradient-to-r from-yellow-100/50 to-amber-100/50 rounded-full mb-6">
-                    <Banana className="h-16 w-16 text-yellow-500 opacity-70" />
+                  <div className="p-5 bg-gradient-to-r from-purple-100/50 to-pink-100/50 rounded-full mb-6">
+                    <Film className="h-16 w-16 text-purple-500 opacity-70" />
                   </div>
                   <p className="text-center text-lg font-medium">
                     อัพโหลดรูปสินค้าเพื่อสร้าง<br />
-                    โฆษณาระดับมืออาชีพ
+                    ภาพและวิดีโอโฆษณาด้วย AI
                   </p>
                   <p className="text-center text-sm mt-2 text-gray-400">
-                    ระบบจะสร้างภาพโฆษณาที่สวยงามและทันสมัย
+                    ระบบจะสร้างเนื้อหาที่สวยงามและทันสมัย
                   </p>
                 </div>
               )}
@@ -271,20 +272,20 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="inline-flex items-center justify-center mb-6">
-              <Banana className="h-8 w-8 text-yellow-500 mr-2" />
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
-                Auto Nano Banana
+              <Sparkles className="h-8 w-8 text-purple-500 mr-2" />
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Prompt D Studio
               </h3>
             </div>
             <p className="mb-4 text-gray-700 max-w-2xl mx-auto">
-              🍌 สร้างโฆษณาสินค้าด้วย AI อัจฉริยะ ใช้เทคโนโลยี Vision API และ Google Gemini AI สำหรับการสร้างเนื้อหาอัจฉริยะ
+              ✨ สร้างภาพและวิดีโอโฆษณาด้วย AI ใช้เทคโนโลยี Gemini AI และ Sora 2 สำหรับการสร้างเนื้อหาคุณภาพสูง
             </p>
             <div className="pt-6 border-t border-white/20">
-              <p className="text-lg font-bold text-yellow-600">
+              <p className="text-lg font-bold text-purple-600">
                 💡 พัฒนาโดย Prompt D
               </p>
               <p className="text-sm text-gray-600 mt-2">
-                Specialist in AI-Powered Solutions
+                AI-Powered Image & Video Studio
               </p>
               {userId && (
                 <div className="mt-4 p-3 bg-white/50 rounded-lg inline-block">
