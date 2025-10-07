@@ -12,7 +12,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
   const [isGenerating, setIsGenerating] = useState(false)
   const [videoResult, setVideoResult] = useState(null)
   const [error, setError] = useState(null)
-  const [showSettings, setShowSettings] = useState(false)
+  const [showSettings, setShowSettings] = useState(true) // เปิดแสดง settings ตั้งแต่แรก
 
   const { apiKeys, userPlan } = useStore()
 
@@ -357,7 +357,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         ) : (
           <span className="flex items-center justify-center">
             <Film className="h-5 w-5 mr-2" />
-            สร้างวิดีโอด้วย Sora 2
+            สร้างวิดีโอด้วย AI
           </span>
         )}
       </button>

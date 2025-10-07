@@ -200,7 +200,11 @@ export default async function handler(req, res) {
       finalUrl: finalUrl,
       taskId: taskId,
       status: currentStatus,
-      model: model,
+      model: actualModel,
+      duration: req.body.duration || 5,
+      resolution: req.body.resolution || '720p',
+      aspectRatio: req.body.aspectRatio || '16:9',
+      mode: image ? 'image-to-video' : 'text-to-video',
       message: '✨ Video generated successfully with Veo3!',
       provider: 'CometAPI (Veo3)'
     })
