@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npm run build:*)",
+      "Bash(killall:*)",
+      "Bash(cat:*)",
+      "Read(//tmp/**)",
+      "Bash(grep:*)",
+      "WebFetch(domain:platform.openai.com)",
+      "WebSearch",
+      "WebFetch(domain:openai.com)",
+      "WebFetch(domain:sora-spark-forge-production.up.railway.app)",
+      "WebFetch(domain:www.cometapi.com)",
+      "WebFetch(domain:api.cometapi.com)",
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:apidoc.cometapi.com)",
+      "WebFetch(domain:app.apidog.com)",
+      "WebFetch(domain:replicate.com)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
