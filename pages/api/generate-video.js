@@ -56,10 +56,10 @@ export default async function handler(req, res) {
       fullPrompt = `Based on this image, create a dynamic video: ${fullPrompt}. Add smooth camera movements and cinematic effects.`
     }
 
-    // Use CometAPI format exactly as documented (no extra params)
+    // Use streaming to avoid timeout (same as veo3)
     const requestPayload = {
       model: modelName,
-      stream: false, // IMPORTANT: Must be false for sora-2
+      stream: true, // IMPORTANT: Use streaming to avoid timeout!
       messages: [
         {
           role: 'user',
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       ]
     }
 
-    console.log('🚀 Sending request to CometAPI...')
+    console.log('🚀 Sending request to CometAPI with streaming...')
     console.log('📦 Request payload:', JSON.stringify(requestPayload, null, 2))
 
     // Call CometAPI using OpenAI-compatible endpoint
@@ -99,59 +99,97 @@ export default async function handler(req, res) {
       throw new Error(errorMessage)
     }
 
-    const responseData = await createResponse.json()
-    console.log('✅ CometAPI Response received')
-    console.log('📦 Full Response:', JSON.stringify(responseData, null, 2))
+    // Read streaming response (same as veo3)
+    const reader = createResponse.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let taskId = null
+    let previewUrl = null
+    let finalUrl = null
 
-    // Extract video URL from response
-    let videoUrl = null
+    console.log('📡 Reading streaming response...')
 
-    // Try different response formats
-    if (responseData.choices && responseData.choices[0]) {
-      const content = responseData.choices[0].message?.content
+    while (true) {
+      const { done, value } = await reader.read()
 
-      if (content) {
-        // Extract URL from content (could be plain URL or markdown format)
-        const urlMatch = content.match(/https?:\/\/[^\s\)\]]+/)
-        if (urlMatch) {
-          videoUrl = urlMatch[0]
-          console.log(`✅ Video URL extracted from content: ${videoUrl}`)
-        } else if (content.startsWith('http')) {
-          // Content itself might be the URL
-          videoUrl = content.trim()
-          console.log(`✅ Video URL from content: ${videoUrl}`)
+      if (done) {
+        console.log('✅ Stream complete')
+        break
+      }
+
+      buffer += decoder.decode(value, { stream: true })
+
+      // Process complete lines
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (!line.trim() || line.startsWith('data: [DONE]')) continue
+
+        console.log('📨 Chunk:', line.substring(0, 200))
+
+        // Extract Task ID
+        if (line.includes('Task ID:') && !taskId) {
+          const match = line.match(/Task ID:\s*`?([^`\s]+)`?/)
+          if (match) {
+            taskId = match[1]
+            console.log(`✅ Task ID: ${taskId}`)
+          }
+        }
+
+        // Extract Preview URL
+        if (line.includes('Preview video') || line.includes('📺 Online Preview')) {
+          const urlMatch = line.match(/https?:\/\/[^\s\)\]]+\.mp4/)
+          if (urlMatch) {
+            previewUrl = urlMatch[0]
+            console.log(`✅ Preview URL: ${previewUrl}`)
+          }
+        }
+
+        // Extract Final URL
+        if (line.includes('High-quality video') || line.includes('▶️ Watch Online') || line.includes('🎉')) {
+          const urlMatch = line.match(/https?:\/\/[^\s\)\]]+\.mp4/)
+          if (urlMatch) {
+            finalUrl = urlMatch[0]
+            console.log(`✅ Final URL: ${finalUrl}`)
+          }
+        }
+
+        // If we have final URL, break early
+        if (finalUrl) {
+          console.log('🎉 Final video ready, stopping stream')
+          break
         }
       }
+
+      if (finalUrl) break
     }
 
-    // Try alternative response formats
-    if (!videoUrl && responseData.data) {
-      if (typeof responseData.data === 'string' && responseData.data.startsWith('http')) {
-        videoUrl = responseData.data
-        console.log(`✅ Video URL from data field: ${videoUrl}`)
-      } else if (responseData.data.url) {
-        videoUrl = responseData.data.url
-        console.log(`✅ Video URL from data.url: ${videoUrl}`)
-      }
-    }
+    // Use final URL if available, otherwise preview
+    const videoUrl = finalUrl || previewUrl
 
     if (!videoUrl) {
-      console.error('❌ Could not extract video URL from response')
-      console.error('Response structure:', JSON.stringify(responseData, null, 2))
-      throw new Error('No video URL found in response. Please check logs.')
+      console.error('❌ No video URL found in streaming response')
+      throw new Error('No video URL found. The video may still be processing.')
     }
+
+    console.log(`🎉 Sora-2 video generation complete!`)
+    console.log(`📹 Video URL: ${videoUrl}`)
 
     // Return video URL
     res.status(200).json({
       success: true,
       videoUrl: videoUrl,
+      previewUrl: previewUrl,
+      finalUrl: finalUrl,
+      taskId: taskId,
       duration: duration,
       resolution: resolution,
       aspectRatio: aspectRatio,
       mode: image ? 'image-to-video' : 'text-to-video',
       model: modelName,
       message: '✨ Video generated successfully with Sora-2!',
-      provider: 'CometAPI'
+      provider: 'CometAPI (Sora-2)'
     })
 
   } catch (error) {
