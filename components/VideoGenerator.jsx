@@ -188,19 +188,32 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     if (!videoResult?.videoUrl) return
 
     try {
-      const response = await fetch(videoResult.videoUrl)
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `sora-video-${Date.now()}.mp4`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      // Check if it's mobile device
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+      if (isMobile) {
+        // For mobile: Open in new tab (user can long-press to save)
+        window.open(videoResult.videoUrl, '_blank')
+        alert('กรุณากดค้างที่วิดีโอ แล้วเลือก "บันทึก" เพื่อดาวน์โหลด')
+      } else {
+        // For desktop: Try direct download via link
+        const a = document.createElement('a')
+        a.href = videoResult.videoUrl
+        a.download = `sora-video-${Date.now()}.mp4`
+        a.target = '_blank' // Open in new tab as fallback
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+
+        // If direct download doesn't work, open in new tab
+        setTimeout(() => {
+          window.open(videoResult.videoUrl, '_blank')
+        }, 500)
+      }
     } catch (error) {
       console.error('Download error:', error)
-      setError('ไม่สามารถดาวน์โหลดวิดีโอได้')
+      // Fallback: Open in new tab
+      window.open(videoResult.videoUrl, '_blank')
     }
   }
 

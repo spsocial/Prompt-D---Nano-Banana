@@ -107,8 +107,36 @@ export default async function handler(req, res) {
     let previewUrl = null
     let finalUrl = null
     let accumulatedContent = '' // NEW: Accumulate all content from chunks
+    let chunkCount = 0
 
     console.log('📡 Reading streaming response...')
+
+    // Helper function to search for URL in accumulated content
+    const searchForUrl = (content) => {
+      if (!content) return null
+
+      // Match various URL formats in markdown or plain text
+      // IMPORTANT: Include query parameters (everything after .mp4 until space/bracket/etc)
+      const urlPatterns = [
+        /!\[([^\]]*)\]\((https?:\/\/[^\)]+\.mp4[^\)]*)\)/,  // ![text](url) with query params
+        /!\[(https?:\/\/[^\]]+\.mp4[^\]]*)\]/,               // ![url] with query params
+        /\[Play online[^\]]*\]\((https?:\/\/[^\)]+\.mp4[^\)]*)\)/i,  // [Play online▶️](url)
+        /https?:\/\/[^\s\)\]"'<>]+\.mp4[^\s\)\]"'<>]*/      // Plain URL with query params
+      ]
+
+      for (const pattern of urlPatterns) {
+        const match = content.match(pattern)
+        if (match) {
+          const url = match[2] || match[1] || match[0]
+          if (url && url.startsWith('http')) {
+            // Clean up any trailing markdown characters
+            const cleanUrl = url.replace(/[\]\)]+$/, '')
+            return cleanUrl
+          }
+        }
+      }
+      return null
+    }
 
     while (true) {
       const { done, value } = await reader.read()
@@ -127,7 +155,10 @@ export default async function handler(req, res) {
       for (const line of lines) {
         if (!line.trim() || line.startsWith('data: [DONE]')) continue
 
-        console.log('📨 Chunk:', line.substring(0, 200))
+        // Only log first 20 chunks to reduce noise
+        if (chunkCount < 20) {
+          console.log('📨 Chunk:', line.substring(0, 200))
+        }
 
         // NEW: Try to parse JSON and extract content
         if (line.startsWith('data: ')) {
@@ -139,7 +170,22 @@ export default async function handler(req, res) {
             if (data.choices?.[0]?.delta?.content) {
               const content = data.choices[0].delta.content
               accumulatedContent += content
-              console.log('📝 Content added:', content.substring(0, 100))
+              chunkCount++
+
+              // Only log first 20 content additions
+              if (chunkCount <= 20) {
+                console.log('📝 Content added:', content.substring(0, 100))
+              }
+
+              // IMPORTANT: Search for URL every 10 chunks or when we see keywords
+              if (chunkCount % 10 === 0 || content.includes('http') || content.includes('.mp4')) {
+                const foundUrl = searchForUrl(accumulatedContent)
+                if (foundUrl && !finalUrl) {
+                  finalUrl = foundUrl
+                  console.log(`✅ Found URL in accumulated content (chunk ${chunkCount}): ${finalUrl}`)
+                  break
+                }
+              }
             }
           } catch (e) {
             // Not JSON, continue with text parsing
@@ -157,15 +203,15 @@ export default async function handler(req, res) {
 
         // Extract URLs from raw line (backward compatibility)
         if (line.includes('Preview video') || line.includes('📺 Online Preview')) {
-          const urlMatch = line.match(/https?:\/\/[^\s\)\]]+\.mp4/)
+          const urlMatch = line.match(/https?:\/\/[^\s\)\]]+\.mp4[^\s\)\]]*/) // Include query params
           if (urlMatch) {
             previewUrl = urlMatch[0]
             console.log(`✅ Preview URL: ${previewUrl}`)
           }
         }
 
-        if (line.includes('High-quality video') || line.includes('▶️ Watch Online') || line.includes('🎉')) {
-          const urlMatch = line.match(/https?:\/\/[^\s\)\]]+\.mp4/)
+        if (line.includes('High-quality video') || line.includes('▶️ Watch Online') || line.includes('Play online') || line.includes('🎉')) {
+          const urlMatch = line.match(/https?:\/\/[^\s\)\]]+\.mp4[^\s\)\]]*/) // Include query params
           if (urlMatch) {
             finalUrl = urlMatch[0]
             console.log(`✅ Final URL: ${finalUrl}`)
@@ -182,29 +228,21 @@ export default async function handler(req, res) {
       if (finalUrl) break
     }
 
+    console.log(`📊 Total chunks processed: ${chunkCount}`)
+    console.log(`📝 Accumulated content length: ${accumulatedContent.length} characters`)
+
     // NEW: Extract URL from accumulated content if not found yet
     if (!finalUrl && !previewUrl && accumulatedContent) {
-      console.log('🔍 Searching for URL in accumulated content...')
-      console.log('📄 Full content:', accumulatedContent)
+      console.log('🔍 Searching for URL in accumulated content (final check)...')
+      console.log('📄 Full content length:', accumulatedContent.length, 'characters')
 
-      // Match various URL formats in markdown or plain text
-      // ![url](url) or ![http://...] or just http://...
-      const urlPatterns = [
-        /!\[([^\]]*)\]\((https?:\/\/[^\)]+\.mp4)\)/,  // ![text](url)
-        /!\[(https?:\/\/[^\]]+\.mp4)\]/,               // ![url]
-        /https?:\/\/[^\s\)\]"'<>]+\.mp4/g              // Plain URL
-      ]
-
-      for (const pattern of urlPatterns) {
-        const match = accumulatedContent.match(pattern)
-        if (match) {
-          const url = match[2] || match[1] || match[0]
-          if (url && url.startsWith('http')) {
-            finalUrl = url
-            console.log(`✅ Found URL in content: ${finalUrl}`)
-            break
-          }
-        }
+      // Use the same helper function
+      const foundUrl = searchForUrl(accumulatedContent)
+      if (foundUrl) {
+        finalUrl = foundUrl
+        console.log(`✅ Found URL in final content search: ${finalUrl}`)
+      } else {
+        console.log('📄 Full content preview:', accumulatedContent.substring(accumulatedContent.length - 500))
       }
     }
 
