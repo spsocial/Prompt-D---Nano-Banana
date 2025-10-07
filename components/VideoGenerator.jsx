@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Film, Loader2, Play, Download, X, Image as ImageIcon, Type } from 'lucide-react'
 import useStore from '../lib/store'
 
-export default function VideoGenerator({ sourceImage = null, sourcePrompt = '' }) {
+export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', model = 'sora-2' }) {
   const [mode, setMode] = useState(sourceImage ? 'image' : 'text')
+  const [uploadedImage, setUploadedImage] = useState(sourceImage)
   const [prompt, setPrompt] = useState(sourcePrompt)
   const [duration, setDuration] = useState(5)
   const [resolution, setResolution] = useState('720p')
@@ -15,14 +16,44 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '' }
 
   const { apiKeys, userPlan } = useStore()
 
+  // Handle image upload
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      setError('กรุณาเลือกไฟล์รูปภาพ')
+      return
+    }
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError('ไฟล์รูปภาพต้องมีขนาดไม่เกิน 10MB')
+      return
+    }
+
+    // Convert to base64
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setUploadedImage(reader.result)
+      setError(null)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveImage = () => {
+    setUploadedImage(null)
+  }
+
   const handleGenerate = async () => {
     if (!prompt && mode === 'text') {
       setError('กรุณาใส่ prompt สำหรับสร้างวิดีโอ')
       return
     }
 
-    if (!sourceImage && mode === 'image') {
-      setError('ไม่พบรูปภาพต้นทาง')
+    if (!uploadedImage && mode === 'image') {
+      setError('กรุณาอัพโหลดรูปภาพ')
       return
     }
 
@@ -40,11 +71,12 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '' }
         },
         body: JSON.stringify({
           prompt: prompt,
-          image: mode === 'image' ? sourceImage : null,
+          image: mode === 'image' ? uploadedImage : null,
           apiKey: apiKeys.openai || null,
           duration: duration,
           resolution: resolution,
-          aspectRatio: aspectRatio
+          aspectRatio: aspectRatio,
+          model: model
         }),
       })
 
@@ -124,44 +156,71 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '' }
       </div>
 
       {/* Mode Selection */}
-      {!sourceImage && (
-        <div className="flex gap-3">
-          <button
-            onClick={() => setMode('text')}
-            className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-              mode === 'text'
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300 hover:border-red-300'
-            }`}
-          >
-            <Type className="h-6 w-6 mx-auto mb-2 text-red-500" />
-            <div className="font-bold">Text to Video</div>
-            <div className="text-xs text-gray-600">สร้างจากข้อความ</div>
-          </button>
-          <button
-            onClick={() => setMode('image')}
-            className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-              mode === 'image'
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300 hover:border-red-300'
-            }`}
-          >
-            <ImageIcon className="h-6 w-6 mx-auto mb-2 text-red-500" />
-            <div className="font-bold">Image to Video</div>
-            <div className="text-xs text-gray-600">สร้างจากรูปภาพ</div>
-          </button>
-        </div>
-      )}
+      <div className="flex gap-3">
+        <button
+          onClick={() => setMode('text')}
+          className={`flex-1 p-4 rounded-xl border-2 transition-all ${
+            mode === 'text'
+              ? 'border-red-500 bg-red-50'
+              : 'border-gray-300 hover:border-red-300'
+          }`}
+        >
+          <Type className="h-6 w-6 mx-auto mb-2 text-red-500" />
+          <div className="font-bold">Text to Video</div>
+          <div className="text-xs text-gray-600">สร้างจากข้อความ</div>
+        </button>
+        <button
+          onClick={() => setMode('image')}
+          className={`flex-1 p-4 rounded-xl border-2 transition-all ${
+            mode === 'image'
+              ? 'border-red-500 bg-red-50'
+              : 'border-gray-300 hover:border-red-300'
+          }`}
+        >
+          <ImageIcon className="h-6 w-6 mx-auto mb-2 text-red-500" />
+          <div className="font-bold">Image to Video</div>
+          <div className="text-xs text-gray-600">สร้างจากรูปภาพ</div>
+        </button>
+      </div>
 
-      {/* Source Image Preview */}
-      {mode === 'image' && sourceImage && (
-        <div className="p-4 bg-white rounded-xl border border-gray-200">
-          <div className="text-sm font-bold text-gray-700 mb-2">รูปภาพต้นทาง:</div>
-          <img
-            src={sourceImage}
-            alt="Source"
-            className="max-h-48 mx-auto rounded-lg border-2 border-gray-200"
-          />
+      {/* Image Upload (for Image to Video mode) */}
+      {mode === 'image' && (
+        <div>
+          {!uploadedImage ? (
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-red-400 transition-colors">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                id="video-image-upload"
+              />
+              <label htmlFor="video-image-upload" className="cursor-pointer">
+                <ImageIcon className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                <div className="text-lg font-semibold text-gray-700 mb-2">
+                  อัพโหลดรูปภาพ
+                </div>
+                <div className="text-sm text-gray-500">
+                  คลิกหรือลากไฟล์มาวาง (สูงสุด 10MB)
+                </div>
+              </label>
+            </div>
+          ) : (
+            <div className="p-4 bg-white rounded-xl border-2 border-red-200 relative">
+              <button
+                onClick={handleRemoveImage}
+                className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="text-sm font-bold text-gray-700 mb-2">รูปภาพต้นทาง:</div>
+              <img
+                src={uploadedImage}
+                alt="Uploaded"
+                className="max-h-64 mx-auto rounded-lg border-2 border-gray-200"
+              />
+            </div>
+          )}
         </div>
       )}
 
