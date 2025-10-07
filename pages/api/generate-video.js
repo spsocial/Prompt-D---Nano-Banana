@@ -40,42 +40,58 @@ export default async function handler(req, res) {
     console.log(`📝 Mode: ${image ? 'Image to Video' : 'Text to Video'}`)
     console.log(`⏱️ Duration: ${duration}s, Resolution: ${resolution}, Aspect: ${aspectRatio}`)
 
-    // CometAPI model options - try multiple model names
-    // Based on CometAPI docs, available models might be:
-    // - "sora-2" (latest)
-    // - "Sora" (generic)
-    // - "sora-1.0-turbo"
-    const modelName = 'sora-2'
+    // Map resolution and aspect ratio to width/height
+    const resolutionMap = {
+      '480p': { height: 480 },
+      '720p': { height: 720 },
+      '1080p': { height: 1080 }
+    }
 
-    console.log(`🎯 Using model: ${modelName}`)
+    const aspectRatioMap = {
+      '16:9': { width: 16, height: 9 },
+      '9:16': { width: 9, height: 16 },
+      '1:1': { width: 1, height: 1 },
+      '4:3': { width: 4, height: 3 },
+      '3:4': { width: 3, height: 4 },
+      '21:9': { width: 21, height: 9 }
+    }
 
-    // Build prompt with specifications
+    const resInfo = resolutionMap[resolution] || { height: 720 }
+    const aspectInfo = aspectRatioMap[aspectRatio] || { width: 16, height: 9 }
+
+    // Calculate width based on aspect ratio and height
+    const videoHeight = resInfo.height
+    const videoWidth = Math.round((videoHeight * aspectInfo.width) / aspectInfo.height)
+
+    // Calculate n_frames (30 fps assumed)
+    const nFrames = duration * 30
+
+    console.log(`📐 Video dimensions: ${videoWidth}x${videoHeight}, Frames: ${nFrames}`)
+
+    // Build prompt
     let fullPrompt = prompt || 'Create a cinematic video'
 
-    // Add specifications to prompt
-    fullPrompt = `${fullPrompt}. Video specifications: ${duration} seconds duration, ${resolution} resolution, ${aspectRatio} aspect ratio.`
+    // Prepare inpaint_items for image-to-video
+    const inpaintItems = image ? [{ url: image }] : []
 
-    if (image) {
-      fullPrompt = `Create a dynamic video with smooth camera movements and cinematic effects. ${fullPrompt}`
-    }
-
-    // Create request using CometAPI format (OpenAI-compatible)
+    // Create request using CometAPI Sora format (from OpenAPI spec)
     const requestPayload = {
-      model: modelName,
-      messages: [
-        {
-          role: 'user',
-          content: fullPrompt
-        }
-      ],
-      max_tokens: 2048
+      type: 'video_gen',
+      prompt: fullPrompt,
+      n_variants: 1,
+      n_frames: nFrames,
+      height: videoHeight,
+      width: videoWidth,
+      style: 'natural',
+      inpaint_items: inpaintItems,
+      operation: 'simple_compose'
     }
 
-    console.log('🚀 Sending request to CometAPI...')
+    console.log('🚀 Sending request to CometAPI Sora endpoint...')
     console.log('📦 Request payload:', JSON.stringify(requestPayload, null, 2))
 
-    // Call CometAPI using OpenAI-compatible endpoint
-    const createResponse = await fetch('https://api.cometapi.com/v1/chat/completions', {
+    // Call CometAPI Sora endpoint (from OpenAPI spec)
+    const createResponse = await fetch('https://api.cometapi.com/sora/v1/videos', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${cometApiKey}`,
@@ -104,29 +120,55 @@ export default async function handler(req, res) {
     console.log('✅ CometAPI Response received')
     console.log('📦 Full Response:', JSON.stringify(responseData, null, 2))
 
-    // Extract video URL from CometAPI response
-    // Format: response.choices[0].message.content contains video URL
+    // Response format: { code: "success", message: "", data: "task_01jryr7zqnecna1nepv0whpfhg" }
+    if (responseData.code !== 'success') {
+      throw new Error(responseData.message || 'Failed to create video generation task')
+    }
+
+    const taskId = responseData.data
+    console.log(`✅ Task created: ${taskId}`)
+
+    // Poll for task completion (max 5 minutes)
+    console.log('⏳ Polling for task completion...')
+    const maxAttempts = 60 // 5 minutes (5 seconds interval)
     let videoUrl = null
 
-    if (responseData.choices && responseData.choices[0]) {
-      const content = responseData.choices[0].message?.content
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // Wait 5 seconds before checking
+      await new Promise(resolve => setTimeout(resolve, 5000))
 
-      if (content) {
-        // Extract URL from content (could be plain URL or markdown format)
-        const urlMatch = content.match(/https?:\/\/[^\s\)]+/)
-        if (urlMatch) {
-          videoUrl = urlMatch[0]
-          console.log(`✅ Video URL extracted: ${videoUrl}`)
-        } else {
-          // If no URL found, the content itself might be the URL
-          videoUrl = content.trim()
+      console.log(`🔍 Checking task status (attempt ${attempt + 1}/${maxAttempts})...`)
+
+      // Query task status (assuming endpoint exists)
+      const statusResponse = await fetch(`https://api.cometapi.com/sora/v1/videos/${taskId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${cometApiKey}`
+        }
+      })
+
+      if (!statusResponse.ok) {
+        console.error(`⚠️ Status check failed: ${statusResponse.status}`)
+        continue
+      }
+
+      const statusData = await statusResponse.json()
+      console.log('📊 Status:', JSON.stringify(statusData, null, 2))
+
+      // Check if completed and extract video URL
+      if (statusData.code === 'success' && statusData.data) {
+        if (statusData.data.status === 'completed' || statusData.data.url) {
+          videoUrl = statusData.data.url || statusData.data.video_url
+          console.log(`✅ Video ready: ${videoUrl}`)
+          break
+        } else if (statusData.data.status === 'failed') {
+          throw new Error('Video generation failed')
         }
       }
     }
 
     if (!videoUrl) {
-      console.error('Response data:', JSON.stringify(responseData, null, 2))
-      throw new Error('No video URL found in CometAPI response')
+      throw new Error('Video generation timeout - please try again')
     }
 
     // Return video URL
@@ -137,9 +179,9 @@ export default async function handler(req, res) {
       resolution: resolution,
       aspectRatio: aspectRatio,
       mode: image ? 'image-to-video' : 'text-to-video',
-      model: modelName,
-      message: '✨ Video generated successfully with Sora 2 via CometAPI!',
-      provider: 'CometAPI'
+      message: '✨ Video generated successfully with Sora via CometAPI!',
+      provider: 'CometAPI',
+      taskId: taskId
     })
 
   } catch (error) {
