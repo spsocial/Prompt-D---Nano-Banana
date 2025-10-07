@@ -348,7 +348,13 @@ Focus on:
 
     } catch (error) {
       console.error('❌ Video generation error:', error)
-      setError(error.message)
+
+      // Check if API is not available
+      if (error.message.includes('not valid JSON') || error.message.includes('Unexpected token')) {
+        setError('⚠️ Sora API ยังไม่เปิดให้ใช้งานสาธารณะ - OpenAI กำลังเปิดให้ใช้งานเป็นระยะ กรุณาตรวจสอบที่ platform.openai.com/docs')
+      } else {
+        setError(error.message)
+      }
     } finally {
       setIsGeneratingVideo(false)
     }
@@ -825,6 +831,28 @@ Focus on:
           {/* Video Mode Settings */}
           {outputMode === 'video' && (
             <>
+              {/* API Status Warning */}
+              <div className="mb-5 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-xl">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-bold mb-1">⚠️ สถานะ Sora API</p>
+                    <p>OpenAI Sora API กำลังเปิดให้ใช้งานเป็นระยะ หากพบข้อผิดพลาด แสดงว่า API ยังไม่พร้อมใช้งาน</p>
+                    <p className="mt-2 text-xs">
+                      ตรวจสอบสถานะล่าสุดที่:{' '}
+                      <a
+                        href="https://platform.openai.com/docs"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-yellow-900"
+                      >
+                        platform.openai.com/docs
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Video Prompt */}
               <div className="mb-5">
                 <label className="block text-sm font-semibold text-gray-700 mb-3">

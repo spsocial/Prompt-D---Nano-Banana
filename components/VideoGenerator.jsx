@@ -76,7 +76,13 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '' }
 
     } catch (error) {
       console.error('❌ Video generation error:', error)
-      setError(error.message)
+
+      // Check if API is not available
+      if (error.message.includes('not valid JSON') || error.message.includes('Unexpected token')) {
+        setError('⚠️ Sora API ยังไม่เปิดให้ใช้งานสาธารณะ - กรุณารอ OpenAI เปิดให้ใช้งานอย่างเป็นทางการ หรือตรวจสอบสถานะล่าสุดที่ platform.openai.com')
+      } else {
+        setError(error.message)
+      }
     } finally {
       setIsGenerating(false)
     }

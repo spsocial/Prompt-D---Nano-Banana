@@ -57,8 +57,8 @@ export default async function handler(req, res) {
 
     console.log('🚀 Creating video generation job...')
 
-    // Create job using OpenAI API
-    const createResponse = await fetch('https://api.openai.com/v1/video/generations', {
+    // Create job using OpenAI Sora API
+    const createResponse = await fetch('https://api.openai.com/v1/sora/videos', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
@@ -68,9 +68,24 @@ export default async function handler(req, res) {
     })
 
     if (!createResponse.ok) {
-      const errorData = await createResponse.json()
-      console.error('❌ Failed to create job:', errorData)
-      throw new Error(errorData.error?.message || 'Failed to create video generation job')
+      const errorText = await createResponse.text()
+      console.error('❌ Failed to create job:', errorText)
+
+      // Try to parse as JSON, otherwise return text error
+      let errorMessage = 'Failed to create video generation job'
+      try {
+        const errorData = JSON.parse(errorText)
+        errorMessage = errorData.error?.message || errorData.message || errorMessage
+      } catch (e) {
+        // If not JSON, check if Sora API is not available
+        if (errorText.includes('<html') || errorText.includes('<!DOCTYPE')) {
+          errorMessage = 'Sora API is not available yet. Please check OpenAI API status or try again later.'
+        } else {
+          errorMessage = errorText.substring(0, 200) // First 200 chars of error
+        }
+      }
+
+      throw new Error(errorMessage)
     }
 
     const jobData = await createResponse.json()
@@ -92,7 +107,7 @@ export default async function handler(req, res) {
 
       console.log(`⏳ Checking status (attempt ${attempts}/${maxAttempts})...`)
 
-      const statusResponse = await fetch(`https://api.openai.com/v1/video/generations/${jobId}`, {
+      const statusResponse = await fetch(`https://api.openai.com/v1/sora/videos/${jobId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${openaiApiKey}`,
@@ -137,10 +152,19 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('❌ Video generation error:', error)
+
+    // Check if it's an API availability issue
+    const isApiNotAvailable = error.message.includes('Sora API is not available') ||
+                               error.message.includes('not valid JSON') ||
+                               error.message.includes('Unexpected token')
+
     res.status(500).json({
       error: error.message || 'Failed to generate video',
       details: error.toString(),
-      suggestion: 'Check your OpenAI API key and ensure you have access to Sora API'
+      suggestion: isApiNotAvailable
+        ? '⚠️ Sora API ยังไม่เปิดให้ใช้งานทั่วไป - กรุณาตรวจสอบสถานะที่ https://platform.openai.com/docs หรือรอ OpenAI เปิดให้ใช้งาน'
+        : 'ตรวจสอบ OpenAI API key และสิทธิ์การเข้าถึง Sora API',
+      apiStatus: isApiNotAvailable ? 'not_available' : 'unknown_error'
     })
   }
 }
