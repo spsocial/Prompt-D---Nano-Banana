@@ -56,17 +56,16 @@ export default async function handler(req, res) {
       fullPrompt = `Based on this image, create a dynamic video: ${fullPrompt}. Add smooth camera movements and cinematic effects.`
     }
 
-    // Try OpenAI-compatible format with sora-2 model
+    // Use CometAPI format exactly as documented (no extra params)
     const requestPayload = {
       model: modelName,
+      stream: false, // IMPORTANT: Must be false for sora-2
       messages: [
         {
           role: 'user',
           content: fullPrompt
         }
-      ],
-      max_tokens: 4096,
-      temperature: 0.7
+      ]
     }
 
     console.log('🚀 Sending request to CometAPI...')
@@ -77,7 +76,9 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${cometApiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Connection': 'keep-alive'
       },
       body: JSON.stringify(requestPayload)
     })
