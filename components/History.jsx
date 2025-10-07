@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import useStore from '../lib/store'
-import { X, Download, Calendar, Image as ImageIcon, Maximize2 } from 'lucide-react'
+import { X, Download, Calendar, Image as ImageIcon, Maximize2, Film } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function History() {
-  const { history, removeFromHistory, loadHistory } = useStore()
+  const { history, removeFromHistory, loadHistory, setUploadedImage } = useStore()
   const [selectedImage, setSelectedImage] = useState(null)
 
   // Load history from IndexedDB on mount
@@ -103,6 +103,30 @@ export default function History() {
     }
   }
 
+  // Handle creating video from image
+  const handleCreateVideo = (item) => {
+    if (!item.imageUrl || item.imageUrl === 'base64_image_stripped') {
+      alert('ไม่สามารถสร้างวิดีโอจากภาพนี้ได้ (ภาพถูกลบแล้ว)')
+      return
+    }
+
+    // Save image to store for video generation
+    setUploadedImage(item.imageUrl)
+
+    // Scroll to top where UnifiedGenerator is
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    // Store mode preference in localStorage for UnifiedGenerator to read
+    localStorage.setItem('nano_pending_video_gen', 'true')
+
+    // Close modal if open
+    setSelectedImage(null)
+
+    // Navigate to home page if not already there
+    if (window.location.pathname !== '/') {
+      window.location.href = '/'
+    }
+  }
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
@@ -181,9 +205,16 @@ export default function History() {
                       loading="lazy"
                     />
 
-                    {/* Mobile Download Button - Always visible on mobile */}
+                    {/* Mobile Buttons - Always visible on mobile */}
                     {item.imageUrl && item.imageUrl !== 'base64_image_stripped' && (
                       <div className="md:hidden absolute top-2 right-2 flex gap-2">
+                        <button
+                          onClick={() => handleCreateVideo(item)}
+                          className="p-2.5 bg-red-500/90 backdrop-blur-sm rounded-lg text-white shadow-lg"
+                          title="สร้างวิดีโอ"
+                        >
+                          <Film className="h-5 w-5" />
+                        </button>
                         <button
                           onClick={() => setSelectedImage(item)}
                           className="p-2.5 bg-black/60 backdrop-blur-sm rounded-lg text-white shadow-lg"
@@ -214,6 +245,13 @@ export default function History() {
 
                     {/* Action Buttons */}
                     <div className="flex space-x-1">
+                      <button
+                        onClick={() => handleCreateVideo(item)}
+                        className="p-1.5 bg-red-500/80 backdrop-blur-sm rounded hover:bg-red-600/90 transition-colors"
+                        title="สร้างวิดีโอ"
+                      >
+                        <Film className="h-4 w-4 text-white" />
+                      </button>
                       <button
                         onClick={() => setSelectedImage(item)}
                         className="p-1.5 bg-white/20 backdrop-blur-sm rounded hover:bg-white/30 transition-colors"
@@ -273,31 +311,33 @@ export default function History() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-7xl h-[90vh] sm:h-[85vh] flex flex-col bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-md rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl"
+              className="relative w-full max-w-7xl max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-md rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Close Button - Large and Prominent */}
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-500 hover:bg-red-600 text-white rounded-full w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-all shadow-2xl z-30 flex-shrink-0 ring-4 ring-white/20"
+                title="ปิด (กดที่ไหนก็ได้เพื่อปิด)"
+              >
+                <X className="h-6 w-6 sm:h-7 sm:w-7" />
+              </button>
+
               {/* Modal Header */}
-              <div className="bg-gradient-to-b from-black/90 to-transparent p-4 rounded-t-2xl">
-                <div className="flex justify-between items-start">
-                  <div className="text-white max-w-[80%]">
+              <div className="bg-gradient-to-b from-black/90 to-transparent p-4 rounded-t-2xl flex-shrink-0">
+                <div className="pr-12">
+                  <div className="text-white">
                     <h3 className="text-xl md:text-2xl font-bold truncate">{selectedImage.style || 'ไม่มีชื่อ'}</h3>
                     <div className="flex items-center text-sm opacity-80 mt-1">
                       <Calendar className="h-4 w-4 mr-1" />
                       <span>{formatDate(selectedImage.timestamp)}</span>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedImage(null)}
-                    className="bg-red-500/90 hover:bg-red-500 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors shadow-lg z-20 flex-shrink-0"
-                    title="ปิด"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
                 </div>
               </div>
 
               {/* Image Container - Responsive to aspect ratio */}
-              <div className="flex-1 flex items-center justify-center p-2 sm:p-4 min-h-0 overflow-auto">
+              <div className="flex-1 flex items-center justify-center p-2 sm:p-4 min-h-0 overflow-hidden">
                 {/* Handle missing image data */}
                 {selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl ? (
                   <div className="flex flex-col items-center justify-center text-center p-8 bg-gray-800/50 rounded-xl">
@@ -323,13 +363,7 @@ export default function History() {
                   <img
                     src={selectedImage.imageUrl}
                     alt={selectedImage.style || 'Generated image'}
-                    className="object-contain rounded-xl shadow-2xl"
-                    style={{
-                      maxHeight: 'calc(100vh - 12rem)',
-                      maxWidth: '100%',
-                      width: 'auto',
-                      height: 'auto'
-                    }}
+                    className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
                     onError={(e) => {
                       // Handle broken image links
                       e.target.onerror = null;
@@ -346,8 +380,23 @@ export default function History() {
               </div>
 
               {/* Modal Footer */}
-              <div className="bg-gradient-to-t from-black/90 to-transparent p-4 rounded-b-2xl">
+              <div className="bg-gradient-to-t from-black/90 to-transparent p-4 rounded-b-2xl flex-shrink-0">
                 <div className="flex flex-col sm:flex-row justify-center gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleCreateVideo(selectedImage)
+                    }}
+                    disabled={selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl}
+                    className={`px-5 py-2.5 rounded-lg flex items-center justify-center space-x-2 transition-all font-bold shadow-lg text-sm ${
+                      selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white'
+                    }`}
+                  >
+                    <Film className="h-4 w-4" />
+                    <span>สร้างวิดีโอจากภาพนี้</span>
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -365,8 +414,9 @@ export default function History() {
                   </button>
                   <button
                     onClick={() => setSelectedImage(null)}
-                    className="px-5 py-2.5 bg-gray-700/80 hover:bg-gray-800/90 text-white rounded-lg font-medium transition-all shadow-lg text-sm"
+                    className="px-5 py-2.5 bg-gray-700/80 hover:bg-gray-800/90 text-white rounded-lg font-bold transition-all shadow-lg text-sm border-2 border-white/20"
                   >
+                    <X className="h-4 w-4 inline mr-1" />
                     ปิด
                   </button>
                 </div>
