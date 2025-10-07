@@ -106,6 +106,7 @@ export default async function handler(req, res) {
     let taskId = null
     let previewUrl = null
     let finalUrl = null
+    let accumulatedContent = '' // NEW: Accumulate all content from chunks
 
     console.log('📡 Reading streaming response...')
 
@@ -128,7 +129,24 @@ export default async function handler(req, res) {
 
         console.log('📨 Chunk:', line.substring(0, 200))
 
-        // Extract Task ID
+        // NEW: Try to parse JSON and extract content
+        if (line.startsWith('data: ')) {
+          try {
+            const jsonStr = line.substring(6) // Remove 'data: ' prefix
+            const data = JSON.parse(jsonStr)
+
+            // Extract content from delta
+            if (data.choices?.[0]?.delta?.content) {
+              const content = data.choices[0].delta.content
+              accumulatedContent += content
+              console.log('📝 Content added:', content.substring(0, 100))
+            }
+          } catch (e) {
+            // Not JSON, continue with text parsing
+          }
+        }
+
+        // Extract Task ID from raw line
         if (line.includes('Task ID:') && !taskId) {
           const match = line.match(/Task ID:\s*`?([^`\s]+)`?/)
           if (match) {
@@ -137,7 +155,7 @@ export default async function handler(req, res) {
           }
         }
 
-        // Extract Preview URL
+        // Extract URLs from raw line (backward compatibility)
         if (line.includes('Preview video') || line.includes('📺 Online Preview')) {
           const urlMatch = line.match(/https?:\/\/[^\s\)\]]+\.mp4/)
           if (urlMatch) {
@@ -146,7 +164,6 @@ export default async function handler(req, res) {
           }
         }
 
-        // Extract Final URL
         if (line.includes('High-quality video') || line.includes('▶️ Watch Online') || line.includes('🎉')) {
           const urlMatch = line.match(/https?:\/\/[^\s\)\]]+\.mp4/)
           if (urlMatch) {
@@ -163,6 +180,32 @@ export default async function handler(req, res) {
       }
 
       if (finalUrl) break
+    }
+
+    // NEW: Extract URL from accumulated content if not found yet
+    if (!finalUrl && !previewUrl && accumulatedContent) {
+      console.log('🔍 Searching for URL in accumulated content...')
+      console.log('📄 Full content:', accumulatedContent)
+
+      // Match various URL formats in markdown or plain text
+      // ![url](url) or ![http://...] or just http://...
+      const urlPatterns = [
+        /!\[([^\]]*)\]\((https?:\/\/[^\)]+\.mp4)\)/,  // ![text](url)
+        /!\[(https?:\/\/[^\]]+\.mp4)\]/,               // ![url]
+        /https?:\/\/[^\s\)\]"'<>]+\.mp4/g              // Plain URL
+      ]
+
+      for (const pattern of urlPatterns) {
+        const match = accumulatedContent.match(pattern)
+        if (match) {
+          const url = match[2] || match[1] || match[0]
+          if (url && url.startsWith('http')) {
+            finalUrl = url
+            console.log(`✅ Found URL in content: ${finalUrl}`)
+            break
+          }
+        }
+      }
     }
 
     // Use final URL if available, otherwise preview
