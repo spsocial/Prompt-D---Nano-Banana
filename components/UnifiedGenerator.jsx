@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Sparkles, Film, Image as ImageIcon, Upload, Wand2, Lock } from 'lucide-react'
 import ImageUploader from './ImageUploader'
 import VideoGenerator from './VideoGenerator'
+import GeminiImageGenerator from './GeminiImageGenerator'
 import useStore from '../lib/store'
 
 // Model configurations
@@ -15,11 +16,22 @@ const IMAGE_MODELS = {
     hasPresetStyles: true,
     color: 'yellow'
   },
+  'gemini-2.0-exp': {
+    id: 'gemini-2.0-exp',
+    name: 'Gemini 2.0 Exp',
+    description: 'แก้ไขภาพแบบสนทนา + Text Rendering',
+    icon: '🎨',
+    requiresImage: false, // optional
+    hasPresetStyles: false,
+    color: 'blue',
+    comingSoon: false,
+    features: ['Text-to-Image', 'Image-to-Image', 'แก้ไขภาพ', 'Text Rendering']
+  },
   'dalle-3': {
     id: 'dalle-3',
     name: 'DALL-E 3',
     description: 'OpenAI - สร้างภาพจาก prompt',
-    icon: '🎨',
+    icon: '🖼️',
     requiresImage: false,
     hasPresetStyles: false,
     color: 'green',
@@ -251,7 +263,11 @@ export default function UnifiedGenerator() {
           <ImageUploader />
         )}
 
-        {mode === 'image' && selectedModel !== 'banana' && (
+        {mode === 'image' && selectedModel === 'gemini-2.0-exp' && (
+          <GeminiImageGenerator />
+        )}
+
+        {mode === 'image' && selectedModel !== 'banana' && selectedModel !== 'gemini-2.0-exp' && (
           <div className="text-center py-12 text-gray-500">
             <Wand2 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
             <div className="text-lg font-semibold">Coming Soon!</div>
