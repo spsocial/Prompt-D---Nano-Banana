@@ -41,24 +41,37 @@ export default async function handler(req, res) {
 
     // Step 1: Create video generation job
     const createJobPayload = {
-      model: 'sora-2',
-      prompt: prompt || 'Create a video based on this image',
-      duration: duration,
-      resolution: resolution,
-      aspect_ratio: aspectRatio
+      model: 'sora-2', // or 'sora-2-pro' for Pro version
+      prompt: prompt || 'Create a video based on this image'
+    }
+
+    // Add optional parameters
+    if (duration) {
+      createJobPayload.duration = duration
+    }
+
+    if (resolution) {
+      createJobPayload.resolution = resolution
+    }
+
+    if (aspectRatio) {
+      createJobPayload.aspect_ratio = aspectRatio
     }
 
     // Add image if provided (Image to Video mode)
     if (image) {
-      // Extract base64 data
+      // Extract base64 data and add as input image
       const base64Data = image.replace(/^data:image\/\w+;base64,/, '')
-      createJobPayload.image = base64Data
+      createJobPayload.input = {
+        type: 'image',
+        data: base64Data
+      }
     }
 
     console.log('🚀 Creating video generation job...')
 
     // Create job using OpenAI Sora API
-    const createResponse = await fetch('https://api.openai.com/v1/sora/videos', {
+    const createResponse = await fetch('https://api.openai.com/v1/video/generations', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiApiKey}`,
@@ -107,7 +120,7 @@ export default async function handler(req, res) {
 
       console.log(`⏳ Checking status (attempt ${attempts}/${maxAttempts})...`)
 
-      const statusResponse = await fetch(`https://api.openai.com/v1/sora/videos/${jobId}`, {
+      const statusResponse = await fetch(`https://api.openai.com/v1/video/generations/${jobId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${openaiApiKey}`,
