@@ -303,6 +303,17 @@ export default function ResultGallery() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
+                      handleCreateVideo(selectedImage)
+                      setSelectedImage(null) // Close modal after clicking
+                    }}
+                    className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-lg flex items-center justify-center space-x-2 transition-all font-bold shadow-lg text-sm"
+                  >
+                    <Film className="h-4 w-4" />
+                    <span>สร้างวิดีโอจากภาพนี้</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
                       handleDownload(selectedImage.imageUrl, selectedImage.style)
                     }}
                     className="px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg flex items-center justify-center space-x-2 transition-all font-bold shadow-lg text-sm"
@@ -311,9 +322,13 @@ export default function ResultGallery() {
                     <span>ดาวน์โหลดภาพ</span>
                   </button>
                   <button
-                    onClick={() => setSelectedImage(null)}
-                    className="px-5 py-2.5 bg-gray-700/80 hover:bg-gray-800/90 text-white rounded-lg font-medium transition-all shadow-lg text-sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedImage(null)
+                    }}
+                    className="px-5 py-2.5 bg-gray-700/80 hover:bg-gray-800/90 text-white rounded-lg font-bold transition-all shadow-lg text-sm border-2 border-white/20"
                   >
+                    <X className="h-4 w-4 inline mr-1" />
                     ปิด
                   </button>
                 </div>
