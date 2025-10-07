@@ -35,12 +35,12 @@ export default function PricingModal({ onClose }) {
   }, [])
 
   const packages = [
-    { id: 1, name: 'ทดลอง', price: 29, credits: 15, perImage: '1.93', popular: false },
-    { id: 2, name: 'Starter', price: 59, credits: 35, perImage: '1.69', popular: false },
-    { id: 3, name: 'Popular', price: 99, credits: 60, perImage: '1.65', popular: true },
-    { id: 4, name: 'Pro', price: 199, credits: 130, perImage: '1.53', popular: false },
-    { id: 5, name: 'Business', price: 399, credits: 280, perImage: '1.43', popular: false },
-    { id: 6, name: 'Enterprise', price: 999, credits: 750, perImage: '1.33', popular: false }
+    { id: 1, name: 'ทดลอง', price: 29, credits: 15, perCredit: '1.93', popular: false },
+    { id: 2, name: 'Starter', price: 59, credits: 35, perCredit: '1.69', popular: false },
+    { id: 3, name: 'Popular', price: 99, credits: 60, perCredit: '1.65', popular: true },
+    { id: 4, name: 'Pro', price: 199, credits: 130, perCredit: '1.53', popular: false },
+    { id: 5, name: 'Business', price: 399, credits: 280, perCredit: '1.43', popular: false },
+    { id: 6, name: 'Enterprise', price: 999, credits: 750, perCredit: '1.33', popular: false }
   ]
 
   const handleCopyAccount = () => {
@@ -210,6 +210,30 @@ export default function PricingModal({ onClose }) {
         {!showPayment ? (
           /* Package Selection */
           <div className="p-6">
+            {/* Auto System Notice */}
+            <div className="mb-5 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl">
+              <h4 className="font-bold text-green-800 mb-2 flex items-center">
+                <span className="text-xl mr-2">⚡</span>
+                ระบบเติมเงินอัตโนมัติ - เครดิตเข้าทันที!
+              </h4>
+              <div className="text-sm text-green-700 space-y-1">
+                <p>✅ <strong>เลือกแพ็ก</strong> → แนบสลิป → <strong>เครดิตเข้าทันที</strong></p>
+                <p>✅ ระบบตรวจสอบสลิปอัตโนมัติด้วย AI</p>
+                <p>✅ หากไม่เข้าภายใน 5 นาที ให้แจ้งแอดมิน</p>
+              </div>
+            </div>
+
+            {/* Credit Usage Info */}
+            <div className="mb-5 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+              <h4 className="font-bold text-blue-800 mb-2">💳 การใช้เครดิต</h4>
+              <div className="text-sm text-blue-700 space-y-1">
+                <p>🖼️ <strong>สร้างภาพ (Nano Banana):</strong> 1 เครดิต/ภาพ</p>
+                <p>🎬 <strong>สร้างวิดีโอ (Sora-2):</strong> 10 เครดิต/คลิป (10 วิ)</p>
+                <p>💎 <strong>สร้างวิดีโอ HD (Sora-2 HD):</strong> 15 เครดิต/คลิป (10 วิ)</p>
+                <p>⚡ <strong>สร้างวิดีโอ (Veo3-fast):</strong> 20 เครดิต/คลิป (8 วิ)</p>
+              </div>
+            </div>
+
             <h3 className="text-lg font-bold mb-4 text-gray-800">เลือกแพ็คเกจ</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {packages.map((pkg) => (
@@ -238,7 +262,13 @@ export default function PricingModal({ onClose }) {
                       {pkg.credits} เครดิต
                     </div>
                     <div className="text-xs text-green-600 font-medium mt-1">
-                      {pkg.perImage} บาท/ภาพ
+                      {pkg.perCredit} บาท/เครดิต
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <div className="text-xs text-gray-600 space-y-0.5">
+                        <div>🖼️ {pkg.credits} ภาพ</div>
+                        <div>หรือ 🎬 {Math.floor(pkg.credits / 10)} วิดีโอ</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -262,7 +292,7 @@ export default function PricingModal({ onClose }) {
             <div className="bg-gradient-to-r from-gray-50/50 to-white/50 backdrop-blur-sm p-5 rounded-xl border border-white/30 mb-5">
               <h3 className="font-bold mb-2 text-gray-800">แพ็คเกจที่เลือก: {selectedPackage?.name}</h3>
               <p className="text-2xl font-bold text-yellow-600">฿{selectedPackage?.price}</p>
-              <p className="text-sm text-gray-600">{selectedPackage?.credits} เครดิต ({selectedPackage?.perImage} บาท/ภาพ)</p>
+              <p className="text-sm text-gray-600">{selectedPackage?.credits} เครดิต ({selectedPackage?.perCredit} บาท/เครดิต)</p>
             </div>
 
             {/* Payment QR */}
@@ -408,7 +438,7 @@ export default function PricingModal({ onClose }) {
               <div className="mt-2 text-xs text-gray-500">
                 💰 เริ่มต้นเพียง 29 บาท/15 เครดิต
                 <br />
-                🎯 ยอดนิยม 99 บาท/60 เครดิต (1.65 บาท/ภาพ)
+                🎯 ยอดนิยม 99 บาท/60 เครดิต (1.65 บาท/เครดิต)
               </div>
             </div>
           </div>

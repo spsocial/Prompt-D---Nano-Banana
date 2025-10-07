@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Film, Loader2, Play, Download, X, Image as ImageIcon, Type } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import useStore from '../lib/store'
 
 export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', model = 'sora-2' }) {
@@ -13,8 +14,9 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
   const [videoResult, setVideoResult] = useState(null)
   const [error, setError] = useState(null)
   const [showSettings, setShowSettings] = useState(true)
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false)
 
-  const { apiKeys, userPlan, setIsGeneratingVideo } = useStore()
+  const { apiKeys, userPlan, setIsGeneratingVideo, userCredits, useCredits } = useStore()
 
   // Model-specific configurations
   const modelConfig = {
@@ -30,29 +32,21 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     },
     'sora-2': {
       name: 'Sora 2',
-      durations: [5, 10, 15, 20],
+      durations: [10], // Fixed 10 seconds only
       resolutions: {
-        '16:9': ['480p', '720p', '1080p'],
-        '9:16': ['480p', '720p', '1080p'],
-        '1:1': ['480p', '720p', '1080p'],
-        '4:3': ['480p', '720p', '1080p'],
-        '3:4': ['480p', '720p', '1080p'],
-        '21:9': ['480p', '720p', '1080p']
+        '16:9': ['720p'], // Fixed 720p
+        '9:16': ['720p']  // Fixed 720p
       },
-      aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9']
+      aspectRatios: ['16:9', '9:16'] // Only horizontal and vertical
     },
     'sora-2-hd': {
       name: 'Sora 2 HD',
-      durations: [5, 10, 15, 20],
+      durations: [10], // Fixed 10 seconds only
       resolutions: {
-        '16:9': ['720p', '1080p'],
-        '9:16': ['720p', '1080p'],
-        '1:1': ['720p', '1080p'],
-        '4:3': ['720p', '1080p'],
-        '3:4': ['720p', '1080p'],
-        '21:9': ['720p', '1080p']
+        '16:9': ['1080p'], // Fixed 1080p
+        '9:16': ['1080p']  // Fixed 1080p
       },
-      aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9']
+      aspectRatios: ['16:9', '9:16'] // Only horizontal and vertical
     }
   }
 
@@ -60,6 +54,21 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
 
   // Get available resolutions for current aspect ratio
   const availableResolutions = currentConfig.resolutions[aspectRatio] || ['720p']
+
+  // Auto-adjust settings when model changes
+  useEffect(() => {
+    // Auto-set resolution based on model and aspect ratio
+    const availableRes = currentConfig.resolutions[aspectRatio] || ['720p']
+    setResolution(availableRes[0])
+
+    // Auto-set duration based on model
+    setDuration(currentConfig.durations[0])
+
+    // Reset aspect ratio to 16:9 if not available in current model
+    if (!currentConfig.aspectRatios.includes(aspectRatio)) {
+      setAspectRatio('16:9')
+    }
+  }, [model])
 
   // Auto-adjust resolution if not available for selected aspect ratio
   const handleAspectRatioChange = (newAspectRatio) => {
@@ -111,6 +120,25 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       return
     }
 
+    // Calculate required credits based on model
+    const requiredCredits =
+      model === 'sora-2-hd' ? 15 :     // Sora-2 HD: 15 credits
+      model === 'veo3-fast' ? 20 :     // Veo3-fast: 20 credits ($0.40/video)
+      10                                // Sora-2: 10 credits
+
+    // Check if user has enough credits
+    if (userCredits < requiredCredits) {
+      setError(`⚠️ เครดิตไม่เพียงพอ! ต้องการ ${requiredCredits} เครดิต (คุณมี ${userCredits} เครดิต)`)
+      return
+    }
+
+    // Deduct credits before generation
+    const success = await useCredits(requiredCredits)
+    if (!success) {
+      setError('❌ ไม่สามารถหักเครดิตได้ กรุณาลองใหม่อีกครั้ง')
+      return
+    }
+
     setIsGenerating(true)
     setIsGeneratingVideo(true) // Lock mode switching
     setError(null)
@@ -119,6 +147,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     try {
       console.log('🎬 Starting video generation...')
       console.log('📝 Model:', model)
+      console.log(`💳 Deducted ${requiredCredits} credits (Remaining: ${userCredits - requiredCredits})`)
 
       // Select API endpoint based on model
       const apiEndpoint = model === 'veo3-fast'
@@ -152,6 +181,12 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       console.log('✅ Video generated:', data)
 
       setVideoResult(data)
+      setShowSuccessPopup(true) // Show success popup
+
+      // Auto-hide popup after 8 seconds
+      setTimeout(() => {
+        setShowSuccessPopup(false)
+      }, 8000)
 
       // Save to history
       try {
@@ -172,11 +207,32 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     } catch (error) {
       console.error('❌ Video generation error:', error)
 
+      // Refund credits on error
+      try {
+        console.log(`💳 Refunding ${requiredCredits} credits due to error...`)
+        await fetch('/api/credits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: localStorage.getItem('nano_user_id'),
+            amount: requiredCredits
+          })
+        })
+        // Reload credits
+        const store = useStore.getState()
+        if (store.loadUserCredits) {
+          await store.loadUserCredits(localStorage.getItem('nano_user_id'))
+        }
+        console.log(`✅ Refunded ${requiredCredits} credits successfully`)
+      } catch (refundError) {
+        console.error('Failed to refund credits:', refundError)
+      }
+
       // Check if API is not available
       if (error.message.includes('not valid JSON') || error.message.includes('Unexpected token')) {
-        setError('⚠️ Sora API ยังไม่เปิดให้ใช้งานสาธารณะ - กรุณารอ OpenAI เปิดให้ใช้งานอย่างเป็นทางการ หรือตรวจสอบสถานะล่าสุดที่ platform.openai.com')
+        setError(`⚠️ Sora API ยังไม่เปิดให้ใช้งานสาธารณะ - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)`)
       } else {
-        setError(error.message)
+        setError(`${error.message} - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)`)
       }
     } finally {
       setIsGenerating(false)
@@ -184,41 +240,56 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     }
   }
 
-  const handleDownload = async () => {
-    if (!videoResult?.videoUrl) return
-
-    try {
-      // Check if it's mobile device
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-
-      if (isMobile) {
-        // For mobile: Open in new tab (user can long-press to save)
-        window.open(videoResult.videoUrl, '_blank')
-        alert('กรุณากดค้างที่วิดีโอ แล้วเลือก "บันทึก" เพื่อดาวน์โหลด')
-      } else {
-        // For desktop: Try direct download via link
-        const a = document.createElement('a')
-        a.href = videoResult.videoUrl
-        a.download = `sora-video-${Date.now()}.mp4`
-        a.target = '_blank' // Open in new tab as fallback
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-
-        // If direct download doesn't work, open in new tab
-        setTimeout(() => {
-          window.open(videoResult.videoUrl, '_blank')
-        }, 500)
-      }
-    } catch (error) {
-      console.error('Download error:', error)
-      // Fallback: Open in new tab
-      window.open(videoResult.videoUrl, '_blank')
-    }
-  }
 
   return (
     <div className="space-y-6">
+      {/* Success Popup */}
+      <AnimatePresence>
+        {showSuccessPopup && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4"
+          >
+            <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl shadow-2xl p-6 border-2 border-white/30">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold mb-1">🎉 วิดีโอสร้างเสร็จแล้ว!</h3>
+                  <p className="text-sm text-white/90 mb-2">
+                    วิดีโอของคุณพร้อมใช้งานแล้ว
+                  </p>
+                  <div className="bg-white/20 rounded-lg p-3 mt-3">
+                    <p className="text-sm font-medium flex items-start">
+                      <span className="mr-2">⚠️</span>
+                      <span>
+                        <strong>สำคัญ:</strong> กรุณาดาวน์โหลดวิดีโอออกไปเก็บไว้ทันที!
+                        ระบบไม่มีการบันทึกวิดีโอย้อนหลัง
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSuccessPopup(false)}
+                  className="flex-shrink-0 text-white/80 hover:text-white transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -329,49 +400,53 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       {/* Advanced Settings */}
       {showSettings && (
         <div className="space-y-4 p-5 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border border-red-200">
-          {/* Duration */}
-          <div>
-            <label className="block text-sm font-bold text-gray-800 mb-2">
-              ความยาววิดีโอ: <span className="text-red-600">{duration} วินาที</span>
-            </label>
-            <div className={`grid gap-2 ${currentConfig.durations.length === 1 ? 'grid-cols-1' : 'grid-cols-4'}`}>
-              {currentConfig.durations.map(sec => (
-                <button
-                  key={sec}
-                  onClick={() => setDuration(sec)}
-                  className={`px-4 py-2 rounded-lg font-bold transition-all ${
-                    duration === sec
-                      ? 'bg-red-500 text-white shadow-lg'
-                      : 'bg-white text-gray-700 hover:bg-red-100'
-                  }`}
-                >
-                  {sec}s
-                </button>
-              ))}
+          {/* Duration - Only show if there are multiple options */}
+          {currentConfig.durations.length > 1 && (
+            <div>
+              <label className="block text-sm font-bold text-gray-800 mb-2">
+                ความยาววิดีโอ: <span className="text-red-600">{duration} วินาที</span>
+              </label>
+              <div className="grid gap-2 grid-cols-4">
+                {currentConfig.durations.map(sec => (
+                  <button
+                    key={sec}
+                    onClick={() => setDuration(sec)}
+                    className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                      duration === sec
+                        ? 'bg-red-500 text-white shadow-lg'
+                        : 'bg-white text-gray-700 hover:bg-red-100'
+                    }`}
+                  >
+                    {sec}s
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Resolution */}
-          <div>
-            <label className="block text-sm font-bold text-gray-800 mb-2">
-              ความละเอียด: <span className="text-red-600">{resolution}</span>
-            </label>
-            <div className={`grid gap-2 ${availableResolutions.length === 1 ? 'grid-cols-1' : 'grid-cols-3'}`}>
-              {availableResolutions.map(res => (
-                <button
-                  key={res}
-                  onClick={() => setResolution(res)}
-                  className={`px-4 py-2 rounded-lg font-bold transition-all ${
-                    resolution === res
-                      ? 'bg-red-500 text-white shadow-lg'
-                      : 'bg-white text-gray-700 hover:bg-red-100'
-                  }`}
-                >
-                  {res}
-                </button>
-              ))}
+          {/* Resolution - Only show if there are multiple options */}
+          {availableResolutions.length > 1 && (
+            <div>
+              <label className="block text-sm font-bold text-gray-800 mb-2">
+                ความละเอียด: <span className="text-red-600">{resolution}</span>
+              </label>
+              <div className="grid gap-2 grid-cols-3">
+                {availableResolutions.map(res => (
+                  <button
+                    key={res}
+                    onClick={() => setResolution(res)}
+                    className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                      resolution === res
+                        ? 'bg-red-500 text-white shadow-lg'
+                        : 'bg-white text-gray-700 hover:bg-red-100'
+                    }`}
+                  >
+                    {res}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Aspect Ratio */}
           <div>
@@ -445,20 +520,29 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
               <Play className="h-5 w-5 mr-2 text-red-500" />
               วิดีโอที่สร้างเสร็จแล้ว
             </h3>
-            <button
-              onClick={handleDownload}
+            <a
+              href={videoResult.videoUrl}
+              download={`${model}-video-${Date.now()}.mp4`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold flex items-center space-x-2 transition-all"
             >
               <Download className="h-4 w-4" />
               <span>ดาวน์โหลด</span>
-            </button>
+            </a>
           </div>
 
-          <video
-            src={videoResult.videoUrl}
-            controls
-            className="w-full rounded-xl border-2 border-gray-200 shadow-lg"
-          />
+          <div className="flex justify-center">
+            <video
+              src={videoResult.videoUrl}
+              controls
+              className={`rounded-xl border-2 border-gray-200 shadow-lg ${
+                videoResult.aspectRatio === '9:16'
+                  ? 'max-w-sm w-full' // Vertical: max 384px width
+                  : 'w-full max-w-4xl' // Horizontal: max 896px width
+              }`}
+            />
+          </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-gray-600">
             <div className="p-2 bg-white rounded-lg">
@@ -486,6 +570,24 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             : ' ใช้คำอธิบายที่ชัดเจนและละเอียด รวมถึงการเคลื่อนไหว แสงสว่าง และอารมณ์ที่ต้องการ'
           }
         </p>
+        {(model === 'sora-2' || model === 'sora-2-hd') && (
+          <p className="text-sm text-blue-800 mt-2">
+            <span className="font-bold">📌 หมายเหตุ:</span>
+            {' '}
+            {model === 'sora-2' ? 'Sora 2 สร้างวิดีโอ 720p' : 'Sora 2 HD สร้างวิดีโอ 1080p'} ความยาว 10 วินาที (ค่าตายตัว)
+          </p>
+        )}
+        <div className="mt-3 pt-3 border-t border-blue-200">
+          <p className="text-sm text-blue-800">
+            <span className="font-bold">💳 ใช้เครดิต:</span>
+            {' '}
+            <span className="text-lg font-bold text-blue-600">
+              {model === 'sora-2-hd' ? '15' : model === 'veo3-fast' ? '20' : '10'} เครดิต
+            </span>
+            {' '}
+            / วิดีโอ (คุณมี {userCredits} เครดิต)
+          </p>
+        </div>
       </div>
     </div>
   )
