@@ -304,31 +304,31 @@ export default function Home() {
             {/* Features Section */}
             <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-white/40 to-white/20 backdrop-blur-lg rounded-2xl border border-white/30 p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <div className="text-3xl mb-3 bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">🤖</div>
-            <h4 className="font-bold text-gray-800">วิเคราะห์ด้วย AI</h4>
+            <div className="text-3xl mb-3 bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">🎬</div>
+            <h4 className="font-bold text-gray-800">เว็บเดียวครบ จบ</h4>
             <p className="text-sm text-gray-600 mt-2">
-              ตรวจจับและวิเคราะห์สินค้าอัตโนมัติ
+              ทั้งภาพและวิดีโอโฆษณาในที่เดียว
             </p>
           </div>
           <div className="bg-gradient-to-br from-white/40 to-white/20 backdrop-blur-lg rounded-2xl border border-white/30 p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <div className="text-3xl mb-3 bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">🎨</div>
-            <h4 className="font-bold text-gray-800">สร้างได้ 1-4 ภาพ</h4>
+            <div className="text-3xl mb-3 bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">🤖</div>
+            <h4 className="font-bold text-gray-800">AI หลากหลายโมเดล</h4>
             <p className="text-sm text-gray-600 mt-2">
-              หลากหลายสไตล์และองค์ประกอบ
+              Gemini, Sora-2, Veo3 เลือกได้ตามงาน
             </p>
           </div>
           <div className="bg-gradient-to-br from-white/40 to-white/20 backdrop-blur-lg rounded-2xl border border-white/30 p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <div className="text-3xl mb-3 bg-gradient-to-r from-green-500 to-teal-500 bg-clip-text text-transparent">⚡</div>
-            <h4 className="font-bold text-gray-800">สร้างภาพเร็ว</h4>
+            <h4 className="font-bold text-gray-800">รวดเร็วทันใจ</h4>
             <p className="text-sm text-gray-600 mt-2">
-              ได้ผลลัพธ์ภายใน 30 วินาที
+              ภาพ 30 วิ | วิดีโอ 1-3 นาที
             </p>
           </div>
           <div className="bg-gradient-to-br from-white/40 to-white/20 backdrop-blur-lg rounded-2xl border border-white/30 p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <div className="text-3xl mb-3 bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">💎</div>
-            <h4 className="font-bold text-gray-800">คุณภาพพรีเมี่ยม</h4>
+            <h4 className="font-bold text-gray-800">คุณภาพระดับโปร</h4>
             <p className="text-sm text-gray-600 mt-2">
-              ดีไซน์โฆษณาระดับมืออาชีพ
+              HD 1080p พร้อมใช้งานทันที
             </p>
           </div>
         </div>
