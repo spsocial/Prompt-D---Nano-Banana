@@ -933,7 +933,7 @@ Focus on:
             ) : (
               <span className="flex items-center justify-center">
                 <Wand2 className="h-5 w-5 mr-2" />
-                สร้างภาพโฆษณา ({numberOfImages} ภาพ)
+                สร้างภาพโฆษณา ({numberOfImages} ภาพ - ใช้ {numberOfImages} เครดิต)
               </span>
             )}
           </button>

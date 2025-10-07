@@ -507,7 +507,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         ) : (
           <span className="flex items-center justify-center">
             <Film className="h-5 w-5 mr-2" />
-            สร้างวิดีโอด้วย AI
+            สร้างวิดีโอด้วย AI (ใช้ {model === 'sora-2-hd' ? '15' : model === 'veo3-fast' ? '20' : '10'} เครดิต)
           </span>
         )}
       </button>
