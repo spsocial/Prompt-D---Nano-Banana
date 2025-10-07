@@ -37,25 +37,44 @@ export default async function handler(req, res) {
 
     console.log(`🎬 Starting Veo3 video generation...`)
     console.log(`📝 Model: ${model}`)
+    console.log(`📝 Mode: ${image ? 'Image-to-Video' : 'Text-to-Video'}`)
     console.log(`📝 Prompt: ${prompt}`)
 
-    // Build full prompt
-    let fullPrompt = prompt
+    // Prepare message content based on mode
+    let messageContent
+    let actualModel = model
 
     if (image) {
-      fullPrompt = `Based on this image, ${prompt}`
+      // Image-to-Video: use veo3-fast-frames and array content format
+      actualModel = 'veo3-fast-frames'
+      messageContent = [
+        {
+          type: 'text',
+          text: prompt || 'Generate a video from this image'
+        },
+        {
+          type: 'image_url',
+          image_url: {
+            url: image
+          }
+        }
+      ]
+    } else {
+      // Text-to-Video: simple string content
+      messageContent = prompt
     }
 
     // Prepare request
     const requestPayload = {
-      model: model,
+      model: actualModel,
       stream: true, // IMPORTANT: Veo3 uses streaming
       messages: [
         {
           role: 'user',
-          content: fullPrompt
+          content: messageContent
         }
-      ]
+      ],
+      max_tokens: 300
     }
 
     console.log('🚀 Sending request to CometAPI...')
