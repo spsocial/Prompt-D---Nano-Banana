@@ -60,7 +60,7 @@ const VIDEO_MODELS = {
     icon: '⚡',
     requiresImage: false,
     color: 'blue',
-    comingSoon: true
+    comingSoon: false // เปิดใช้งานแล้ว!
   }
 }
 

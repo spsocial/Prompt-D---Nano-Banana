@@ -63,8 +63,16 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
 
     try {
       console.log('🎬 Starting video generation...')
+      console.log('📝 Model:', model)
 
-      const response = await fetch('/api/generate-video', {
+      // Select API endpoint based on model
+      const apiEndpoint = model === 'veo3-fast'
+        ? '/api/generate-video-veo3'
+        : '/api/generate-video'
+
+      console.log('🔗 API Endpoint:', apiEndpoint)
+
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
