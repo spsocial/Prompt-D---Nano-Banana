@@ -65,6 +65,7 @@ export default async function handler(req, res) {
           topK: 32,
           topP: 1,
           maxOutputTokens: 8192,
+          responseModalities: ['Text', 'Image'], // IMPORTANT: Enable image generation
           imageConfig: {
             aspectRatio: aspectRatio
           }
@@ -84,6 +85,7 @@ export default async function handler(req, res) {
           topK: 32,
           topP: 1,
           maxOutputTokens: 8192,
+          responseModalities: ['Text', 'Image'], // IMPORTANT: Enable image generation
           imageConfig: {
             aspectRatio: aspectRatio
           }
