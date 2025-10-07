@@ -6,6 +6,7 @@ export default function APIKeyManager() {
   const { apiKeys, setApiKeys, userPlan, setUserPlan } = useStore()
   const [showKeys, setShowKeys] = useState(false)
   const [localKeys, setLocalKeys] = useState({
+    openai: '',
     gemini: '',
     replicate: ''
   })
@@ -16,15 +17,18 @@ export default function APIKeyManager() {
 
   useEffect(() => {
     // Load keys from localStorage on mount
+    const savedOpenAI = localStorage.getItem('openai_api_key') || ''
     const savedGemini = localStorage.getItem('gemini_api_key') || ''
     const savedReplicate = localStorage.getItem('replicate_api_key') || ''
 
     setLocalKeys({
+      openai: savedOpenAI,
       gemini: savedGemini,
       replicate: savedReplicate
     })
 
     setApiKeys({
+      openai: savedOpenAI,
       gemini: savedGemini,
       replicate: savedReplicate
     })
@@ -32,11 +36,12 @@ export default function APIKeyManager() {
 
   const handleSave = () => {
     // Save to localStorage
+    localStorage.setItem('openai_api_key', localKeys.openai)
     localStorage.setItem('gemini_api_key', localKeys.gemini)
     localStorage.setItem('replicate_api_key', localKeys.replicate)
 
     // Update global state
-    setApiKeys({ ...apiKeys, gemini: localKeys.gemini, replicate: localKeys.replicate })
+    setApiKeys({ openai: localKeys.openai, gemini: localKeys.gemini, replicate: localKeys.replicate })
 
     // Show success feedback
     setSaved(true)
@@ -47,8 +52,9 @@ export default function APIKeyManager() {
     setUserPlan(plan)
     if (plan === 'premium') {
       // Clear local API keys when switching to premium
-      setLocalKeys({ gemini: '', replicate: '' })
-      setApiKeys({ ...apiKeys, gemini: '', replicate: '' })
+      setLocalKeys({ openai: '', gemini: '', replicate: '' })
+      setApiKeys({ openai: '', gemini: '', replicate: '' })
+      localStorage.removeItem('openai_api_key')
       localStorage.removeItem('gemini_api_key')
       localStorage.removeItem('replicate_api_key')
     }
@@ -154,6 +160,44 @@ export default function APIKeyManager() {
         {isAuthenticated && (
           <>
             <div className="space-y-4">
+              {/* OpenAI Key */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <span className="flex items-center">
+                    OpenAI API Key (สำหรับ Sora Video Generation 🎬)
+                    <Sparkles className="h-3 w-3 ml-1 text-red-500" />
+                  </span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showKeys ? 'text' : 'password'}
+                    value={localKeys.openai}
+                    onChange={(e) => setLocalKeys({ ...localKeys, openai: e.target.value })}
+                    placeholder="sk-proj-..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKeys(!showKeys)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showKeys ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Get your key from{' '}
+                  <a
+                    href="https://platform.openai.com/api-keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-red-600 hover:underline"
+                  >
+                    OpenAI Platform
+                  </a>
+                  {' '}(ต้องมีสิทธิ์ใช้ Sora API)
+                </p>
+              </div>
+
               {/* Gemini Key */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

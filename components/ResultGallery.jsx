@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import useStore from '../lib/store'
-import { Download, Maximize2, X } from 'lucide-react'
+import { Download, Maximize2, X, Film } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import VideoGenerator from './VideoGenerator'
 
 export default function ResultGallery() {
   const { results } = useStore()
   const [selectedImage, setSelectedImage] = useState(null)
+  const [videoGenImage, setVideoGenImage] = useState(null)
 
   const handleDownload = async (imageUrl, style) => {
     try {
@@ -132,8 +134,15 @@ export default function ResultGallery() {
                 loading="lazy"
               />
 
-              {/* Mobile Download Button - Always visible on mobile */}
+              {/* Mobile Buttons - Always visible on mobile */}
               <div className="md:hidden absolute top-2 right-2 flex gap-2">
+                <button
+                  onClick={() => setVideoGenImage(result)}
+                  className="p-2.5 bg-red-500/90 backdrop-blur-sm rounded-lg text-white shadow-lg"
+                  title="สร้างวิดีโอ"
+                >
+                  <Film className="h-5 w-5" />
+                </button>
                 <button
                   onClick={() => setSelectedImage(result)}
                   className="p-2.5 bg-black/60 backdrop-blur-sm rounded-lg text-white shadow-lg"
@@ -164,6 +173,13 @@ export default function ResultGallery() {
 
                   {/* Action Buttons */}
                   <div className="flex space-x-2">
+                    <button
+                      onClick={() => setVideoGenImage(result)}
+                      className="p-2 bg-red-500/80 backdrop-blur-sm rounded-lg hover:bg-red-600/90 transition-colors"
+                      title="สร้างวิดีโอ"
+                    >
+                      <Film className="h-4 w-4 text-white" />
+                    </button>
                     <button
                       onClick={() => setSelectedImage(result)}
                       className="p-2 bg-white/20 backdrop-blur-sm rounded-lg hover:bg-white/30 transition-colors"
@@ -289,6 +305,43 @@ export default function ResultGallery() {
                     ปิด
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Video Generator Modal */}
+      <AnimatePresence>
+        {videoGenImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+            onClick={() => setVideoGenImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-4xl bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl my-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setVideoGenImage(null)}
+                className="absolute top-4 right-4 z-10 bg-red-500 hover:bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors shadow-lg"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              {/* Content */}
+              <div className="p-6 md:p-8">
+                <VideoGenerator
+                  sourceImage={videoGenImage.imageUrl}
+                  sourcePrompt={videoGenImage.prompt || `Create an animated video from this ${videoGenImage.style} style product image`}
+                />
               </div>
             </motion.div>
           </motion.div>
