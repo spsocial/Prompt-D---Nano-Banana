@@ -26,141 +26,124 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Either prompt or image is required' })
     }
 
-    const openaiApiKey = apiKey || process.env.OPENAI_API_KEY
+    // Use CometAPI key (new approach)
+    const cometApiKey = apiKey || process.env.COMET_API_KEY || 'sk-UXGWQInXgWPRGoCZ6FJdsV3JCXAw8OrNkCAc5rquiViqx2oL'
 
-    if (!openaiApiKey) {
+    if (!cometApiKey) {
       return res.status(400).json({
-        error: 'OpenAI API key is required',
-        message: 'Please provide an OpenAI API key to use Sora video generation'
+        error: 'CometAPI key is required',
+        message: 'Please provide a CometAPI key to use Sora video generation'
       })
     }
 
-    console.log(`🎬 Starting Sora video generation...`)
+    console.log(`🎬 Starting Sora video generation via CometAPI...`)
     console.log(`📝 Mode: ${image ? 'Image to Video' : 'Text to Video'}`)
     console.log(`⏱️ Duration: ${duration}s, Resolution: ${resolution}, Aspect: ${aspectRatio}`)
 
-    // Step 1: Create video generation job
-    const createJobPayload = {
-      model: 'sora-2', // or 'sora-2-pro' for Pro version
-      prompt: prompt || 'Create a video based on this image'
+    // Map resolution and aspect ratio to CometAPI model format
+    // Format: sora-[aspectRatio]-[resolution]-[duration]s
+    const aspectMap = {
+      '16:9': '16:9',
+      '9:16': '9:16',
+      '1:1': '1:1',
+      '4:3': '16:9', // fallback to 16:9
+      '3:4': '9:16', // fallback to 9:16
+      '21:9': '16:9' // fallback to 16:9
     }
 
-    // Add optional parameters
-    if (duration) {
-      createJobPayload.duration = duration
-    }
+    const mappedAspect = aspectMap[aspectRatio] || '16:9'
+    const mappedResolution = resolution || '720p'
+    const mappedDuration = duration || 5
 
-    if (resolution) {
-      createJobPayload.resolution = resolution
-    }
+    const modelName = `sora-${mappedAspect}-${mappedResolution}-${mappedDuration}s`
 
-    if (aspectRatio) {
-      createJobPayload.aspect_ratio = aspectRatio
-    }
+    console.log(`🎯 Using model: ${modelName}`)
 
-    // Add image if provided (Image to Video mode)
+    // Build prompt with image description if provided
+    let fullPrompt = prompt || 'Create a video based on this image'
+
     if (image) {
-      // Extract base64 data and add as input image
-      const base64Data = image.replace(/^data:image\/\w+;base64,/, '')
-      createJobPayload.input = {
-        type: 'image',
-        data: base64Data
-      }
+      fullPrompt = `Create a video animation from this image: ${fullPrompt}. Make it dynamic and cinematic with smooth camera movements.`
     }
 
-    console.log('🚀 Creating video generation job...')
+    // Create request using CometAPI format (OpenAI-compatible)
+    const requestPayload = {
+      model: modelName,
+      messages: [
+        {
+          role: 'user',
+          content: fullPrompt
+        }
+      ],
+      max_tokens: 2048
+    }
 
-    // Create job using OpenAI Sora API
-    const createResponse = await fetch('https://api.openai.com/v1/video/generations', {
+    console.log('🚀 Sending request to CometAPI...')
+
+    // Call CometAPI
+    const createResponse = await fetch('https://api.cometapi.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${cometApiKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(createJobPayload)
+      body: JSON.stringify(requestPayload)
     })
 
     if (!createResponse.ok) {
       const errorText = await createResponse.text()
-      console.error('❌ Failed to create job:', errorText)
+      console.error('❌ CometAPI Error:', errorText)
 
-      // Try to parse as JSON, otherwise return text error
-      let errorMessage = 'Failed to create video generation job'
+      let errorMessage = 'Failed to generate video via CometAPI'
       try {
         const errorData = JSON.parse(errorText)
         errorMessage = errorData.error?.message || errorData.message || errorMessage
       } catch (e) {
-        // If not JSON, check if Sora API is not available
-        if (errorText.includes('<html') || errorText.includes('<!DOCTYPE')) {
-          errorMessage = 'Sora API is not available yet. Please check OpenAI API status or try again later.'
-        } else {
-          errorMessage = errorText.substring(0, 200) // First 200 chars of error
-        }
+        errorMessage = errorText.substring(0, 200)
       }
 
       throw new Error(errorMessage)
     }
 
-    const jobData = await createResponse.json()
-    const jobId = jobData.id
+    const responseData = await createResponse.json()
+    console.log('✅ CometAPI Response received')
 
-    console.log(`✅ Job created: ${jobId}`)
-
-    // Step 2: Poll for job completion
-    let attempts = 0
-    const maxAttempts = 60 // 5 minutes max (5s interval)
+    // Extract video URL from CometAPI response
+    // Format: response.choices[0].message.content contains video URL
     let videoUrl = null
-    let jobStatus = 'processing'
 
-    while (attempts < maxAttempts && jobStatus === 'processing') {
-      attempts++
+    if (responseData.choices && responseData.choices[0]) {
+      const content = responseData.choices[0].message?.content
 
-      // Wait 5 seconds before checking status
-      await new Promise(resolve => setTimeout(resolve, 5000))
-
-      console.log(`⏳ Checking status (attempt ${attempts}/${maxAttempts})...`)
-
-      const statusResponse = await fetch(`https://api.openai.com/v1/video/generations/${jobId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json'
+      if (content) {
+        // Extract URL from content (could be plain URL or markdown format)
+        const urlMatch = content.match(/https?:\/\/[^\s\)]+/)
+        if (urlMatch) {
+          videoUrl = urlMatch[0]
+          console.log(`✅ Video URL extracted: ${videoUrl}`)
+        } else {
+          // If no URL found, the content itself might be the URL
+          videoUrl = content.trim()
         }
-      })
-
-      if (!statusResponse.ok) {
-        console.error('❌ Failed to check status')
-        continue
-      }
-
-      const statusData = await statusResponse.json()
-      jobStatus = statusData.status
-
-      console.log(`📊 Status: ${jobStatus}`)
-
-      if (jobStatus === 'succeeded') {
-        videoUrl = statusData.video_url || statusData.url
-        console.log(`✅ Video generation completed!`)
-        break
-      } else if (jobStatus === 'failed') {
-        throw new Error(statusData.error?.message || 'Video generation failed')
       }
     }
 
     if (!videoUrl) {
-      throw new Error('Video generation timed out or no URL returned')
+      console.error('Response data:', JSON.stringify(responseData, null, 2))
+      throw new Error('No video URL found in CometAPI response')
     }
 
-    // Step 3: Return video URL
+    // Return video URL
     res.status(200).json({
       success: true,
       videoUrl: videoUrl,
-      jobId: jobId,
       duration: duration,
       resolution: resolution,
       aspectRatio: aspectRatio,
       mode: image ? 'image-to-video' : 'text-to-video',
-      message: '✨ Video generated successfully with Sora 2!'
+      model: modelName,
+      message: '✨ Video generated successfully with Sora 2 via CometAPI!',
+      provider: 'CometAPI'
     })
 
   } catch (error) {
