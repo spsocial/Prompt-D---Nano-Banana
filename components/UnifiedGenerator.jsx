@@ -42,25 +42,28 @@ const VIDEO_MODELS = {
   'sora-2': {
     id: 'sora-2',
     name: 'Sora 2',
-    description: 'OpenAI - วิดีโอคุณภาพสูง',
+    description: 'OpenAI - Text/Image to Video',
     icon: '🎬',
-    requiresImage: false, // optional
+    requiresImage: false, // optional (รองรับทั้ง text และ image)
+    supportsImageToVideo: true,
     color: 'red'
   },
   'sora-2-hd': {
     id: 'sora-2-hd',
     name: 'Sora 2 HD',
-    description: 'OpenAI - คุณภาพ 1080p',
+    description: 'OpenAI - 1080p Text/Image to Video',
     icon: '💎',
-    requiresImage: false,
+    requiresImage: false, // optional (รองรับทั้ง text และ image)
+    supportsImageToVideo: true,
     color: 'pink'
   },
   'veo3-fast': {
     id: 'veo3-fast',
     name: 'Veo 3 Fast',
-    description: 'Google - สร้างเร็ว ราคาถูก',
+    description: 'Google - Text/Image to Video',
     icon: '⚡',
-    requiresImage: false,
+    requiresImage: false, // optional (รองรับทั้ง text และ image)
+    supportsImageToVideo: true,
     color: 'blue',
     comingSoon: false // เปิดใช้งานแล้ว!
   }

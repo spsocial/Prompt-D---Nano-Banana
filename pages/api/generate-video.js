@@ -52,8 +52,27 @@ export default async function handler(req, res) {
     // Add video specifications to prompt
     fullPrompt = `${fullPrompt}. Create a ${duration} second video in ${resolution} resolution with ${aspectRatio} aspect ratio.`
 
+    // Prepare message content based on mode (similar to Veo3)
+    let messageContent
+
     if (image) {
-      fullPrompt = `Based on this image, create a dynamic video: ${fullPrompt}. Add smooth camera movements and cinematic effects.`
+      // Image-to-Video: use array format with image and text
+      console.log('📸 Image-to-Video mode: Including image in request')
+      messageContent = [
+        {
+          type: 'text',
+          text: `${fullPrompt}. Animate this image with smooth camera movements and cinematic effects.`
+        },
+        {
+          type: 'image_url',
+          image_url: {
+            url: image  // base64 or URL
+          }
+        }
+      ]
+    } else {
+      // Text-to-Video: simple string content
+      messageContent = fullPrompt
     }
 
     // Use streaming to avoid timeout (same as veo3)
@@ -63,7 +82,7 @@ export default async function handler(req, res) {
       messages: [
         {
           role: 'user',
-          content: fullPrompt
+          content: messageContent
         }
       ]
     }

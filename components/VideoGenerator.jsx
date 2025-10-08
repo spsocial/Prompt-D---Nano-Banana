@@ -69,11 +69,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       setAspectRatio('16:9')
     }
 
-    // Force text mode for Sora 2 models (no image support)
-    if (model === 'sora-2' || model === 'sora-2-hd') {
-      setMode('text')
-      setUploadedImage(null)
-    }
+    // Note: Sora 2 now supports both text-to-video and image-to-video via CometAPI
   }, [model])
 
   // Auto-adjust resolution if not available for selected aspect ratio
