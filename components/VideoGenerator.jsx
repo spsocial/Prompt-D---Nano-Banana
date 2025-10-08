@@ -216,22 +216,38 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       // Refund credits on error
       try {
         console.log(`💳 Refunding ${requiredCredits} credits due to error...`)
-        await fetch('/api/credits', {
+        const refundResponse = await fetch('/api/credits', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: localStorage.getItem('nano_user_id'),
-            amount: requiredCredits
+            amount: requiredCredits,
+            isRefund: true // Flag to skip admin key check
           })
         })
-        // Reload credits
+
+        if (!refundResponse.ok) {
+          const errorData = await refundResponse.json()
+          console.error('Refund API error:', errorData)
+          throw new Error(errorData.message || 'Refund failed')
+        }
+
+        const refundData = await refundResponse.json()
+        console.log(`✅ Refunded ${requiredCredits} credits successfully. New balance: ${refundData.credits}`)
+
+        // Force reload credits from database
         const store = useStore.getState()
         if (store.loadUserCredits) {
           await store.loadUserCredits(localStorage.getItem('nano_user_id'))
         }
-        console.log(`✅ Refunded ${requiredCredits} credits successfully`)
+
+        // Update local state immediately with the returned value
+        if (store.setUserCredits) {
+          store.setUserCredits(refundData.credits)
+        }
       } catch (refundError) {
-        console.error('Failed to refund credits:', refundError)
+        console.error('❌ Failed to refund credits:', refundError)
+        alert(`⚠️ เกิดข้อผิดพลาดในการคืนเครดิต กรุณาติดต่อแอดมิน\nError: ${refundError.message}`)
       }
 
       // Check if API is not available
@@ -272,14 +288,18 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
                   <p className="text-sm text-white/90 mb-2">
                     วิดีโอของคุณพร้อมใช้งานแล้ว
                   </p>
-                  <div className="bg-white/20 rounded-lg p-3 mt-3">
-                    <p className="text-sm font-medium flex items-start">
-                      <span className="mr-2">⚠️</span>
+                  <div className="bg-red-500/30 backdrop-blur-sm rounded-xl p-4 mt-3 border-2 border-white/50">
+                    <p className="text-sm font-bold flex items-start mb-2">
+                      <span className="mr-2 text-xl">⚠️</span>
                       <span>
-                        <strong>สำคัญ:</strong> กรุณาดาวน์โหลดวิดีโอออกไปเก็บไว้ทันที!
-                        ระบบไม่มีการบันทึกวิดีโอย้อนหลัง
+                        สำคัญมาก! ดาวน์โหลดทันที
                       </span>
                     </p>
+                    <div className="text-sm space-y-1 pl-7">
+                      <p>• วิดีโอนี้มีอายุ <strong>24 ชั่วโมงเท่านั้น</strong></p>
+                      <p>• หลัง 24 ชม. ลิงก์จะหมดอายุและไม่สามารถกู้คืนได้</p>
+                      <p>• <strong className="underline">ดาวน์โหลดเก็บไว้ในเครื่องทันที</strong></p>
+                    </div>
                   </div>
                 </div>
                 <button
@@ -537,6 +557,17 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       {/* Video Result */}
       {videoResult && (
         <div className="p-6 bg-gradient-to-br from-white to-gray-50 rounded-2xl border-2 border-red-200 shadow-xl">
+          {/* Warning Banner - Prominent */}
+          <div className="mb-5 p-4 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl shadow-lg animate-pulse">
+            <div className="flex items-start space-x-3">
+              <span className="text-2xl flex-shrink-0">⏰</span>
+              <div className="flex-1">
+                <p className="font-bold text-lg mb-1">⚠️ วิดีโอนี้หมดอายุใน 24 ชั่วโมง!</p>
+                <p className="text-sm">กรุณาดาวน์โหลดเก็บไว้ในเครื่องทันที ลิงก์จะหายหลัง 24 ชม.</p>
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-gray-900 flex items-center">
               <Play className="h-5 w-5 mr-2 text-red-500" />
@@ -547,10 +578,10 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
               download={`${model}-video-${Date.now()}.mp4`}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold flex items-center space-x-2 transition-all"
+              className="px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold flex items-center space-x-2 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 animate-bounce"
             >
-              <Download className="h-4 w-4" />
-              <span>ดาวน์โหลด</span>
+              <Download className="h-5 w-5" />
+              <span>ดาวน์โหลดทันที!</span>
             </a>
           </div>
 

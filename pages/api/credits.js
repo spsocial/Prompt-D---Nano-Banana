@@ -58,28 +58,34 @@ export default async function handler(req, res) {
         });
 
       case 'POST':
-        // Add credits to user
-        const { targetUserId, amount, type, adminKey } = req.body;
+        // Add credits to user (for both manual admin adds and automatic refunds)
+        const { targetUserId, userId: bodyUserId, amount, type, adminKey, isRefund } = req.body;
 
-        // Simple admin authentication
-        const ADMIN_KEY = process.env.ADMIN_KEY || 'nano-admin-2024';
-        if (adminKey !== ADMIN_KEY) {
-          return res.status(401).json({
-            success: false,
-            message: 'Unauthorized'
-          });
+        // Use targetUserId or userId (for backward compatibility)
+        const finalUserId = targetUserId || bodyUserId;
+
+        // Skip admin key check for refunds (automatic system refunds)
+        if (!isRefund) {
+          // Simple admin authentication for manual credit additions
+          const ADMIN_KEY = process.env.ADMIN_KEY || 'nano-admin-2024';
+          if (adminKey !== ADMIN_KEY) {
+            return res.status(401).json({
+              success: false,
+              message: 'Unauthorized'
+            });
+          }
         }
 
-        if (!targetUserId || !amount) {
+        if (!finalUserId || !amount) {
           return res.status(400).json({
             success: false,
-            message: 'Target user ID and amount required'
+            message: 'User ID and amount required'
           });
         }
 
         // Update or create user
         const updatedUser = await prisma.user.upsert({
-          where: { userId: targetUserId },
+          where: { userId: finalUserId },
           update: {
             credits: {
               increment: amount
@@ -87,7 +93,7 @@ export default async function handler(req, res) {
             lastActive: new Date()
           },
           create: {
-            userId: targetUserId,
+            userId: finalUserId,
             firstSeen: new Date(),
             lastActive: new Date(),
             totalGenerated: 0,
@@ -96,25 +102,29 @@ export default async function handler(req, res) {
           }
         });
 
-        // Track all manual credit additions as transactions
-        await prisma.transaction.create({
-          data: {
-            transactionId: `MANUAL-${Date.now()}`,
-            userId: targetUserId,
-            amount: amount, // Store the credit amount for statistics
-            packageName: type === 'free' ? `เครดิตฟรี - ${amount} เครดิต` : `เติมเงินแมนนวล - ${amount} เครดิต`,
-            status: 'completed'
-          }
-        });
+        // Track transactions (skip for refunds to avoid clutter)
+        if (!isRefund) {
+          await prisma.transaction.create({
+            data: {
+              transactionId: `MANUAL-${Date.now()}`,
+              userId: finalUserId,
+              amount: amount,
+              packageName: type === 'free' ? `เครดิตฟรี - ${amount} เครดิต` : `เติมเงินแมนนวล - ${amount} เครดิต`,
+              status: 'completed'
+            }
+          });
+        }
 
-        console.log(`[API] Added ${amount} credits to ${targetUserId}, new total: ${updatedUser.credits}`);
+        const actionType = isRefund ? 'Refunded' : 'Added';
+        console.log(`[API] ${actionType} ${amount} credits to ${finalUserId}, new total: ${updatedUser.credits}`);
 
         return res.status(200).json({
           success: true,
-          message: `Added ${amount} credits to ${targetUserId}`,
-          userId: targetUserId,
+          message: `${actionType} ${amount} credits to ${finalUserId}`,
+          userId: finalUserId,
           credits: updatedUser.credits,
-          type: type
+          type: type,
+          isRefund: isRefund
         });
 
       case 'PUT':

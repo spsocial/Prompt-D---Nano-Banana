@@ -5,6 +5,7 @@ import { Upload, Image, Loader2, Wand2, RefreshCw, AlertCircle, X, Camera, Brain
 import SuccessNotification from './SuccessNotification'
 
 export default function ImageUploader() {
+  const [mode, setMode] = useState('withImage') // 'withImage' or 'promptOnly'
   const [preview, setPreview] = useState(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
@@ -120,22 +121,26 @@ Focus on:
     })
   }
 
-  const processImage = async (base64Image) => {
+  const processImage = async (base64Image = null) => {
     setIsProcessing(true)
     setError(null)
     setResults([])
-    // Don't reset readyToProcess so button stays visible
-    // setReadyToProcess(false) - removed this line
 
     try {
-      // Compress image before sending
-      setIsCompressing(true)
-      console.log('🗜️ Compressing image...')
-      const compressedImage = await compressImage(base64Image, 1024, 0.85)
-      const originalSize = (base64Image.length * 0.75) / 1024 / 1024 // Convert to MB
-      const compressedSize = (compressedImage.length * 0.75) / 1024 / 1024
-      console.log(`✅ Compressed: ${originalSize.toFixed(2)}MB → ${compressedSize.toFixed(2)}MB`)
-      setIsCompressing(false)
+      let compressedImage = null
+
+      // Only compress if we have an image
+      if (base64Image && mode === 'withImage') {
+        setIsCompressing(true)
+        console.log('🗜️ Compressing image...')
+        compressedImage = await compressImage(base64Image, 1024, 0.85)
+        const originalSize = (base64Image.length * 0.75) / 1024 / 1024
+        const compressedSize = (compressedImage.length * 0.75) / 1024 / 1024
+        console.log(`✅ Compressed: ${originalSize.toFixed(2)}MB → ${compressedSize.toFixed(2)}MB`)
+        setIsCompressing(false)
+      } else if (mode === 'promptOnly') {
+        console.log('🎨 Creating image from prompt only (no image input)')
+      }
 
       // Determine which prompt to use
       const promptToUse = useCustomPrompt ? customPrompt : (customPrompt || mainPrompt)
@@ -294,6 +299,17 @@ Focus on:
 
   // Handle process button click
   const handleProcess = () => {
+    // Validate inputs based on mode
+    if (mode === 'promptOnly' && !customPrompt) {
+      setError('กรุณาใส่ Prompt สำหรับสร้างภาพ')
+      return
+    }
+
+    if (mode === 'withImage' && !uploadedImage) {
+      setError('กรุณาอัพโหลดรูปภาพ')
+      return
+    }
+
     // Check if admin (premium plan doesn't need credits)
     if (userPlan !== 'premium') {
       // Check credits for normal users
@@ -304,14 +320,13 @@ Focus on:
 
       // Deduct credits for normal users
       useCredits(numberOfImages)
-
-      // Credits are handled by useCredits which now manages storage properly
     }
 
-    if (uploadedImage) {
+    // Process based on mode
+    if (mode === 'withImage' && uploadedImage) {
       processImage(uploadedImage)
-      // Keep button visible for regeneration
-      // setReadyToProcess(false) - removed
+    } else if (mode === 'promptOnly') {
+      processImage(null) // No image, prompt-only generation
     }
   }
 
@@ -510,6 +525,79 @@ Focus on:
         autoHideDuration={8000}
       />
 
+      {/* Mode Selection */}
+      {!preview && !readyToProcess && (
+        <div className="mb-6">
+          <h3 className="text-sm font-bold text-gray-700 mb-3">📝 เลือกวิธีสร้างภาพ:</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              onClick={() => {
+                setMode('withImage')
+                setReadyToProcess(false)
+                setCustomPrompt('')
+              }}
+              className={`p-5 rounded-2xl border-2 transition-all text-left ${
+                mode === 'withImage'
+                  ? 'border-yellow-500 bg-gradient-to-br from-yellow-50 to-amber-50 shadow-lg'
+                  : 'border-gray-300 hover:border-yellow-300 bg-white'
+              }`}
+            >
+              <div className="flex items-start space-x-3">
+                <div className={`p-2 rounded-lg ${mode === 'withImage' ? 'bg-yellow-500' : 'bg-gray-300'}`}>
+                  <Upload className={`h-5 w-5 ${mode === 'withImage' ? 'text-white' : 'text-gray-600'}`} />
+                </div>
+                <div className="flex-1">
+                  <div className={`font-bold text-lg mb-1 ${mode === 'withImage' ? 'text-yellow-900' : 'text-gray-700'}`}>
+                    อัพโหลดรูปสินค้า
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    แนบรูปสินค้าของคุณ AI จะวิเคราะห์และสร้างภาพโฆษณาให้
+                  </div>
+                  {mode === 'withImage' && (
+                    <div className="mt-2 text-xs text-yellow-700 font-medium">
+                      ✓ เหมาะสำหรับสินค้าที่มีรูปอยู่แล้ว
+                    </div>
+                  )}
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                setMode('promptOnly')
+                setPreview(null)
+                setReadyToProcess(true)
+                setShowAdvanced(true)
+              }}
+              className={`p-5 rounded-2xl border-2 transition-all text-left ${
+                mode === 'promptOnly'
+                  ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg'
+                  : 'border-gray-300 hover:border-purple-300 bg-white'
+              }`}
+            >
+              <div className="flex items-start space-x-3">
+                <div className={`p-2 rounded-lg ${mode === 'promptOnly' ? 'bg-purple-500' : 'bg-gray-300'}`}>
+                  <Brain className={`h-5 w-5 ${mode === 'promptOnly' ? 'text-white' : 'text-gray-600'}`} />
+                </div>
+                <div className="flex-1">
+                  <div className={`font-bold text-lg mb-1 ${mode === 'promptOnly' ? 'text-purple-900' : 'text-gray-700'}`}>
+                    สร้างจาก Prompt เท่านั้น
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    ไม่ต้องแนบรูป เขียน Prompt อธิบายภาพที่ต้องการเอง
+                  </div>
+                  {mode === 'promptOnly' && (
+                    <div className="mt-2 text-xs text-purple-700 font-medium">
+                      ✓ เหมาะสำหรับสร้างภาพจากจินตนาการ
+                    </div>
+                  )}
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Camera View */}
       {showCamera && (
         <div className="fixed inset-0 bg-black z-50 flex flex-col">
@@ -555,9 +643,11 @@ Focus on:
         </div>
       )}
 
-      <div
-        {...getRootProps()}
-        className={`
+      {/* Upload Area - Only show in 'withImage' mode */}
+      {mode === 'withImage' && (
+        <div
+          {...getRootProps()}
+          className={`
           relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer
           transition-all duration-300
           ${isDragActive
@@ -640,7 +730,8 @@ Focus on:
             </p>
           </>
         )}
-      </div>
+        </div>
+      )}
 
       {/* File Size Info */}
       {preview && !isProcessing && (

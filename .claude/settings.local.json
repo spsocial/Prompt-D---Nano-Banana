@@ -30,7 +30,8 @@
       "WebFetch(domain:dev.to)",
       "WebFetch(domain:apidoc.cometapi.com)",
       "WebFetch(domain:app.apidog.com)",
-      "WebFetch(domain:replicate.com)"
+      "WebFetch(domain:replicate.com)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []
