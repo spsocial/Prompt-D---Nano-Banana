@@ -58,7 +58,7 @@ export default function Home() {
   }, [status, session, loadUserCredits])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-pink-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50">
       <Head>
         <title>Prompt D Studio - สร้างภาพและวิดีโอด้วย AI</title>
         <meta name="description" content="แพลตฟอร์ม AI ครบวงจร สร้างภาพและวิดีโอโฆษณาคุณภาพสูง | Prompt D Studio - All-in-One AI Creative Platform" />
@@ -69,7 +69,7 @@ export default function Home() {
       </Head>
 
       {/* Header */}
-      <header className="bg-white/60 backdrop-blur-xl border-b border-white/30 sticky top-0 z-40 shadow-md">
+      <header className="bg-white/30 backdrop-blur-lg border-b border-white/20 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
