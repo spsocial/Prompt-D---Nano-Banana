@@ -31,7 +31,11 @@
       "WebFetch(domain:apidoc.cometapi.com)",
       "WebFetch(domain:app.apidog.com)",
       "WebFetch(domain:replicate.com)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(git checkout:*)",
+      "Bash(git revert:*)",
+      "Bash(npx next lint:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

@@ -138,8 +138,10 @@ ${promptData.style} style with premium quality`
             }
           }
 
-          // Use Gemini 2.5 Flash Image Preview model
-          const modelName = 'gemini-2.5-flash-image-preview'
+          // Use different models based on whether we have an image
+          const modelName = originalImage
+            ? 'gemini-2.5-flash-image-preview'  // Image-to-Image: use preview model
+            : 'gemini-2.5-flash-image'           // Text-to-Image: use standard model
 
           console.log(`🎨 Calling ${modelName} API...`)
 

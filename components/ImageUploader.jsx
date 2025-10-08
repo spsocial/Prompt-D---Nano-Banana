@@ -5,7 +5,7 @@ import { Upload, Image, Loader2, Wand2, RefreshCw, AlertCircle, X, Camera, Brain
 import SuccessNotification from './SuccessNotification'
 
 export default function ImageUploader() {
-  const [mode, setMode] = useState('withImage') // 'withImage' or 'promptOnly'
+  const [mode, setMode] = useState('withImage') // 'withImage', 'promptOnly', 'styleTransfer', 'imageEdit'
   const [preview, setPreview] = useState(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
@@ -17,6 +17,8 @@ export default function ImageUploader() {
   const [cameraError, setCameraError] = useState(null)
   const [useCustomPrompt, setUseCustomPrompt] = useState(false) // New state for custom prompt toggle
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
+  const [selectedStyle, setSelectedStyle] = useState('Van Gogh') // For style transfer mode
+  const [editInstruction, setEditInstruction] = useState('') // For image edit mode
   const videoRef = useRef(null)
   const streamRef = useRef(null)
   
@@ -129,8 +131,8 @@ Focus on:
     try {
       let compressedImage = null
 
-      // Only compress if we have an image
-      if (base64Image && mode === 'withImage') {
+      // Compress image for modes that require it
+      if (base64Image && (mode === 'withImage' || mode === 'styleTransfer' || mode === 'imageEdit')) {
         setIsCompressing(true)
         console.log('🗜️ Compressing image...')
         compressedImage = await compressImage(base64Image, 1024, 0.85)
@@ -142,6 +144,141 @@ Focus on:
         console.log('🎨 Creating image from prompt only (no image input)')
       }
 
+      // Handle different modes
+      if (mode === 'styleTransfer') {
+        // Style Transfer Mode
+        console.log(`🎨 Style Transfer: ${selectedStyle}`)
+
+        const styleTransferResponse = await fetch('/api/generate-style-transfer', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image: compressedImage,
+            styleName: selectedStyle,
+            apiKey: userPlan === 'free' ? apiKeys.gemini : null,
+            aspectRatio: aspectRatio
+          }),
+        })
+
+        if (!styleTransferResponse.ok) {
+          const errorText = await styleTransferResponse.text()
+          let error
+          try {
+            error = JSON.parse(errorText)
+          } catch {
+            error = { error: errorText }
+          }
+          throw new Error(error.error || 'Failed to apply style transfer')
+        }
+
+        const styleResult = await styleTransferResponse.json()
+        const results = [{
+          style: selectedStyle,
+          imageUrl: styleResult.imageUrl,
+          description: styleResult.description,
+          prompt: `Style Transfer: ${selectedStyle}`,
+          isGenerated: true
+        }]
+
+        setResults(results)
+
+        // Show success popup
+        setShowSuccessPopup(true)
+        setTimeout(() => setShowSuccessPopup(false), 8000)
+
+        // Scroll to results
+        setTimeout(() => {
+          const resultsElement = document.querySelector('[class*="ResultGallery"]') ||
+                                 document.querySelector('[class*="ภาพโฆษณาที่สร้างแล้ว"]')
+          if (resultsElement) {
+            resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+        }, 500)
+
+        // Add to history
+        try {
+          useStore.getState().addToHistory({
+            ...results[0],
+            originalImage: undefined
+          })
+        } catch (historyError) {
+          console.error('Error adding to history:', historyError)
+        }
+
+        useStore.getState().incrementGenerated()
+        console.log('✅ Style transfer complete')
+        return
+
+      } else if (mode === 'imageEdit') {
+        // Image Edit Mode
+        console.log(`✏️ Image Edit: ${editInstruction}`)
+
+        const imageEditResponse = await fetch('/api/generate-image-edit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image: compressedImage,
+            editInstruction: editInstruction,
+            apiKey: userPlan === 'free' ? apiKeys.gemini : null,
+            aspectRatio: aspectRatio
+          }),
+        })
+
+        if (!imageEditResponse.ok) {
+          const errorText = await imageEditResponse.text()
+          let error
+          try {
+            error = JSON.parse(errorText)
+          } catch {
+            error = { error: errorText }
+          }
+          throw new Error(error.error || 'Failed to edit image')
+        }
+
+        const editResult = await imageEditResponse.json()
+        const results = [{
+          style: 'Image Edit',
+          imageUrl: editResult.imageUrl,
+          description: editResult.description,
+          prompt: `Edit: ${editInstruction}`,
+          isGenerated: true
+        }]
+
+        setResults(results)
+
+        // Show success popup
+        setShowSuccessPopup(true)
+        setTimeout(() => setShowSuccessPopup(false), 8000)
+
+        // Scroll to results
+        setTimeout(() => {
+          const resultsElement = document.querySelector('[class*="ResultGallery"]') ||
+                                 document.querySelector('[class*="ภาพโฆษณาที่สร้างแล้ว"]')
+          if (resultsElement) {
+            resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+        }, 500)
+
+        // Add to history
+        try {
+          useStore.getState().addToHistory({
+            ...results[0],
+            originalImage: undefined
+          })
+        } catch (historyError) {
+          console.error('Error adding to history:', historyError)
+        }
+
+        useStore.getState().incrementGenerated()
+        console.log('✅ Image edit complete')
+        return
+      }
+
+      // Original Image+Text and Prompt Only modes
       // Determine which prompt to use
       const promptToUse = useCustomPrompt ? customPrompt : (customPrompt || mainPrompt)
 
@@ -310,16 +447,37 @@ Focus on:
       return
     }
 
+    if (mode === 'styleTransfer' && !uploadedImage) {
+      setError('กรุณาอัพโหลดรูปภาพสำหรับ Style Transfer')
+      return
+    }
+
+    if (mode === 'imageEdit' && !uploadedImage) {
+      setError('กรุณาอัพโหลดรูปภาพสำหรับแก้ไข')
+      return
+    }
+
+    if (mode === 'imageEdit' && !editInstruction.trim()) {
+      setError('กรุณาใส่คำสั่งแก้ไขภาพ')
+      return
+    }
+
+    // Determine credit cost based on mode
+    let creditsNeeded = numberOfImages
+    if (mode === 'styleTransfer' || mode === 'imageEdit') {
+      creditsNeeded = 1 // These modes generate 1 image at a time
+    }
+
     // Check if admin (premium plan doesn't need credits)
     if (userPlan !== 'premium') {
       // Check credits for normal users
-      if (userCredits < numberOfImages) {
-        setError(`ไม่มีเครดิตเพียงพอ (ต้องการ ${numberOfImages} เครดิต, คงเหลือ ${userCredits} เครดิต)`)
+      if (userCredits < creditsNeeded) {
+        setError(`ไม่มีเครดิตเพียงพอ (ต้องการ ${creditsNeeded} เครดิต, คงเหลือ ${userCredits} เครดิต)`)
         return
       }
 
       // Deduct credits for normal users
-      useCredits(numberOfImages)
+      useCredits(creditsNeeded)
     }
 
     // Process based on mode
@@ -327,6 +485,10 @@ Focus on:
       processImage(uploadedImage)
     } else if (mode === 'promptOnly') {
       processImage(null) // No image, prompt-only generation
+    } else if (mode === 'styleTransfer' && uploadedImage) {
+      processImage(uploadedImage)
+    } else if (mode === 'imageEdit' && uploadedImage) {
+      processImage(uploadedImage)
     }
   }
 
@@ -549,54 +711,349 @@ Focus on:
         autoHideDuration={8000}
       />
 
-      {/* 1. Toggle Switch - Image to Image / Text to Image */}
+      {/* 1. Mode Selector - 4 Button Grid */}
       <div className="mb-6">
-        <div className="flex items-center justify-center">
-          <div className="relative inline-flex items-center bg-gray-200 rounded-full p-1 shadow-md">
-            <button
-              onClick={() => {
-                setMode('withImage')
-                setReadyToProcess(false)
-              }}
-              className={`relative z-10 px-6 py-3 rounded-full font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
+        <div className="grid grid-cols-2 gap-3 max-w-2xl mx-auto">
+          {/* Image + Text Mode */}
+          <button
+            onClick={() => {
+              setMode('withImage')
+              setReadyToProcess(false)
+            }}
+            className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
+              mode === 'withImage'
+                ? 'border-yellow-500 bg-gradient-to-r from-yellow-100/50 to-amber-100/50 shadow-lg'
+                : 'border-gray-300/50 bg-white/20 hover:border-yellow-300/50 hover:bg-white/30'
+            }`}
+          >
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className={`mb-2 p-3 rounded-lg ${
                 mode === 'withImage'
-                  ? 'text-white'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <Image className="h-5 w-5" />
-              Image to Image
-            </button>
-            <button
-              onClick={() => {
-                setMode('promptOnly')
-                setPreview(null)
-                setReadyToProcess(true)
-                setShowAdvanced(true)
-              }}
-              className={`relative z-10 px-6 py-3 rounded-full font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
+                  ? 'bg-gradient-to-r from-yellow-400 to-yellow-500'
+                  : 'bg-gray-200'
+              }`}>
+                <Image className={`h-6 w-6 ${mode === 'withImage' ? 'text-white' : 'text-gray-600'}`} />
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-gray-800">Image + Text</div>
+                <div className="text-xs mt-1 text-gray-600">แนบรูป + Prompt</div>
+              </div>
+            </div>
+          </button>
+
+          {/* Text Only Mode */}
+          <button
+            onClick={() => {
+              setMode('promptOnly')
+              setPreview(null)
+              setReadyToProcess(true)
+              setShowAdvanced(true)
+            }}
+            className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
+              mode === 'promptOnly'
+                ? 'border-purple-500 bg-gradient-to-r from-purple-100/50 to-pink-100/50 shadow-lg'
+                : 'border-gray-300/50 bg-white/20 hover:border-purple-300/50 hover:bg-white/30'
+            }`}
+          >
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className={`mb-2 p-3 rounded-lg ${
                 mode === 'promptOnly'
-                  ? 'text-white'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <Wand2 className="h-5 w-5" />
-              Text to Image
-            </button>
-            {/* Sliding Background */}
-            <div
-              className={`absolute top-1 bottom-1 rounded-full transition-all duration-300 ${
-                mode === 'withImage'
-                  ? 'left-1 right-1/2 bg-gradient-to-r from-yellow-400 to-yellow-500'
-                  : 'left-1/2 right-1 bg-gradient-to-r from-purple-500 to-purple-600'
-              }`}
-            />
-          </div>
+                  ? 'bg-gradient-to-r from-purple-500 to-purple-600'
+                  : 'bg-gray-200'
+              }`}>
+                <Wand2 className={`h-6 w-6 ${mode === 'promptOnly' ? 'text-white' : 'text-gray-600'}`} />
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-gray-800">Text Only</div>
+                <div className="text-xs mt-1 text-gray-600">กรอก Prompt อย่างเดียว</div>
+              </div>
+            </div>
+          </button>
+
+          {/* Style Transfer Mode */}
+          <button
+            onClick={() => {
+              setMode('styleTransfer')
+              setReadyToProcess(false)
+            }}
+            className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
+              mode === 'styleTransfer'
+                ? 'border-blue-500 bg-gradient-to-r from-blue-100/50 to-cyan-100/50 shadow-lg'
+                : 'border-gray-300/50 bg-white/20 hover:border-blue-300/50 hover:bg-white/30'
+            }`}
+          >
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className={`mb-2 p-3 rounded-lg ${
+                mode === 'styleTransfer'
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500'
+                  : 'bg-gray-200'
+              }`}>
+                <span className={`text-xl ${mode === 'styleTransfer' ? '' : 'grayscale'}`}>🎨</span>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-gray-800">Style Transfer</div>
+                <div className="text-xs mt-1 text-gray-600">แนบรูป + เลือกสไตล์</div>
+              </div>
+            </div>
+          </button>
+
+          {/* Image Edit Mode */}
+          <button
+            onClick={() => {
+              setMode('imageEdit')
+              setReadyToProcess(false)
+            }}
+            className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
+              mode === 'imageEdit'
+                ? 'border-green-500 bg-gradient-to-r from-green-100/50 to-emerald-100/50 shadow-lg'
+                : 'border-gray-300/50 bg-white/20 hover:border-green-300/50 hover:bg-white/30'
+            }`}
+          >
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className={`mb-2 p-3 rounded-lg ${
+                mode === 'imageEdit'
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                  : 'bg-gray-200'
+              }`}>
+                <span className={`text-xl ${mode === 'imageEdit' ? '' : 'grayscale'}`}>✏️</span>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-gray-800">Image Edit</div>
+                <div className="text-xs mt-1 text-gray-600">แนบรูป + แก้ไข</div>
+              </div>
+            </div>
+          </button>
         </div>
       </div>
 
       {/* 2. Conditional Content Based on Mode */}
-      {mode === 'withImage' ? (
+      {mode === 'styleTransfer' ? (
+        /* Style Transfer Mode: Upload Area + Style Picker */
+        <div className="space-y-6">
+          {/* Upload Area */}
+          <div
+            {...getRootProps()}
+            className={`
+            relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer
+            transition-all duration-300
+            ${isDragActive
+              ? 'border-blue-500 bg-gradient-to-br from-blue-50/50 to-cyan-50/50 backdrop-blur-sm'
+              : 'border-gray-300/50 hover:border-blue-400 hover:bg-gradient-to-br hover:from-blue-50/30 hover:to-cyan-50/30 hover:backdrop-blur-sm'
+            }
+            ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
+            ${preview ? 'bg-gradient-to-br from-gray-50/50 to-white/50 backdrop-blur-sm' : 'bg-white/20 backdrop-blur-sm'}
+          `}
+          >
+            <input {...getInputProps()} />
+
+            {preview ? (
+              <div className="relative">
+                <div className="relative inline-block">
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    className="mx-auto max-h-64 rounded-xl shadow-lg border-4 border-white"
+                  />
+                  {!isProcessing && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleReset()
+                      }}
+                      className="absolute -top-3 -right-3 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                      aria-label="ลบรูปภาพ"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {!isProcessing && (
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-700 font-medium">
+                      คลิกหรือลากรูปใหม่มาเพื่อเปลี่ยน
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-center mb-4">
+                  <div className="p-4 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full">
+                    <Upload className="h-10 w-10 text-white" />
+                  </div>
+                </div>
+                <p className="text-xl font-bold text-gray-800 mb-2">
+                  อัพโหลดรูปภาพสำหรับ Style Transfer
+                </p>
+                <p className="text-gray-600">
+                  หรือ <span className="text-blue-600 font-bold">คลิกเพื่อเลือกไฟล์</span>
+                </p>
+                <p className="text-sm text-gray-500 mt-4">
+                  รองรับ: JPG, PNG, GIF, WebP (สูงสุด 10MB)
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Style Picker */}
+          {preview && (
+            <>
+              <div>
+                <label className="block text-lg font-bold text-gray-800 mb-3">
+                  เลือกสไตล์
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {['Van Gogh', 'Anime', 'Watercolor', 'Oil Painting', 'Sketch', 'Pop Art'].map((style) => (
+                    <button
+                      key={style}
+                      onClick={() => setSelectedStyle(style)}
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
+                        selectedStyle === style
+                          ? 'border-blue-500 bg-gradient-to-r from-blue-100/50 to-cyan-100/50 shadow-lg'
+                          : 'border-white/30 bg-white/20 hover:border-blue-300/50 hover:bg-white/30'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center justify-center h-full">
+                        <div className="mb-2 text-3xl">
+                          {style === 'Van Gogh' && '🌻'}
+                          {style === 'Anime' && '🎌'}
+                          {style === 'Watercolor' && '🖌️'}
+                          {style === 'Oil Painting' && '🖼️'}
+                          {style === 'Sketch' && '✏️'}
+                          {style === 'Pop Art' && '🎨'}
+                        </div>
+                        <div className="text-center">
+                          <div className="font-bold text-gray-800">{style}</div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Aspect Ratio */}
+              <div>
+                <label className="block text-base font-bold text-gray-800 mb-2">ขนาดภาพ</label>
+                <select
+                  value={aspectRatio}
+                  onChange={(e) => setAspectRatio(e.target.value)}
+                  className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                >
+                  <option value="1:1">จตุรัส 1:1</option>
+                  <option value="16:9">แนวนอน 16:9</option>
+                  <option value="9:16">แนวตั้ง 9:16</option>
+                  <option value="4:3">แนวนอน 4:3</option>
+                  <option value="3:4">แนวตั้ง 3:4</option>
+                  <option value="21:9">ไวด์ 21:9</option>
+                </select>
+              </div>
+            </>
+          )}
+        </div>
+      ) : mode === 'imageEdit' ? (
+        /* Image Edit Mode: Upload Area + Edit Instruction */
+        <div className="space-y-6">
+          {/* Upload Area */}
+          <div
+            {...getRootProps()}
+            className={`
+            relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer
+            transition-all duration-300
+            ${isDragActive
+              ? 'border-green-500 bg-gradient-to-br from-green-50/50 to-emerald-50/50 backdrop-blur-sm'
+              : 'border-gray-300/50 hover:border-green-400 hover:bg-gradient-to-br hover:from-green-50/30 hover:to-emerald-50/30 hover:backdrop-blur-sm'
+            }
+            ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
+            ${preview ? 'bg-gradient-to-br from-gray-50/50 to-white/50 backdrop-blur-sm' : 'bg-white/20 backdrop-blur-sm'}
+          `}
+          >
+            <input {...getInputProps()} />
+
+            {preview ? (
+              <div className="relative">
+                <div className="relative inline-block">
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    className="mx-auto max-h-64 rounded-xl shadow-lg border-4 border-white"
+                  />
+                  {!isProcessing && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleReset()
+                      }}
+                      className="absolute -top-3 -right-3 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                      aria-label="ลบรูปภาพ"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {!isProcessing && (
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-700 font-medium">
+                      คลิกหรือลากรูปใหม่มาเพื่อเปลี่ยน
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-center mb-4">
+                  <div className="p-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full">
+                    <Upload className="h-10 w-10 text-white" />
+                  </div>
+                </div>
+                <p className="text-xl font-bold text-gray-800 mb-2">
+                  อัพโหลดรูปภาพที่ต้องการแก้ไข
+                </p>
+                <p className="text-gray-600">
+                  หรือ <span className="text-green-600 font-bold">คลิกเพื่อเลือกไฟล์</span>
+                </p>
+                <p className="text-sm text-gray-500 mt-4">
+                  รองรับ: JPG, PNG, GIF, WebP (สูงสุด 10MB)
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Edit Instruction */}
+          {preview && (
+            <>
+              <div>
+                <label className="block text-lg font-bold text-gray-800 mb-3">
+                  คำสั่งแก้ไขภาพ
+                </label>
+                <textarea
+                  value={editInstruction}
+                  onChange={(e) => setEditInstruction(e.target.value)}
+                  placeholder="บอกว่าต้องการแก้ไขอะไร เช่น 'ลบคนออกจากภาพ' หรือ 'เปลี่ยนพื้นหลังเป็นชายหาด' หรือ 'เพิ่มโลโก้ตรงมุมบนขว้า'"
+                  className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-green-400 focus:border-transparent transition-all resize-none"
+                  rows={4}
+                />
+              </div>
+
+              {/* Aspect Ratio */}
+              <div>
+                <label className="block text-base font-bold text-gray-800 mb-2">ขนาดภาพ</label>
+                <select
+                  value={aspectRatio}
+                  onChange={(e) => setAspectRatio(e.target.value)}
+                  className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-green-400 focus:border-transparent transition-all"
+                >
+                  <option value="1:1">จตุรัส 1:1</option>
+                  <option value="16:9">แนวนอน 16:9</option>
+                  <option value="9:16">แนวตั้ง 9:16</option>
+                  <option value="4:3">แนวนอน 4:3</option>
+                  <option value="3:4">แนวตั้ง 3:4</option>
+                  <option value="21:9">ไวด์ 21:9</option>
+                </select>
+              </div>
+            </>
+          )}
+        </div>
+      ) : mode === 'withImage' ? (
         /* Image to Image Mode: Upload Area First, then Prompt Below */
         <div className="space-y-6">
           {/* Upload Area */}
@@ -1092,7 +1549,7 @@ Focus on:
       )}
 
       {/* 6. Generate Button - Large Prominent Button */}
-      {(mode === 'withImage' ? preview : true) && (
+      {((mode === 'withImage' || mode === 'styleTransfer' || mode === 'imageEdit') ? preview : true) && (
         <div className="mt-6">
           <button
             onClick={handleProcess}
@@ -1100,29 +1557,43 @@ Focus on:
             className={`w-full py-5 rounded-2xl font-bold text-lg shadow-xl transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3 ${
               mode === 'withImage'
                 ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white'
-                : 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white'
+                : mode === 'promptOnly'
+                ? 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white'
+                : mode === 'styleTransfer'
+                ? 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white'
+                : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
             }`}
           >
             {isProcessing ? (
               <>
                 <Loader2 className="h-6 w-6 animate-spin" />
-                กำลังสร้างภาพ...
+                กำลังประมวลผล...
               </>
             ) : mode === 'withImage' ? (
               <>
                 <Wand2 className="h-6 w-6" />
                 สร้างภาพจากรูปสินค้า ({numberOfImages} ภาพ = {numberOfImages} เครดิต)
               </>
-            ) : (
+            ) : mode === 'promptOnly' ? (
               <>
                 <Wand2 className="h-6 w-6" />
                 สร้างภาพจาก Prompt ({numberOfImages} ภาพ = {numberOfImages} เครดิต)
               </>
+            ) : mode === 'styleTransfer' ? (
+              <>
+                <Wand2 className="h-6 w-6" />
+                แปลงภาพเป็นสไตล์ {selectedStyle} (1 เครดิต)
+              </>
+            ) : (
+              <>
+                <Wand2 className="h-6 w-6" />
+                แก้ไขภาพ (1 เครดิต)
+              </>
             )}
           </button>
 
-          {/* Reset Button for Image Mode */}
-          {mode === 'withImage' && preview && !isProcessing && (
+          {/* Reset Button for Image Modes */}
+          {(mode === 'withImage' || mode === 'styleTransfer' || mode === 'imageEdit') && preview && !isProcessing && (
             <button
               onClick={handleReset}
               className="w-full mt-3 px-6 py-3 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700 font-bold rounded-xl transition-all transform hover:scale-[1.01] shadow-md flex items-center justify-center gap-2"
