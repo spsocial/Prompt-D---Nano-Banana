@@ -176,7 +176,9 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate video')
+        // Use Thai suggestion if available, otherwise use error message
+        const errorMessage = errorData.suggestion || errorData.error || 'ไม่สามารถสร้างวิดีโอได้'
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
