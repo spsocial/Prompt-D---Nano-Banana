@@ -325,49 +325,33 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         </div>
       </div>
 
-      {/* Mode Selection - Hide for Sora 2 models (text-only) */}
-      {model !== 'sora-2' && model !== 'sora-2-hd' ? (
-        <div className="flex gap-3">
-          <button
-            onClick={() => setMode('text')}
-            className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-              mode === 'text'
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300 hover:border-red-300'
-            }`}
-          >
-            <Type className="h-6 w-6 mx-auto mb-2 text-red-500" />
-            <div className="font-bold">Text to Video</div>
-            <div className="text-xs text-gray-600">สร้างจากข้อความ</div>
-          </button>
-          <button
-            onClick={() => setMode('image')}
-            className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-              mode === 'image'
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300 hover:border-red-300'
-            }`}
+      {/* Mode Selection - Show for all models (Sora 2 now supports image-to-video) */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => setMode('text')}
+          className={`flex-1 p-4 rounded-xl border-2 transition-all ${
+            mode === 'text'
+              ? 'border-red-500 bg-red-50'
+              : 'border-gray-300 hover:border-red-300'
+          }`}
+        >
+          <Type className="h-6 w-6 mx-auto mb-2 text-red-500" />
+          <div className="font-bold">Text to Video</div>
+          <div className="text-xs text-gray-600">สร้างจากข้อความ</div>
+        </button>
+        <button
+          onClick={() => setMode('image')}
+          className={`flex-1 p-4 rounded-xl border-2 transition-all ${
+            mode === 'image'
+              ? 'border-red-500 bg-red-50'
+              : 'border-gray-300 hover:border-red-300'
+          }`}
           >
             <ImageIcon className="h-6 w-6 mx-auto mb-2 text-red-500" />
             <div className="font-bold">Image to Video</div>
             <div className="text-xs text-gray-600">สร้างจากรูปภาพ</div>
           </button>
         </div>
-      ) : (
-        <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
-          <div className="flex items-start space-x-2">
-            <span className="text-yellow-600 font-bold">💡</span>
-            <div className="text-sm text-yellow-800">
-              <span className="font-bold">หมายเหตุ:</span> {currentConfig.name} รองรับเฉพาะการสร้างวิดีโอจาก <strong>ข้อความ (Text to Video)</strong> เท่านั้น
-              <div className="mt-2 pt-2 border-t border-yellow-300">
-                <span className="inline-flex items-center">
-                  🔄 <span className="ml-1"><strong>การแนบภาพ (Image to Video)</strong> จะอัพเดตภายในวันนี้</span>
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Image Upload (for Image to Video mode) */}
       {mode === 'image' && (
