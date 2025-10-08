@@ -549,123 +549,24 @@ Focus on:
         autoHideDuration={8000}
       />
 
-      {/* Compact Settings Panel - Always Show */}
-      <div className="mb-5 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Number of Images - Dropdown */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-2">จำนวนภาพ</label>
-            <select
-              value={numberOfImages}
-              onChange={(e) => setNumberOfImages(parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all"
-            >
-              {[1, 2, 3, 4].map(num => (
-                <option key={num} value={num}>{num} ภาพ ({num} เครดิต)</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Aspect Ratio - Dropdown */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-2">ขนาดภาพ</label>
-            <select
-              value={aspectRatio}
-              onChange={(e) => setAspectRatio(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
-            >
-              <option value="1:1">⬛ จตุรัส 1:1</option>
-              <option value="16:9">▭ แนวนอน 16:9</option>
-              <option value="9:16">▯ แนวตั้ง 9:16</option>
-              <option value="4:3">▬ แนวนอน 4:3</option>
-              <option value="3:4">▮ แนวตั้ง 3:4</option>
-              <option value="21:9">▬ ไวด์ 21:9</option>
-            </select>
-          </div>
-
-          {/* Prompt Style - Dropdown */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-2">สไตล์ Prompt</label>
-            <select
-              value={selectedPromptStyle}
-              onChange={handleStyleChange}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all"
-            >
-              <option value="premium">🌟 Premium (หรูหรา)</option>
-              <option value="floating">🎈 Floating (ลอยอากาศ)</option>
-              <option value="moody">🌙 Moody (อารมณ์ลึกลับ)</option>
-              <option value="cinematic">🎬 Cinematic (โปสเตอร์)</option>
-              <option value="product-hero">📸 Product Hero</option>
-              <option value="custom">✏️ กรอกเอง</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Custom Prompt Textarea - Always Show */}
-        <div className="mt-4">
-          <label className="block text-xs font-bold text-gray-700 mb-2">
-            {selectedPromptStyle === 'custom' ? '✏️ เขียน Prompt ของคุณเอง (จำเป็น)' : '✏️ แก้ไข Prompt (ไม่บังคับ)'}
-          </label>
-          <div className="relative">
-            <textarea
-              value={customPrompt}
-              onChange={(e) => setCustomPrompt(e.target.value)}
-              placeholder={selectedPromptStyle === 'custom' ? 'เขียน Prompt ของคุณเองที่นี่...' : 'สามารถแก้ไข Prompt ได้ตรงนี้...'}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none"
-              rows={selectedPromptStyle === 'custom' ? 4 : 3}
-            />
-            {preview && (
-              <a
-                href="https://chatgpt.com/g/g-68d4b28a81148191b1fe407432225d34-kh-prompt-aichthmaaphaaphsinkhaaopset-rkhaay-prompt-d"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="absolute bottom-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-xs rounded-lg font-medium shadow-md transition-all duration-300 flex items-center gap-1 no-underline"
-              >
-                <Brain className="h-3 w-3" />
-                วิเคราะห์ AI
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Mode Selection */}
-      {!preview && !readyToProcess && (
-        <div className="mb-6">
-          <h3 className="text-sm font-bold text-gray-700 mb-3">📝 เลือกวิธีสร้างภาพ:</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* 1. Toggle Switch - Image to Image / Text to Image */}
+      <div className="mb-6">
+        <div className="flex items-center justify-center">
+          <div className="relative inline-flex items-center bg-gray-200 rounded-full p-1 shadow-md">
             <button
               onClick={() => {
                 setMode('withImage')
                 setReadyToProcess(false)
-                setCustomPrompt('')
               }}
-              className={`p-5 rounded-2xl border-2 transition-all text-left ${
+              className={`relative z-10 px-6 py-3 rounded-full font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
                 mode === 'withImage'
-                  ? 'border-yellow-500 bg-gradient-to-br from-yellow-50 to-amber-50 shadow-lg'
-                  : 'border-gray-300 hover:border-yellow-300 bg-white'
+                  ? 'text-white'
+                  : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              <div className="flex items-start space-x-3">
-                <div className={`p-2 rounded-lg ${mode === 'withImage' ? 'bg-yellow-500' : 'bg-gray-300'}`}>
-                  <Upload className={`h-5 w-5 ${mode === 'withImage' ? 'text-white' : 'text-gray-600'}`} />
-                </div>
-                <div className="flex-1">
-                  <div className={`font-bold text-lg mb-1 ${mode === 'withImage' ? 'text-yellow-900' : 'text-gray-700'}`}>
-                    อัพโหลดรูปสินค้า
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    แนบรูปสินค้าของคุณ AI จะวิเคราะห์และสร้างภาพโฆษณาให้
-                  </div>
-                  {mode === 'withImage' && (
-                    <div className="mt-2 text-xs text-yellow-700 font-medium">
-                      ✓ เหมาะสำหรับสินค้าที่มีรูปอยู่แล้ว
-                    </div>
-                  )}
-                </div>
-              </div>
+              <Image className="h-5 w-5" />
+              Image to Image
             </button>
-
             <button
               onClick={() => {
                 setMode('promptOnly')
@@ -673,31 +574,274 @@ Focus on:
                 setReadyToProcess(true)
                 setShowAdvanced(true)
               }}
-              className={`p-5 rounded-2xl border-2 transition-all text-left ${
+              className={`relative z-10 px-6 py-3 rounded-full font-bold text-sm transition-all duration-300 flex items-center gap-2 ${
                 mode === 'promptOnly'
-                  ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg'
-                  : 'border-gray-300 hover:border-purple-300 bg-white'
+                  ? 'text-white'
+                  : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              <div className="flex items-start space-x-3">
-                <div className={`p-2 rounded-lg ${mode === 'promptOnly' ? 'bg-purple-500' : 'bg-gray-300'}`}>
-                  <Brain className={`h-5 w-5 ${mode === 'promptOnly' ? 'text-white' : 'text-gray-600'}`} />
+              <Wand2 className="h-5 w-5" />
+              Text to Image
+            </button>
+            {/* Sliding Background */}
+            <div
+              className={`absolute top-1 bottom-1 rounded-full transition-all duration-300 ${
+                mode === 'withImage'
+                  ? 'left-1 right-1/2 bg-gradient-to-r from-yellow-400 to-yellow-500'
+                  : 'left-1/2 right-1 bg-gradient-to-r from-purple-500 to-purple-600'
+              }`}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Conditional Content Based on Mode */}
+      {mode === 'withImage' ? (
+        /* Image to Image Mode: Upload Area First, then Prompt Below */
+        <div className="space-y-6">
+          {/* Upload Area */}
+          <div
+            {...getRootProps()}
+            className={`
+            relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer
+            transition-all duration-300
+            ${isDragActive
+              ? 'border-yellow-500 bg-gradient-to-br from-yellow-50/50 to-amber-50/50 backdrop-blur-sm'
+              : 'border-gray-300/50 hover:border-yellow-400 hover:bg-gradient-to-br hover:from-yellow-50/30 hover:to-amber-50/30 hover:backdrop-blur-sm'
+            }
+            ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
+            ${preview ? 'bg-gradient-to-br from-gray-50/50 to-white/50 backdrop-blur-sm' : 'bg-white/20 backdrop-blur-sm'}
+          `}
+          >
+            <input {...getInputProps()} />
+
+            {preview ? (
+              <div className="relative">
+                <div className="relative inline-block">
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    className="mx-auto max-h-64 rounded-xl shadow-lg border-4 border-white"
+                  />
+                  {!isProcessing && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleReset()
+                      }}
+                      className="absolute -top-3 -right-3 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                      aria-label="ลบรูปภาพ"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
-                <div className="flex-1">
-                  <div className={`font-bold text-lg mb-1 ${mode === 'promptOnly' ? 'text-purple-900' : 'text-gray-700'}`}>
-                    สร้างจาก Prompt เท่านั้น
+                {!isProcessing && (
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-700 font-medium">
+                      คลิกหรือลากรูปใหม่มาเพื่อเปลี่ยน
+                    </p>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    ไม่ต้องแนบรูป เขียน Prompt อธิบายภาพที่ต้องการเอง
+                )}
+                {isCompressing && (
+                  <div className="mt-4 flex items-center justify-center space-x-2">
+                    <Loader2 className="h-5 w-5 animate-spin text-yellow-500" />
+                    <span className="text-sm text-gray-700 font-medium">กำลังบีบอัดรูปภาพ...</span>
                   </div>
-                  {mode === 'promptOnly' && (
-                    <div className="mt-2 text-xs text-purple-700 font-medium">
-                      ✓ เหมาะสำหรับสร้างภาพจากจินตนาการ
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-center mb-4">
+                  {isDragActive ? (
+                    <div className="p-4 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full">
+                      <Image className="h-10 w-10 text-white animate-pulse" />
+                    </div>
+                  ) : isProcessing ? (
+                    <div className="p-4 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full">
+                      <Loader2 className="h-10 w-10 text-white animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full">
+                      <Upload className="h-10 w-10 text-gray-600" />
                     </div>
                   )}
                 </div>
+
+                <p className="text-xl font-bold text-gray-800 mb-2">
+                  {isDragActive
+                    ? 'วางรูปได้เลย'
+                    : isProcessing
+                    ? 'กำลังประมวลผลรูปภาพ...'
+                    : 'ลากและวางรูปสินค้าที่นี่'}
+                </p>
+
+                <p className="text-gray-600">
+                  หรือ <span className="text-yellow-600 font-bold">คลิกเพื่อเลือกไฟล์</span>
+                </p>
+
+                <p className="text-sm text-gray-500 mt-4">
+                  รองรับ: JPG, PNG, GIF, WebP (สูงสุด 10MB)
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Show Prompt Section after image is uploaded */}
+          {preview && (
+            <>
+              {/* 3. Prompt Style Dropdown */}
+              <div>
+                <label className="block text-lg font-bold text-gray-800 mb-3">
+                  เลือกสไตล์ Prompt
+                </label>
+                <select
+                  value={selectedPromptStyle}
+                  onChange={handleStyleChange}
+                  className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base font-medium focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all shadow-sm"
+                >
+                  <option value="premium">Premium (หรูหรา)</option>
+                  <option value="floating">Floating (ลอยอากาศ)</option>
+                  <option value="moody">Moody (อารมณ์ลึกลับ)</option>
+                  <option value="cinematic">Cinematic (โปสเตอร์)</option>
+                  <option value="product-hero">Product Hero</option>
+                  <option value="custom">กรอกเอง</option>
+                </select>
               </div>
-            </button>
+
+              {/* 4. Prompt Textarea */}
+              <div>
+                <label className="block text-lg font-bold text-gray-800 mb-3">
+                  {selectedPromptStyle === 'custom' ? 'เขียน Prompt ของคุณเอง' : 'Prompt (ปรับแต่งได้)'}
+                </label>
+                <div className="relative">
+                  <textarea
+                    value={selectedPromptStyle === 'custom' ? customPrompt : '•'.repeat(50)}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder={selectedPromptStyle === 'custom' ? 'เขียน Prompt ของคุณเองที่นี่...' : ''}
+                    readOnly={selectedPromptStyle !== 'custom'}
+                    className={`w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none ${
+                      selectedPromptStyle !== 'custom' ? 'text-gray-400 font-bold tracking-widest cursor-not-allowed' : ''
+                    }`}
+                    rows={6}
+                  />
+                  <a
+                    href="https://chatgpt.com/g/g-68d4b28a81148191b1fe407432225d34-kh-prompt-aichthmaaphaaphsinkhaaopset-rkhaay-prompt-d"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute bottom-3 right-3 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-sm rounded-lg font-medium shadow-md transition-all duration-300 flex items-center gap-2 no-underline"
+                  >
+                    <Brain className="h-4 w-4" />
+                    วิเคราะห์ AI
+                  </a>
+                </div>
+              </div>
+
+              {/* 5. Size & Quantity Dropdowns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-base font-bold text-gray-800 mb-2">จำนวนภาพ</label>
+                  <select
+                    value={numberOfImages}
+                    onChange={(e) => setNumberOfImages(parseInt(e.target.value))}
+                    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all"
+                  >
+                    {[1, 2, 3, 4].map(num => (
+                      <option key={num} value={num}>{num} ภาพ ({num} เครดิต)</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-base font-bold text-gray-800 mb-2">ขนาดภาพ</label>
+                  <select
+                    value={aspectRatio}
+                    onChange={(e) => setAspectRatio(e.target.value)}
+                    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+                  >
+                    <option value="1:1">จตุรัส 1:1</option>
+                    <option value="16:9">แนวนอน 16:9</option>
+                    <option value="9:16">แนวตั้ง 9:16</option>
+                    <option value="4:3">แนวนอน 4:3</option>
+                    <option value="3:4">แนวตั้ง 3:4</option>
+                    <option value="21:9">ไวด์ 21:9</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        /* Text to Image Mode: Show Prompt Immediately */
+        <div className="space-y-6">
+          {/* 3. Prompt Style Dropdown */}
+          <div>
+            <label className="block text-lg font-bold text-gray-800 mb-3">
+              เลือกสไตล์ Prompt
+            </label>
+            <select
+              value={selectedPromptStyle}
+              onChange={handleStyleChange}
+              className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base font-medium focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all shadow-sm"
+            >
+              <option value="premium">Premium (หรูหรา)</option>
+              <option value="floating">Floating (ลอยอากาศ)</option>
+              <option value="moody">Moody (อารมณ์ลึกลับ)</option>
+              <option value="cinematic">Cinematic (โปสเตอร์)</option>
+              <option value="product-hero">Product Hero</option>
+              <option value="custom">กรอกเอง</option>
+            </select>
+          </div>
+
+          {/* 4. Prompt Textarea - Large and Prominent */}
+          <div>
+            <label className="block text-2xl font-bold text-gray-800 mb-4">
+              {selectedPromptStyle === 'custom' ? 'เขียน Prompt ของคุณเอง' : 'Prompt (ปรับแต่งได้)'}
+            </label>
+            <div className="relative">
+              <textarea
+                value={selectedPromptStyle === 'custom' ? customPrompt : '•'.repeat(50)}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                placeholder={selectedPromptStyle === 'custom' ? 'อธิบายภาพที่คุณต้องการสร้าง...' : ''}
+                readOnly={selectedPromptStyle !== 'custom'}
+                className={`w-full px-5 py-4 bg-white border-2 border-gray-300 rounded-xl text-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all resize-none shadow-lg ${
+                  selectedPromptStyle !== 'custom' ? 'text-gray-400 font-bold tracking-widest cursor-not-allowed' : ''
+                }`}
+                rows={8}
+              />
+            </div>
+          </div>
+
+          {/* 5. Size & Quantity Dropdowns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-base font-bold text-gray-800 mb-2">จำนวนภาพ</label>
+              <select
+                value={numberOfImages}
+                onChange={(e) => setNumberOfImages(parseInt(e.target.value))}
+                className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all"
+              >
+                {[1, 2, 3, 4].map(num => (
+                  <option key={num} value={num}>{num} ภาพ ({num} เครดิต)</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-base font-bold text-gray-800 mb-2">ขนาดภาพ</label>
+              <select
+                value={aspectRatio}
+                onChange={(e) => setAspectRatio(e.target.value)}
+                className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+              >
+                <option value="1:1">จตุรัส 1:1</option>
+                <option value="16:9">แนวนอน 16:9</option>
+                <option value="9:16">แนวตั้ง 9:16</option>
+                <option value="4:3">แนวนอน 4:3</option>
+                <option value="3:4">แนวตั้ง 3:4</option>
+                <option value="21:9">ไวด์ 21:9</option>
+              </select>
+            </div>
           </div>
         </div>
       )}
@@ -736,7 +880,7 @@ Focus on:
                 <div className="w-16 h-16 bg-red-500 rounded-full"></div>
               </button>
             </div>
-            
+
             {/* Camera instructions */}
             <div className="absolute top-1/2 left-0 right-0 text-center text-white">
               <p className="bg-black/50 inline-block px-4 py-2 rounded-lg">
@@ -747,8 +891,8 @@ Focus on:
         </div>
       )}
 
-      {/* Upload Area - Only show in 'withImage' mode */}
-      {mode === 'withImage' && (
+      {/* OLD UPLOAD AREA - REPLACED WITH NEW DESIGN ABOVE */}
+      {false && mode === 'withImage' && (
         <div
           {...getRootProps()}
           className={`
@@ -837,283 +981,54 @@ Focus on:
         </div>
       )}
 
+      {/* 6. Generate Button - Large Prominent Button */}
+      {(mode === 'withImage' ? preview : true) && (
+        <div className="mt-6">
+          <button
+            onClick={handleProcess}
+            disabled={isProcessing || (mode === 'promptOnly' && selectedPromptStyle === 'custom' && !customPrompt)}
+            className={`w-full py-5 rounded-2xl font-bold text-lg shadow-xl transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3 ${
+              mode === 'withImage'
+                ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white'
+                : 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white'
+            }`}
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="h-6 w-6 animate-spin" />
+                กำลังสร้างภาพ...
+              </>
+            ) : mode === 'withImage' ? (
+              <>
+                <Wand2 className="h-6 w-6" />
+                สร้างภาพจากรูปสินค้า ({numberOfImages} ภาพ = {numberOfImages} เครดิต)
+              </>
+            ) : (
+              <>
+                <Wand2 className="h-6 w-6" />
+                สร้างภาพจาก Prompt ({numberOfImages} ภาพ = {numberOfImages} เครดิต)
+              </>
+            )}
+          </button>
+
+          {/* Reset Button for Image Mode */}
+          {mode === 'withImage' && preview && !isProcessing && (
+            <button
+              onClick={handleReset}
+              className="w-full mt-3 px-6 py-3 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700 font-bold rounded-xl transition-all transform hover:scale-[1.01] shadow-md flex items-center justify-center gap-2"
+            >
+              <RefreshCw className="h-5 w-5" />
+              เริ่มใหม่
+            </button>
+          )}
+        </div>
+      )}
+
       {/* File Size Info */}
       {preview && !isProcessing && (
         <div className="mt-3 flex items-center justify-center space-x-2 text-sm text-gray-600">
           <AlertCircle className="h-4 w-4" />
           <span>รูปภาพจะถูกปรับขนาดอัตโนมัติเพื่อประสิทธิภาพที่ดีขึ้น</span>
-        </div>
-      )}
-
-      {/* Hidden: Old Process Controls - Moved to top as dropdowns */}
-
-      {/* Hidden: Old Advanced Settings - Now always visible at top */}
-      {false && preview && (
-        <div className="mt-5">
-          <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className={`flex items-center space-x-2 text-sm font-semibold transition-all duration-300 ${
-              showAdvanced
-                ? 'text-yellow-600'
-                : 'text-gray-700 hover:text-yellow-600'
-            }`}
-          >
-            <Wand2 className="h-4 w-4" />
-            <span>
-              {showAdvanced ? '▼ ซ่อนการตั้งค่าขั้นสูง' : '▶ แสดงการตั้งค่าขั้นสูง'}
-            </span>
-          </button>
-
-        {showAdvanced && (
-          <div className="mt-4 space-y-5 p-5 bg-white/20 backdrop-blur-lg rounded-2xl border border-white/30 shadow-lg">
-            {/* Prompt Style Selection */}
-            <div>
-              <label className="block text-sm font-bold text-gray-800 mb-3">
-                เลือกสไตล์ Prompt:
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                <button
-                  onClick={() => {
-                    setSelectedPromptStyle('premium')
-                    setMainPrompt(premiumPrompt)
-                    setCustomPrompt(premiumPrompt)
-                    setUseCustomPrompt(false) // Reset custom prompt toggle
-                  }}
-                  className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
-                    selectedPromptStyle === 'premium' && !useCustomPrompt
-                      ? 'border-yellow-500 bg-gradient-to-r from-yellow-100/50 to-amber-100/50 shadow-lg'
-                      : 'border-white/30 bg-white/20 hover:border-yellow-300/50 hover:bg-white/30'
-                  }`}
-                >
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <div className="mb-2 p-2 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg">
-                      <span className="text-white font-bold text-xl">💎</span>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-bold text-gray-800">พรีเมี่ยมหรูหรา</div>
-                      <div className="text-xs mt-1 text-gray-600">วางบนพื้นผิวหรูหรา</div>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setSelectedPromptStyle('floating')
-                    setMainPrompt(floatingPrompt)
-                    setCustomPrompt(floatingPrompt)
-                    setUseCustomPrompt(false) // Reset custom prompt toggle
-                  }}
-                  className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
-                    selectedPromptStyle === 'floating' && !useCustomPrompt
-                      ? 'border-purple-500 bg-gradient-to-r from-purple-100/50 to-pink-100/50 shadow-lg'
-                      : 'border-white/30 bg-white/20 hover:border-purple-300/50 hover:bg-white/30'
-                  }`}
-                >
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <div className="mb-2 p-2 bg-gradient-to-r from-purple-400 to-purple-500 rounded-lg">
-                      <span className="text-white font-bold text-xl">🎈</span>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-bold text-gray-800">ลอยในอากาศ</div>
-                      <div className="text-xs mt-1 text-gray-600">ลอยพร้อมส่วนประกอบ</div>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setSelectedPromptStyle('moody')
-                    setMainPrompt(moodyPrompt)
-                    setCustomPrompt(moodyPrompt)
-                    setUseCustomPrompt(false) // Reset custom prompt toggle
-                  }}
-                  className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
-                    selectedPromptStyle === 'moody' && !useCustomPrompt
-                      ? 'border-indigo-500 bg-gradient-to-r from-indigo-100/50 to-blue-100/50 shadow-lg'
-                      : 'border-white/30 bg-white/20 hover:border-indigo-300/50 hover:bg-white/30'
-                  }`}
-                >
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <div className="mb-2 p-2 bg-gradient-to-r from-indigo-400 to-blue-500 rounded-lg">
-                      <span className="text-white font-bold text-xl">🌙</span>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-bold text-gray-800">โทนภาพ Moody</div>
-                      <div className="text-xs mt-1 text-gray-600">งานโฆษณา rustic, moody</div>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setSelectedPromptStyle('cinematic')
-                    setMainPrompt(cinematicPrompt)
-                    setCustomPrompt(cinematicPrompt)
-                    setUseCustomPrompt(false)
-                  }}
-                  className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
-                    selectedPromptStyle === 'cinematic' && !useCustomPrompt
-                      ? 'border-red-500 bg-gradient-to-r from-red-100/50 to-orange-100/50 shadow-lg'
-                      : 'border-white/30 bg-white/20 hover:border-red-300/50 hover:bg-white/30'
-                  }`}
-                >
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <div className="mb-2 p-2 bg-gradient-to-r from-red-400 to-orange-500 rounded-lg">
-                      <span className="text-white font-bold text-xl">🎬</span>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-bold text-gray-800">3D Cinematic</div>
-                      <div className="text-xs mt-1 text-gray-600">ภาพระเบิดพลัง</div>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setSelectedPromptStyle('productHero')
-                    setMainPrompt(productHeroPrompt)
-                    setCustomPrompt(productHeroPrompt)
-                    setUseCustomPrompt(false) // Reset custom prompt toggle
-                  }}
-                  className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
-                    selectedPromptStyle === 'productHero' && !useCustomPrompt
-                      ? 'border-orange-500 bg-gradient-to-r from-orange-100/50 to-red-100/50 shadow-lg'
-                      : 'border-white/30 bg-white/20 hover:border-orange-300/50 hover:bg-white/30'
-                  }`}
-                >
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <div className="mb-2 p-2 bg-gradient-to-r from-orange-400 to-orange-500 rounded-lg">
-                      <span className="text-white font-bold text-xl">🏆</span>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-bold text-gray-800">Product Hero</div>
-                      <div className="text-xs mt-1 text-gray-600">Hero shot สไตล์โปร</div>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Custom Prompt Option */}
-                <button
-                  onClick={() => {
-                    setUseCustomPrompt(true)
-                    setSelectedPromptStyle('custom')
-                    setMainPrompt('')
-                    setCustomPrompt('')
-                  }}
-                  className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
-                    useCustomPrompt
-                      ? 'border-green-500 bg-gradient-to-r from-green-100/50 to-emerald-100/50 shadow-lg'
-                      : 'border-white/30 bg-white/20 hover:border-green-300/50 hover:bg-white/30'
-                  }`}
-                >
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <div className="mb-2 p-2 bg-gradient-to-r from-green-400 to-green-500 rounded-lg">
-                      <span className="text-white font-bold text-xl">✏️</span>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-bold text-gray-800">ใส่พ้อมเอง</div>
-                      <div className="text-xs mt-1 text-gray-600">เขียน Prompt เอง</div>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Custom Prompt Text Area - Only show when useCustomPrompt is true */}
-            {useCustomPrompt && (
-              <div>
-                <label className="block text-sm font-bold text-gray-800 mb-3">
-                  ปรับแต่ง Prompt เพิ่มเติม:
-                </label>
-                <div className="relative">
-                  <textarea
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    placeholder="เขียน Prompt ของคุณเองที่นี่ หรือกดปุ่มวิเคราะห์ด้วย AI..."
-                    className="w-full px-4 py-3 pr-32 bg-white/30 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all duration-300 resize-none modern-textarea"
-                    rows={5}
-                  />
-                  {/* AI Analyze Button - Opens External Link */}
-                  {preview && (
-                    <a
-                      href="https://chatgpt.com/g/g-68d4b28a81148191b1fe407432225d34-kh-prompt-aichthmaaphaaphsinkhaaopset-rkhaay-prompt-d"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="absolute bottom-3 right-3 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-sm rounded-lg font-medium shadow-lg transition-all duration-300 flex items-center gap-2 no-underline"
-                    >
-                      <Brain className="h-4 w-4" />
-                      วิเคราะห์ด้วย AI
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons - Only show when using custom prompt */}
-            {useCustomPrompt && (
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => {
-                    setCustomPrompt('')
-                    setMainPrompt('')
-                  }}
-                  className="flex items-center space-x-1 text-sm bg-gradient-to-r from-yellow-100 to-amber-100 hover:from-yellow-200 hover:to-amber-200 text-yellow-800 px-4 py-2 rounded-xl transition-all duration-300 font-medium shadow-md"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  <span>รีเซ็ต Prompt</span>
-                </button>
-
-                <button
-                  onClick={() => setCustomPrompt('')}
-                  className="text-sm bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 px-4 py-2 rounded-xl transition-all duration-300 font-medium shadow-md"
-                >
-                  ล้าง
-                </button>
-              </div>
-            )}
-
-            <div className="p-4 bg-gradient-to-r from-blue-100/50 to-indigo-100/50 rounded-xl border border-blue-200/50 shadow-sm">
-              <p className="text-sm text-blue-800">
-                <span className="font-bold">💡 เคล็ดลับ:</span> Prompt ที่ดีควรระบุ:
-                บรรยากาศ, แสง, สี, มุมกล้อง, สไตล์, และความรู้สึกที่ต้องการ
-              </p>
-            </div>
-          </div>
-        )}
-        </div>
-      )}
-
-      {/* Generate Button - Always show when mode is selected */}
-      {(readyToProcess || mode === 'promptOnly' || (mode === 'withImage' && preview)) && (
-        <div className="mt-5 flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={handleProcess}
-            disabled={isProcessing}
-            className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-bold py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] shadow-lg"
-          >
-            {isProcessing ? (
-              <span className="flex items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                กำลังประมวลผล...
-              </span>
-            ) : (
-              <span className="flex items-center justify-center">
-                <Wand2 className="h-5 w-5 mr-2" />
-                {preview
-                  ? `สร้างภาพจากรูป (${numberOfImages} ภาพ)`
-                  : `สร้างภาพจาก Prompt (${numberOfImages} ภาพ)`}
-              </span>
-            )}
-          </button>
-
-          {preview && (
-            <button
-              onClick={handleReset}
-              className="px-6 py-4 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700 font-bold rounded-xl transition-all transform hover:scale-105 shadow-md"
-            >
-              <RefreshCw className="h-5 w-5" />
-            </button>
-          )}
         </div>
       )}
 
@@ -1125,6 +1040,7 @@ Focus on:
           (ระบบจะบีบอัดรูปอัตโนมัติ)
         </p>
       </div>
+
     </div>
   )
 }
