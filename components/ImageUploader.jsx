@@ -690,52 +690,184 @@ Focus on:
           {/* Show Prompt Section after image is uploaded */}
           {preview && (
             <>
-              {/* 3. Prompt Style Dropdown */}
+              {/* 3. Prompt Style Selection - Beautiful Card Style */}
               <div>
                 <label className="block text-lg font-bold text-gray-800 mb-3">
                   เลือกสไตล์ Prompt
                 </label>
-                <select
-                  value={selectedPromptStyle}
-                  onChange={handleStyleChange}
-                  className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base font-medium focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all shadow-sm"
-                >
-                  <option value="premium">Premium (หรูหรา)</option>
-                  <option value="floating">Floating (ลอยอากาศ)</option>
-                  <option value="moody">Moody (อารมณ์ลึกลับ)</option>
-                  <option value="cinematic">Cinematic (โปสเตอร์)</option>
-                  <option value="product-hero">Product Hero</option>
-                  <option value="custom">กรอกเอง</option>
-                </select>
-              </div>
-
-              {/* 4. Prompt Textarea */}
-              <div>
-                <label className="block text-lg font-bold text-gray-800 mb-3">
-                  {selectedPromptStyle === 'custom' ? 'เขียน Prompt ของคุณเอง' : 'Prompt (ปรับแต่งได้)'}
-                </label>
-                <div className="relative">
-                  <textarea
-                    value={selectedPromptStyle === 'custom' ? customPrompt : '•'.repeat(50)}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    placeholder={selectedPromptStyle === 'custom' ? 'เขียน Prompt ของคุณเองที่นี่...' : ''}
-                    readOnly={selectedPromptStyle !== 'custom'}
-                    className={`w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none ${
-                      selectedPromptStyle !== 'custom' ? 'text-gray-400 font-bold tracking-widest cursor-not-allowed' : ''
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <button
+                    onClick={() => {
+                      setSelectedPromptStyle('premium')
+                      setMainPrompt(premiumPrompt)
+                      setCustomPrompt(premiumPrompt)
+                      setUseCustomPrompt(false)
+                    }}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
+                      selectedPromptStyle === 'premium' && !useCustomPrompt
+                        ? 'border-yellow-500 bg-gradient-to-r from-yellow-100/50 to-amber-100/50 shadow-lg'
+                        : 'border-white/30 bg-white/20 hover:border-yellow-300/50 hover:bg-white/30'
                     }`}
-                    rows={6}
-                  />
-                  <a
-                    href="https://chatgpt.com/g/g-68d4b28a81148191b1fe407432225d34-kh-prompt-aichthmaaphaaphsinkhaaopset-rkhaay-prompt-d"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute bottom-3 right-3 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-sm rounded-lg font-medium shadow-md transition-all duration-300 flex items-center gap-2 no-underline"
                   >
-                    <Brain className="h-4 w-4" />
-                    วิเคราะห์ AI
-                  </a>
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="mb-2 p-2 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-lg">
+                        <span className="text-white font-bold text-xl">💎</span>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-gray-800">พรีเมี่ยมหรูหรา</div>
+                        <div className="text-xs mt-1 text-gray-600">วางบนพื้นผิวหรูหรา</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedPromptStyle('floating')
+                      setMainPrompt(floatingPrompt)
+                      setCustomPrompt(floatingPrompt)
+                      setUseCustomPrompt(false)
+                    }}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
+                      selectedPromptStyle === 'floating' && !useCustomPrompt
+                        ? 'border-purple-500 bg-gradient-to-r from-purple-100/50 to-pink-100/50 shadow-lg'
+                        : 'border-white/30 bg-white/20 hover:border-purple-300/50 hover:bg-white/30'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="mb-2 p-2 bg-gradient-to-r from-purple-400 to-purple-500 rounded-lg">
+                        <span className="text-white font-bold text-xl">🎈</span>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-gray-800">ลอยในอากาศ</div>
+                        <div className="text-xs mt-1 text-gray-600">ลอยพร้อมส่วนประกอบ</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedPromptStyle('moody')
+                      setMainPrompt(moodyPrompt)
+                      setCustomPrompt(moodyPrompt)
+                      setUseCustomPrompt(false)
+                    }}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
+                      selectedPromptStyle === 'moody' && !useCustomPrompt
+                        ? 'border-indigo-500 bg-gradient-to-r from-indigo-100/50 to-blue-100/50 shadow-lg'
+                        : 'border-white/30 bg-white/20 hover:border-indigo-300/50 hover:bg-white/30'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="mb-2 p-2 bg-gradient-to-r from-indigo-400 to-blue-500 rounded-lg">
+                        <span className="text-white font-bold text-xl">🌙</span>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-gray-800">โทนภาพ Moody</div>
+                        <div className="text-xs mt-1 text-gray-600">งานโฆษณา rustic, moody</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedPromptStyle('cinematic')
+                      setMainPrompt(cinematicPrompt)
+                      setCustomPrompt(cinematicPrompt)
+                      setUseCustomPrompt(false)
+                    }}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
+                      selectedPromptStyle === 'cinematic' && !useCustomPrompt
+                        ? 'border-red-500 bg-gradient-to-r from-red-100/50 to-orange-100/50 shadow-lg'
+                        : 'border-white/30 bg-white/20 hover:border-red-300/50 hover:bg-white/30'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="mb-2 p-2 bg-gradient-to-r from-red-400 to-orange-500 rounded-lg">
+                        <span className="text-white font-bold text-xl">🎬</span>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-gray-800">3D Cinematic</div>
+                        <div className="text-xs mt-1 text-gray-600">ภาพระเบิดพลัง</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedPromptStyle('productHero')
+                      setMainPrompt(productHeroPrompt)
+                      setCustomPrompt(productHeroPrompt)
+                      setUseCustomPrompt(false)
+                    }}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
+                      selectedPromptStyle === 'productHero' && !useCustomPrompt
+                        ? 'border-orange-500 bg-gradient-to-r from-orange-100/50 to-red-100/50 shadow-lg'
+                        : 'border-white/30 bg-white/20 hover:border-orange-300/50 hover:bg-white/30'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="mb-2 p-2 bg-gradient-to-r from-orange-400 to-orange-500 rounded-lg">
+                        <span className="text-white font-bold text-xl">🏆</span>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-gray-800">Product Hero</div>
+                        <div className="text-xs mt-1 text-gray-600">Hero shot สไตล์โปร</div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setUseCustomPrompt(true)
+                      setSelectedPromptStyle('custom')
+                      setMainPrompt('')
+                      setCustomPrompt('')
+                    }}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-[1.02] ${
+                      useCustomPrompt
+                        ? 'border-green-500 bg-gradient-to-r from-green-100/50 to-emerald-100/50 shadow-lg'
+                        : 'border-white/30 bg-white/20 hover:border-green-300/50 hover:bg-white/30'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="mb-2 p-2 bg-gradient-to-r from-green-400 to-green-500 rounded-lg">
+                        <span className="text-white font-bold text-xl">✏️</span>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-gray-800">ใส่พ้อมเอง</div>
+                        <div className="text-xs mt-1 text-gray-600">เขียน Prompt เอง</div>
+                      </div>
+                    </div>
+                  </button>
                 </div>
               </div>
+
+              {/* 4. Prompt Textarea - Only show when custom */}
+              {useCustomPrompt && (
+                <div>
+                  <label className="block text-lg font-bold text-gray-800 mb-3">
+                    เขียน Prompt ของคุณเอง
+                  </label>
+                  <div className="relative">
+                    <textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      placeholder="เขียน Prompt ของคุณเองที่นี่ หรือกดปุ่มวิเคราะห์ด้วย AI..."
+                      className="w-full px-4 py-3 bg-white/30 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all duration-300 resize-none"
+                      rows={6}
+                    />
+                    <a
+                      href="https://chatgpt.com/g/g-68d4b28a81148191b1fe407432225d34-kh-prompt-aichthmaaphaaphsinkhaaopset-rkhaay-prompt-d"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute bottom-3 right-3 px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-sm rounded-lg font-medium shadow-md transition-all duration-300 flex items-center gap-2 no-underline"
+                    >
+                      <Brain className="h-4 w-4" />
+                      วิเคราะห์ AI
+                    </a>
+                  </div>
+                </div>
+              )}
 
               {/* 5. Size & Quantity Dropdowns */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -282,12 +282,12 @@ export default function ResultGallery() {
                 </div>
               </div>
 
-              {/* Image Container - White background for better visibility */}
-              <div className="flex-1 flex items-center justify-center p-4 sm:p-6 min-h-0 overflow-hidden bg-white rounded-xl">
+              {/* Image Container - Show actual size, scrollable */}
+              <div className="flex-1 overflow-auto p-4 sm:p-6 bg-white rounded-xl">
                 <img
                   src={selectedImage.imageUrl}
                   alt={selectedImage.style}
-                  className="max-w-full max-h-full w-auto h-auto object-contain shadow-2xl"
+                  className="mx-auto shadow-2xl"
                   style={{ imageRendering: 'auto' }}
                 />
               </div>
