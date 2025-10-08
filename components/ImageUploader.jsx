@@ -2,6 +2,7 @@ import { useCallback, useState, useRef, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import useStore from '../lib/store'
 import { Upload, Image, Loader2, Wand2, RefreshCw, AlertCircle, X, Camera, Brain } from 'lucide-react'
+import SuccessNotification from './SuccessNotification'
 
 export default function ImageUploader() {
   const [preview, setPreview] = useState(null)
@@ -14,6 +15,7 @@ export default function ImageUploader() {
   const [showCamera, setShowCamera] = useState(false)
   const [cameraError, setCameraError] = useState(null)
   const [useCustomPrompt, setUseCustomPrompt] = useState(false) // New state for custom prompt toggle
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
   
@@ -200,6 +202,19 @@ Focus on:
 
       const { results } = await generateResponse.json()
       setResults(results)
+
+      // Show success popup
+      setShowSuccessPopup(true)
+      setTimeout(() => setShowSuccessPopup(false), 8000)
+
+      // Scroll to results
+      setTimeout(() => {
+        const resultsElement = document.querySelector('[class*="ResultGallery"]') ||
+                               document.querySelector('[class*="ภาพโฆษณาที่สร้างแล้ว"]')
+        if (resultsElement) {
+          resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 500)
 
       // Add results to history with better error handling
       try {
@@ -485,6 +500,16 @@ Focus on:
 
   return (
     <div>
+      {/* Success Popup */}
+      <SuccessNotification
+        show={showSuccessPopup}
+        onClose={() => setShowSuccessPopup(false)}
+        title="ภาพสร้างเสร็จแล้ว!"
+        message={`สร้างภาพโฆษณาสำเร็จ ${numberOfImages} ภาพ กำลังแสดงผลด้านล่าง`}
+        type="image"
+        autoHideDuration={8000}
+      />
+
       {/* Camera View */}
       {showCamera && (
         <div className="fixed inset-0 bg-black z-50 flex flex-col">

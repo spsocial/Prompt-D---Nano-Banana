@@ -345,60 +345,104 @@ export default function PricingModal({ onClose }) {
               </div>
             </div>
 
-            {/* Slip Upload */}
-            <div className="bg-gradient-to-r from-gray-50/50 to-white/50 backdrop-blur-sm p-5 rounded-xl border border-white/30">
-              <h4 className="font-bold mb-3 text-gray-800">📸 อัพโหลดสลิปการโอน</h4>
-
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleSlipUpload}
-                className="block w-full text-sm text-gray-500
-                  file:mr-4 file:py-2.5 file:px-5
-                  file:rounded-xl file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-gradient-to-r file:from-yellow-100 file:to-amber-100
-                  file:text-yellow-800 hover:file:from-yellow-200
-                  hover:file:to-amber-200 file:transition-all file:duration-300"
-              />
-
-              {slipFile && (
-                <div className="mt-3">
-                  <p className="text-sm text-green-600 font-medium">✅ เลือกไฟล์: {slipFile.name}</p>
+            {/* Important Warning - Sticky at top */}
+            <div className="sticky top-0 z-10 mb-5 p-5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-2xl shadow-xl border-2 border-white/30 animate-pulse">
+              <div className="flex items-start space-x-3">
+                <span className="text-3xl flex-shrink-0">⚠️</span>
+                <div>
+                  <h4 className="font-bold text-lg mb-2">สำคัญมาก! กรุณาอ่าน</h4>
+                  <div className="space-y-1 text-sm">
+                    <p className="font-semibold">📸 <u>ต้องแนบสลิปด้านล่าง</u> มิฉะนั้นเครดิตจะไม่เข้า!</p>
+                    <p>✅ โอนเงิน → <strong>แนบสลิป</strong> → กดยืนยัน</p>
+                    <p className="text-white/90">⏰ ห้ามปิดหน้าต่างก่อนแนบสลิป</p>
+                  </div>
                 </div>
-              )}
+              </div>
+            </div>
+
+            {/* Slip Upload - Highlighted */}
+            <div className="bg-gradient-to-br from-yellow-100 to-amber-100 p-6 rounded-2xl border-4 border-red-500 shadow-2xl mb-5">
+              <div className="flex items-center justify-center space-x-2 mb-4">
+                <span className="text-2xl animate-bounce">👇</span>
+                <h4 className="font-bold text-xl text-red-700">แนบสลิปที่นี่!</h4>
+                <span className="text-2xl animate-bounce">👇</span>
+              </div>
+
+              <label
+                htmlFor="slip-upload"
+                className={`
+                  block w-full py-6 px-6 rounded-2xl border-4 border-dashed cursor-pointer
+                  transition-all duration-300 transform hover:scale-[1.02]
+                  ${slipFile
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-red-400 bg-white hover:border-red-500 hover:bg-red-50'
+                  }
+                `}
+              >
+                <input
+                  id="slip-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleSlipUpload}
+                  className="hidden"
+                />
+                <div className="text-center">
+                  {slipFile ? (
+                    <>
+                      <div className="text-5xl mb-3">✅</div>
+                      <p className="text-lg font-bold text-green-700 mb-2">สลิปที่เลือก:</p>
+                      <p className="text-sm text-green-600 font-medium">{slipFile.name}</p>
+                      <p className="text-xs text-gray-600 mt-2">คลิกเพื่อเปลี่ยนไฟล์</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-5xl mb-3">📸</div>
+                      <p className="text-lg font-bold text-red-700 mb-2">คลิกที่นี่เพื่อเลือกสลิป</p>
+                      <p className="text-sm text-gray-600">รองรับ: JPG, PNG (ขนาดไม่เกิน 10MB)</p>
+                    </>
+                  )}
+                </div>
+              </label>
 
               <button
                 onClick={handleVerifySlip}
                 disabled={!slipFile || isVerifying}
                 className={`
-                  mt-4 w-full py-3.5 px-5 rounded-xl font-bold
-                  flex items-center justify-center space-x-2
+                  mt-5 w-full py-5 px-6 rounded-2xl font-bold text-lg
+                  flex items-center justify-center space-x-3
                   transition-all duration-300 transform
                   ${slipFile && !isVerifying
-                    ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white shadow-lg hover:scale-[1.02]'
-                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-2xl hover:scale-[1.03] animate-pulse'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }
                 `}
               >
                 {isVerifying ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <span>กำลังตรวจสอบ...</span>
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span>กำลังตรวจสอบสลิป...</span>
+                  </>
+                ) : slipFile ? (
+                  <>
+                    <Check className="h-6 w-6" />
+                    <span>ยืนยันการชำระเงิน (คลิกที่นี่)</span>
                   </>
                 ) : (
-                  <span>ยืนยันการชำระเงิน</span>
+                  <>
+                    <X className="h-6 w-6" />
+                    <span>กรุณาแนบสลิปก่อน</span>
+                  </>
                 )}
               </button>
 
               {verificationResult && (
-                <div className={`mt-4 p-4 rounded-xl ${
+                <div className={`mt-5 p-5 rounded-2xl border-2 ${
                   verificationResult.success
-                    ? 'bg-gradient-to-r from-green-50/50 to-emerald-50/50 border border-green-200/50'
-                    : 'bg-gradient-to-r from-red-50/50 to-pink-50/50 border border-red-200/50'
+                    ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-green-500'
+                    : 'bg-gradient-to-r from-red-100 to-pink-100 border-red-500'
                 }`}>
-                  <p className={`text-sm font-medium ${
-                    verificationResult.success ? 'text-green-700' : 'text-red-700'
+                  <p className={`text-base font-bold text-center ${
+                    verificationResult.success ? 'text-green-800' : 'text-red-800'
                   }`}>
                     {verificationResult.message}
                   </p>

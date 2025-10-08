@@ -249,14 +249,14 @@ export default function ResultGallery() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
+            className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4"
             onClick={() => setSelectedImage(null)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-7xl max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-md rounded-xl sm:rounded-2xl border border-white/10 shadow-2xl"
+              className="relative w-full max-w-7xl max-h-[90vh] sm:max-h-[85vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close Button - Large and Prominent */}
@@ -269,7 +269,7 @@ export default function ResultGallery() {
               </button>
 
               {/* Modal Header */}
-              <div className="bg-gradient-to-b from-black/90 to-transparent p-4 rounded-t-2xl flex-shrink-0">
+              <div className="bg-black/80 backdrop-blur-md p-4 rounded-t-2xl flex-shrink-0">
                 <div className="pr-12">
                   <div className="text-white">
                     <h3 className="text-xl md:text-2xl font-bold truncate">{selectedImage.style}</h3>
@@ -282,17 +282,18 @@ export default function ResultGallery() {
                 </div>
               </div>
 
-              {/* Image Container - Responsive to aspect ratio */}
-              <div className="flex-1 flex items-center justify-center p-2 sm:p-4 min-h-0 overflow-hidden">
+              {/* Image Container - White background for better visibility */}
+              <div className="flex-1 flex items-center justify-center p-4 sm:p-6 min-h-0 overflow-hidden bg-white rounded-xl">
                 <img
                   src={selectedImage.imageUrl}
                   alt={selectedImage.style}
-                  className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                  className="max-w-full max-h-full w-auto h-auto object-contain shadow-2xl"
+                  style={{ imageRendering: 'auto' }}
                 />
               </div>
 
               {/* Modal Footer */}
-              <div className="bg-gradient-to-t from-black/90 to-transparent p-4 rounded-b-2xl flex-shrink-0">
+              <div className="bg-black/80 backdrop-blur-md p-4 rounded-b-2xl flex-shrink-0 mt-2">
                 <div className="flex flex-col sm:flex-row justify-center gap-3">
                   <button
                     onClick={(e) => {
