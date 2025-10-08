@@ -327,6 +327,29 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         </div>
       </div>
 
+      {/* Sora 2 Beta Warning - Show only for Sora 2 models */}
+      {(model === 'sora-2' || model === 'sora-2-hd') && (
+        <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl shadow-md">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base font-bold text-amber-900 mb-1">⚠️ โมเดล Sora 2 อยู่ในช่วงทดลอง (Beta)</h3>
+              <div className="text-sm text-amber-800 space-y-1">
+                <p>• <strong>ระบบอาจไม่เสถียร</strong> - บางครั้งอาจใช้เวลานานหรือล้มเหลว</p>
+                <p>• <strong>API มีปัญหาเป็นครั้งคราว</strong> - หากล้มเหลว เครดิตจะถูกคืนอัตโนมัติ</p>
+                <p>• <strong>แนะนำ:</strong> ลองใหม่อีกครั้งหากประสบปัญหา หรือเปลี่ยนไปใช้ Veo 3 แทน</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mode Selection - Show for all models (Sora 2 now supports image-to-video) */}
       <div className="flex gap-3">
         <button
