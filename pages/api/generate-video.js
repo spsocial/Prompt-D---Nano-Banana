@@ -268,6 +268,21 @@ export default async function handler(req, res) {
     // Use final URL if available, otherwise preview
     const videoUrl = finalUrl || previewUrl
 
+    // Check for API system errors in accumulated content
+    if (!videoUrl && accumulatedContent) {
+      const hasSystemError = accumulatedContent.includes('network fluctuations') ||
+                            accumulatedContent.includes('high load') ||
+                            accumulatedContent.includes('Generation failed') ||
+                            accumulatedContent.includes('Failure reason')
+
+      if (hasSystemError) {
+        console.error('❌ API System Error detected in response')
+        const errorMatch = accumulatedContent.match(/Failure reason:\s*(.+?)(?:\n|$)/)
+        const errorReason = errorMatch ? errorMatch[1] : 'API service is experiencing issues'
+        throw new Error(`API_SYSTEM_ERROR: ${errorReason}`)
+      }
+    }
+
     if (!videoUrl) {
       console.error('❌ No video URL found in streaming response')
       throw new Error('No video URL found. The video may still be processing.')
@@ -295,6 +310,14 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('❌ Video generation error:', error)
 
+    // Check if it's an API system error (should refund credits automatically)
+    const isSystemError = error.message.includes('API_SYSTEM_ERROR') ||
+                         error.message.includes('network fluctuations') ||
+                         error.message.includes('high load') ||
+                         error.message.includes('5xx') ||
+                         error.message.includes('503') ||
+                         error.message.includes('502')
+
     // Check if it's an API availability issue
     const isApiNotAvailable = error.message.includes('Sora API is not available') ||
                                error.message.includes('not valid JSON') ||
@@ -305,15 +328,24 @@ export default async function handler(req, res) {
                      error.message.includes('Gateway Timeout') ||
                      error.message.includes('timed out')
 
+    // Extract clean error message
+    let cleanErrorMessage = error.message
+    if (cleanErrorMessage.startsWith('API_SYSTEM_ERROR: ')) {
+      cleanErrorMessage = cleanErrorMessage.replace('API_SYSTEM_ERROR: ', '')
+    }
+
     res.status(500).json({
-      error: error.message || 'Failed to generate video',
+      error: cleanErrorMessage || 'Failed to generate video',
       details: error.toString(),
-      suggestion: isTimeout
-        ? '⏱️ การสร้างวิดีโอใช้เวลานาน (1-3 นาที) แต่ API timeout ก่อน กรุณาติดต่อ CometAPI Support: https://discord.gg/HMpuV6FCrG หรือลองใหม่อีกครั้ง'
+      suggestion: isSystemError
+        ? '🔧 ระบบ API กำลังมีปัญหา (network fluctuations หรือ high load) - เครดิตจะถูกคืนอัตโนมัติ กรุณารอสักครู่แล้วลองใหม่อีกครั้ง'
+        : isTimeout
+        ? '⏱️ การสร้างวิดีโอใช้เวลานาน (1-3 นาที) แต่ API timeout ก่อน - เครดิตจะถูกคืนอัตโนมัติ ลองใหม่อีกครั้งหรือติดต่อ CometAPI Support'
         : isApiNotAvailable
-        ? '⚠️ Sora API ยังไม่เปิดให้ใช้งานทั่วไป - กรุณาตรวจสอบสถานะที่ https://platform.openai.com/docs หรือรอ OpenAI เปิดให้ใช้งาน'
-        : 'ตรวจสอบ API key และสิทธิ์การเข้าถึง Sora API',
-      apiStatus: isTimeout ? 'timeout' : isApiNotAvailable ? 'not_available' : 'unknown_error'
+        ? '⚠️ Sora API ยังไม่เปิดให้ใช้งานทั่วไป - เครดิตจะถูกคืนอัตโนมัติ กรุณารอ OpenAI เปิดให้ใช้งาน'
+        : 'เกิดข้อผิดพลาด - เครดิตจะถูกคืนอัตโนมัติ',
+      apiStatus: isSystemError ? 'system_error' : isTimeout ? 'timeout' : isApiNotAvailable ? 'not_available' : 'unknown_error',
+      shouldRefund: true // Always refund on error
     })
   }
 }

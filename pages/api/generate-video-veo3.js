@@ -212,11 +212,28 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('❌ Video generation error:', error)
 
+    // Check if it's an API system error (should refund credits automatically)
+    const isSystemError = error.message.includes('network fluctuations') ||
+                         error.message.includes('high load') ||
+                         error.message.includes('5xx') ||
+                         error.message.includes('503') ||
+                         error.message.includes('502')
+
+    // Check for timeout errors
+    const isTimeout = error.message.includes('504') ||
+                     error.message.includes('Gateway Timeout') ||
+                     error.message.includes('timed out')
+
     res.status(500).json({
       error: error.message || 'Failed to generate video',
       details: error.toString(),
-      suggestion: 'Please try again or check your API key',
-      apiStatus: 'error'
+      suggestion: isSystemError
+        ? '🔧 ระบบ API กำลังมีปัญหา (network fluctuations หรือ high load) - เครดิตจะถูกคืนอัตโนมัติ กรุณารอสักครู่แล้วลองใหม่อีกครั้ง'
+        : isTimeout
+        ? '⏱️ การสร้างวิดีโอใช้เวลานาน แต่ API timeout ก่อน - เครดิตจะถูกคืนอัตโนมัติ ลองใหม่อีกครั้ง'
+        : 'เกิดข้อผิดพลาด - เครดิตจะถูกคืนอัตโนมัติ',
+      apiStatus: isSystemError ? 'system_error' : isTimeout ? 'timeout' : 'error',
+      shouldRefund: true // Always refund on error
     })
   }
 }
