@@ -242,90 +242,74 @@ export default function ResultGallery() {
         ))}
       </motion.div>
 
-      {/* Fullscreen Modal */}
+      {/* Fullscreen Modal - Clean Popup Style */}
       <AnimatePresence>
         {selectedImage && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4"
+            className="fixed inset-0 bg-black/95 backdrop-blur-lg z-50 flex items-center justify-center p-4"
             onClick={() => setSelectedImage(null)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-7xl max-h-[90vh] sm:max-h-[85vh] flex flex-col"
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative max-w-[95vw] max-h-[95vh]"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Close Button - Large and Prominent */}
+              {/* Close Button - Top Right Corner */}
               <button
                 onClick={() => setSelectedImage(null)}
-                className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-red-500 hover:bg-red-600 text-white rounded-full w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-all shadow-2xl z-30 flex-shrink-0 ring-4 ring-white/20"
-                title="ปิด (กดที่ไหนก็ได้เพื่อปิด)"
+                className="absolute -top-4 -right-4 bg-red-500 hover:bg-red-600 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all shadow-2xl z-10 ring-4 ring-red-500/30"
+                title="ปิด"
               >
-                <X className="h-6 w-6 sm:h-7 sm:w-7" />
+                <X className="h-6 w-6" />
               </button>
 
-              {/* Modal Header */}
-              <div className="bg-black/80 backdrop-blur-md p-4 rounded-t-2xl flex-shrink-0">
-                <div className="pr-12">
-                  <div className="text-white">
-                    <h3 className="text-xl md:text-2xl font-bold truncate">{selectedImage.style}</h3>
-                    {selectedImage.description && (
-                      <p className="text-sm opacity-80 mt-1 line-clamp-2">
-                        {selectedImage.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Image Container - Show actual size, scrollable */}
-              <div className="flex-1 overflow-auto p-4 sm:p-6 bg-white rounded-xl">
+              {/* Image with white background and shadow */}
+              <div className="bg-white rounded-2xl shadow-2xl p-4 max-h-[95vh] overflow-auto">
                 <img
                   src={selectedImage.imageUrl}
                   alt={selectedImage.style}
-                  className="mx-auto shadow-2xl"
-                  style={{ imageRendering: 'auto' }}
+                  className="mx-auto rounded-lg shadow-lg"
+                  style={{
+                    maxHeight: '85vh',
+                    width: 'auto',
+                    height: 'auto',
+                    imageRendering: 'auto'
+                  }}
                 />
-              </div>
 
-              {/* Modal Footer */}
-              <div className="bg-black/80 backdrop-blur-md p-4 rounded-b-2xl flex-shrink-0 mt-2">
-                <div className="flex flex-col sm:flex-row justify-center gap-3">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleCreateVideo(selectedImage)
-                      setSelectedImage(null) // Close modal after clicking
-                    }}
-                    className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-lg flex items-center justify-center space-x-2 transition-all font-bold shadow-lg text-sm"
-                  >
-                    <Film className="h-4 w-4" />
-                    <span>สร้างวิดีโอจากภาพนี้</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDownload(selectedImage.imageUrl, selectedImage.style)
-                    }}
-                    className="px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg flex items-center justify-center space-x-2 transition-all font-bold shadow-lg text-sm"
-                  >
-                    <Download className="h-4 w-4" />
-                    <span>ดาวน์โหลดภาพ</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSelectedImage(null)
-                    }}
-                    className="px-5 py-2.5 bg-gray-700/80 hover:bg-gray-800/90 text-white rounded-lg font-bold transition-all shadow-lg text-sm border-2 border-white/20"
-                  >
-                    <X className="h-4 w-4 inline mr-1" />
-                    ปิด
-                  </button>
+                {/* Image Info Below */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{selectedImage.style}</h3>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCreateVideo(selectedImage)
+                        setSelectedImage(null)
+                      }}
+                      className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-lg flex items-center gap-2 transition-all font-bold shadow-md text-sm"
+                    >
+                      <Film className="h-4 w-4" />
+                      สร้างวิดีโอ
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDownload(selectedImage.imageUrl, selectedImage.style)
+                      }}
+                      className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg flex items-center gap-2 transition-all font-bold shadow-md text-sm"
+                    >
+                      <Download className="h-4 w-4" />
+                      ดาวน์โหลด
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>

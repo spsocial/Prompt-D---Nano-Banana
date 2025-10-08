@@ -904,41 +904,19 @@ Focus on:
           )}
         </div>
       ) : (
-        /* Text to Image Mode: Show Prompt Immediately */
+        /* Text to Image Mode: Show Prompt Field Only */
         <div className="space-y-6">
-          {/* 3. Prompt Style Dropdown */}
-          <div>
-            <label className="block text-lg font-bold text-gray-800 mb-3">
-              เลือกสไตล์ Prompt
-            </label>
-            <select
-              value={selectedPromptStyle}
-              onChange={handleStyleChange}
-              className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-base font-medium focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all shadow-sm"
-            >
-              <option value="premium">Premium (หรูหรา)</option>
-              <option value="floating">Floating (ลอยอากาศ)</option>
-              <option value="moody">Moody (อารมณ์ลึกลับ)</option>
-              <option value="cinematic">Cinematic (โปสเตอร์)</option>
-              <option value="product-hero">Product Hero</option>
-              <option value="custom">กรอกเอง</option>
-            </select>
-          </div>
-
-          {/* 4. Prompt Textarea - Large and Prominent */}
+          {/* Prompt Textarea - Large and Prominent */}
           <div>
             <label className="block text-2xl font-bold text-gray-800 mb-4">
-              {selectedPromptStyle === 'custom' ? 'เขียน Prompt ของคุณเอง' : 'Prompt (ปรับแต่งได้)'}
+              เขียน Prompt ของคุณเอง
             </label>
             <div className="relative">
               <textarea
-                value={selectedPromptStyle === 'custom' ? customPrompt : '•'.repeat(50)}
+                value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder={selectedPromptStyle === 'custom' ? 'อธิบายภาพที่คุณต้องการสร้าง...' : ''}
-                readOnly={selectedPromptStyle !== 'custom'}
-                className={`w-full px-5 py-4 bg-white border-2 border-gray-300 rounded-xl text-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all resize-none shadow-lg ${
-                  selectedPromptStyle !== 'custom' ? 'text-gray-400 font-bold tracking-widest cursor-not-allowed' : ''
-                }`}
+                placeholder="อธิบายภาพที่คุณต้องการสร้าง... เช่น 'สินค้าลอยอยู่บนพื้นผิวหินอ่อนสีขาว มีแสงสว่างจากด้านข้าง บรรยากาศหรูหรา'"
+                className="w-full px-5 py-4 bg-white border-2 border-gray-300 rounded-xl text-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all resize-none shadow-lg"
                 rows={8}
               />
             </div>
