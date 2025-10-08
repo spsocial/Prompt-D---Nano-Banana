@@ -5,15 +5,17 @@ import { Upload, Image, Loader2, Wand2, RefreshCw, AlertCircle, X, Camera, Brain
 import SuccessNotification from './SuccessNotification'
 
 export default function ImageUploader() {
+  const [mode, setMode] = useState('withImage') // 'withImage' or 'promptOnly'
   const [preview, setPreview] = useState(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [isCompressing, setIsCompressing] = useState(false)
-  const [numberOfImages, setNumberOfImages] = useState(1)
-  const [aspectRatio, setAspectRatio] = useState('1:1')
+  const [numberOfImages, setNumberOfImages] = useState(1) // เริ่มต้นที่ 1 ภาพเพื่อป้องกันการสร้างมากเกินไป
+  const [aspectRatio, setAspectRatio] = useState('1:1') // Default aspect ratio
+  const [readyToProcess, setReadyToProcess] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
   const [cameraError, setCameraError] = useState(null)
-  const [useCustomPrompt, setUseCustomPrompt] = useState(false)
+  const [useCustomPrompt, setUseCustomPrompt] = useState(false) // New state for custom prompt toggle
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
@@ -35,6 +37,8 @@ export default function ImageUploader() {
   useEffect(() => {
     if (uploadedImage) {
       setPreview(uploadedImage)
+      setReadyToProcess(true)
+      setShowAdvanced(true)
     }
 
     // Load user-specific credits on mount using store's consistent method
@@ -126,7 +130,7 @@ Focus on:
       let compressedImage = null
 
       // Only compress if we have an image
-      if (base64Image) {
+      if (base64Image && mode === 'withImage') {
         setIsCompressing(true)
         console.log('🗜️ Compressing image...')
         compressedImage = await compressImage(base64Image, 1024, 0.85)
@@ -134,7 +138,7 @@ Focus on:
         const compressedSize = (compressedImage.length * 0.75) / 1024 / 1024
         console.log(`✅ Compressed: ${originalSize.toFixed(2)}MB → ${compressedSize.toFixed(2)}MB`)
         setIsCompressing(false)
-      } else {
+      } else if (mode === 'promptOnly') {
         console.log('🎨 Creating image from prompt only (no image input)')
       }
 
@@ -275,6 +279,8 @@ Focus on:
       const base64 = e.target.result
       setPreview(base64)
       setStoreUploadedImage(base64) // Save to global store
+      setReadyToProcess(true) // Don't process automatically
+      setShowAdvanced(true) // Auto-open advanced settings when image uploaded
     }
     reader.readAsDataURL(file)
   }, [setStoreUploadedImage])
@@ -293,9 +299,14 @@ Focus on:
 
   // Handle process button click
   const handleProcess = () => {
-    // Validate: If custom prompt style, must have prompt
-    if (selectedPromptStyle === 'custom' && !customPrompt) {
-      setError('กรุณาใส่ Prompt เมื่อเลือกสไตล์ "กรอกเอง"')
+    // Validate inputs based on mode
+    if (mode === 'promptOnly' && !customPrompt) {
+      setError('กรุณาใส่ Prompt สำหรับสร้างภาพ')
+      return
+    }
+
+    if (mode === 'withImage' && !uploadedImage) {
+      setError('กรุณาอัพโหลดรูปภาพ')
       return
     }
 
@@ -311,17 +322,18 @@ Focus on:
       useCredits(numberOfImages)
     }
 
-    // Process: with or without image
-    if (preview) {
-      processImage(preview) // With image
-    } else {
-      processImage(null) // Prompt-only
+    // Process based on mode
+    if (mode === 'withImage' && uploadedImage) {
+      processImage(uploadedImage)
+    } else if (mode === 'promptOnly') {
+      processImage(null) // No image, prompt-only generation
     }
   }
 
   // Handle reset
   const handleReset = () => {
     setPreview(null)
+    setReadyToProcess(false)
     setError(null)
     setResults([])
     clearUploadedImage() // Clear from global store
@@ -479,6 +491,8 @@ Focus on:
               const base64 = e.target.result
               setPreview(base64)
               setStoreUploadedImage(base64) // Save to global store
+              setReadyToProcess(true)
+              setShowAdvanced(true)
               stopCamera()
             } else {
               setCameraError('ไม่สามารถประมวลผลภาพได้')
@@ -511,84 +525,78 @@ Focus on:
         autoHideDuration={8000}
       />
 
-      {/* Compact Settings - Always show */}
-      <div className="mb-5 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Number of Images - Dropdown */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-2">จำนวนภาพ</label>
-            <select
-              value={numberOfImages}
-              onChange={(e) => setNumberOfImages(parseInt(e.target.value))}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-            >
-              {[1, 2, 3, 4].map(num => (
-                <option key={num} value={num}>{num} ภาพ ({num} เครดิต)</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Aspect Ratio - Dropdown */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-2">ขนาดภาพ</label>
-            <select
-              value={aspectRatio}
-              onChange={(e) => setAspectRatio(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-            >
-              <option value="1:1">⬛ จตุรัส 1:1</option>
-              <option value="16:9">▭ แนวนอน 16:9</option>
-              <option value="9:16">▯ แนวตั้ง 9:16</option>
-              <option value="4:3">▬ แนวนอน 4:3</option>
-              <option value="3:4">▮ แนวตั้ง 3:4</option>
-              <option value="21:9">▬ ไวด์ 21:9</option>
-            </select>
-          </div>
-
-          {/* Prompt Style - Dropdown */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-2">สไตล์ Prompt</label>
-            <select
-              value={selectedPromptStyle}
-              onChange={(e) => {
-                const style = e.target.value
-                setSelectedPromptStyle(style)
-                if (style === 'premium') setMainPrompt(premiumPrompt)
-                else if (style === 'floating') setMainPrompt(floatingPrompt)
-                else if (style === 'moody') setMainPrompt(moodyPrompt)
-                else if (style === 'cinematic') setMainPrompt(cinematicPrompt)
-                else if (style === 'product-hero') setMainPrompt(productHeroPrompt)
-                else if (style === 'custom') setUseCustomPrompt(true)
+      {/* Mode Selection */}
+      {!preview && !readyToProcess && (
+        <div className="mb-6">
+          <h3 className="text-sm font-bold text-gray-700 mb-3">📝 เลือกวิธีสร้างภาพ:</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              onClick={() => {
+                setMode('withImage')
+                setReadyToProcess(false)
+                setCustomPrompt('')
               }}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              className={`p-5 rounded-2xl border-2 transition-all text-left ${
+                mode === 'withImage'
+                  ? 'border-yellow-500 bg-gradient-to-br from-yellow-50 to-amber-50 shadow-lg'
+                  : 'border-gray-300 hover:border-yellow-300 bg-white'
+              }`}
             >
-              <option value="premium">🌟 Premium (หรูหรา)</option>
-              <option value="floating">🎈 Floating (ลอยอากาศ)</option>
-              <option value="moody">🌙 Moody (อารมณ์ลึกลับ)</option>
-              <option value="cinematic">🎬 Cinematic (โปสเตอร์)</option>
-              <option value="product-hero">📸 Product Hero</option>
-              <option value="custom">✏️ กรอกเอง</option>
-            </select>
+              <div className="flex items-start space-x-3">
+                <div className={`p-2 rounded-lg ${mode === 'withImage' ? 'bg-yellow-500' : 'bg-gray-300'}`}>
+                  <Upload className={`h-5 w-5 ${mode === 'withImage' ? 'text-white' : 'text-gray-600'}`} />
+                </div>
+                <div className="flex-1">
+                  <div className={`font-bold text-lg mb-1 ${mode === 'withImage' ? 'text-yellow-900' : 'text-gray-700'}`}>
+                    อัพโหลดรูปสินค้า
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    แนบรูปสินค้าของคุณ AI จะวิเคราะห์และสร้างภาพโฆษณาให้
+                  </div>
+                  {mode === 'withImage' && (
+                    <div className="mt-2 text-xs text-yellow-700 font-medium">
+                      ✓ เหมาะสำหรับสินค้าที่มีรูปอยู่แล้ว
+                    </div>
+                  )}
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                setMode('promptOnly')
+                setPreview(null)
+                setReadyToProcess(true)
+                setShowAdvanced(true)
+              }}
+              className={`p-5 rounded-2xl border-2 transition-all text-left ${
+                mode === 'promptOnly'
+                  ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg'
+                  : 'border-gray-300 hover:border-purple-300 bg-white'
+              }`}
+            >
+              <div className="flex items-start space-x-3">
+                <div className={`p-2 rounded-lg ${mode === 'promptOnly' ? 'bg-purple-500' : 'bg-gray-300'}`}>
+                  <Brain className={`h-5 w-5 ${mode === 'promptOnly' ? 'text-white' : 'text-gray-600'}`} />
+                </div>
+                <div className="flex-1">
+                  <div className={`font-bold text-lg mb-1 ${mode === 'promptOnly' ? 'text-purple-900' : 'text-gray-700'}`}>
+                    สร้างจาก Prompt เท่านั้น
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    ไม่ต้องแนบรูป เขียน Prompt อธิบายภาพที่ต้องการเอง
+                  </div>
+                  {mode === 'promptOnly' && (
+                    <div className="mt-2 text-xs text-purple-700 font-medium">
+                      ✓ เหมาะสำหรับสร้างภาพจากจินตนาการ
+                    </div>
+                  )}
+                </div>
+              </div>
+            </button>
           </div>
         </div>
-
-        {/* Custom Prompt Textarea - Always show */}
-        <div className="mt-4">
-          <label className="block text-xs font-bold text-gray-700 mb-2">
-            {selectedPromptStyle === 'custom' ? '✏️ เขียน Prompt ของคุณเอง (จำเป็น)' : '✏️ แก้ไข Prompt (ไม่บังคับ)'}
-          </label>
-          <textarea
-            value={customPrompt}
-            onChange={(e) => setCustomPrompt(e.target.value)}
-            placeholder={selectedPromptStyle === 'custom'
-              ? "เขียน Prompt อธิบายภาพที่ต้องการ เช่น: A luxury perfume bottle on marble surface with golden lighting..."
-              : "คุณสามารถแก้ไข Prompt ได้ตรงนี้ หรือเว้นว่างไว้เพื่อใช้ค่าเริ่มต้น"
-            }
-            rows={selectedPromptStyle === 'custom' ? 4 : 3}
-            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-400 focus:border-transparent resize-none"
-          />
-        </div>
-      </div>
+      )}
 
       {/* Camera View */}
       {showCamera && (
@@ -733,8 +741,64 @@ Focus on:
         </div>
       )}
 
-      {/* Old Advanced Settings removed - Now using compact settings above */}
-      {false && preview && (
+      {/* Process Controls */}
+      {readyToProcess && (
+        <div className="mt-5 p-5 bg-gradient-to-r from-yellow-100/50 to-amber-100/50 backdrop-blur-sm border-2 border-yellow-300/50 rounded-2xl shadow-lg">
+          <h3 className="font-bold text-gray-800 mb-4 text-lg">ตั้งค่าการสร้างภาพ</h3>
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  จำนวนภาพที่ต้องการสร้าง: <span className="text-yellow-600">{numberOfImages}</span>
+                </label>
+            <div className="grid grid-cols-4 gap-2">
+              {[1, 2, 3, 4].map(num => (
+                <button
+                  key={num}
+                  onClick={() => setNumberOfImages(num)}
+                  className={`px-4 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 ${
+                    numberOfImages === num
+                      ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg'
+                      : 'bg-white/50 backdrop-blur-sm text-gray-700 border border-white/30 hover:bg-white/70'
+                  }`}
+                >
+                  {num} ภาพ
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
+              ขนาดรูปภาพ (Aspect Ratio): <span className="text-yellow-600">{aspectRatio}</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { ratio: '1:1', label: 'จตุรัส 1:1', icon: '⬛' },
+                { ratio: '16:9', label: 'แนวนอน 16:9', icon: '▭' },
+                { ratio: '9:16', label: 'แนวตั้ง 9:16', icon: '▯' },
+                { ratio: '4:3', label: 'แนวนอน 4:3', icon: '▬' },
+                { ratio: '3:4', label: 'แนวตั้ง 3:4', icon: '▮' },
+                { ratio: '21:9', label: 'ไวด์ 21:9', icon: '▬' }
+              ].map(({ ratio, label, icon }) => (
+                <button
+                  key={ratio}
+                  onClick={() => setAspectRatio(ratio)}
+                  className={`px-3 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
+                    aspectRatio === ratio
+                      ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
+                      : 'bg-white/50 backdrop-blur-sm text-gray-700 border border-white/30 hover:bg-white/70'
+                  }`}
+                >
+                  <div className="text-xl mb-1">{icon}</div>
+                  <div className="text-xs">{label}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Advanced Settings - Auto shows when image uploaded */}
+      {preview && (
         <div className="mt-5">
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
@@ -969,36 +1033,35 @@ Focus on:
         </div>
       )}
 
-      {/* Generate Button - Always show */}
-      <div className="mt-5 flex flex-col sm:flex-row gap-3">
-        <button
-          onClick={handleProcess}
-          disabled={isProcessing}
-          className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-bold py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] shadow-lg"
-        >
-          {isProcessing ? (
-            <span className="flex items-center justify-center">
-              <Loader2 className="h-5 w-5 animate-spin mr-2" />
-              กำลังประมวลผล...
-            </span>
-          ) : (
-            <span className="flex items-center justify-center">
-              <Wand2 className="h-5 w-5 mr-2" />
-              {preview ? `สร้างภาพจากรูป` : `สร้างภาพจาก Prompt`} ({numberOfImages} ภาพ - ใช้ {numberOfImages} เครดิต)
-            </span>
-          )}
-        </button>
+      {/* Generate Button - Moved to bottom as final step */}
+      {readyToProcess && (
+        <div className="mt-5 flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={handleProcess}
+            disabled={isProcessing}
+            className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-bold py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] shadow-lg"
+          >
+            {isProcessing ? (
+              <span className="flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                กำลังประมวลผล...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center">
+                <Wand2 className="h-5 w-5 mr-2" />
+                สร้างภาพโฆษณา ({numberOfImages} ภาพ - ใช้ {numberOfImages} เครดิต)
+              </span>
+            )}
+          </button>
 
-        {preview && (
           <button
             onClick={handleReset}
             className="px-6 py-4 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700 font-bold rounded-xl transition-all transform hover:scale-105 shadow-md"
-            title="ลบรูปและเริ่มใหม่"
           >
             <RefreshCw className="h-5 w-5" />
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Upload tips */}
       <div className="mt-5 p-4 bg-gradient-to-r from-yellow-100/50 to-amber-100/50 backdrop-blur-sm rounded-xl border border-yellow-200/50 shadow-sm">
