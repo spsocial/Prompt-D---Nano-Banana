@@ -513,6 +513,30 @@ Focus on:
     }
   }
 
+  // Handle style change
+  const handleStyleChange = (e) => {
+    const style = e.target.value
+    setSelectedPromptStyle(style)
+
+    if (style === 'custom') {
+      setUseCustomPrompt(true)
+      setMainPrompt('')
+      setCustomPrompt('')
+    } else {
+      setUseCustomPrompt(false)
+      const prompts = {
+        premium: premiumPrompt,
+        floating: floatingPrompt,
+        moody: moodyPrompt,
+        cinematic: cinematicPrompt,
+        'product-hero': productHeroPrompt
+      }
+      const selectedPrompt = prompts[style] || premiumPrompt
+      setMainPrompt(selectedPrompt)
+      setCustomPrompt(selectedPrompt)
+    }
+  }
+
   return (
     <div>
       {/* Success Popup */}
@@ -524,6 +548,86 @@ Focus on:
         type="image"
         autoHideDuration={8000}
       />
+
+      {/* Compact Settings Panel - Always Show */}
+      <div className="mb-5 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Number of Images - Dropdown */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-2">จำนวนภาพ</label>
+            <select
+              value={numberOfImages}
+              onChange={(e) => setNumberOfImages(parseInt(e.target.value))}
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-all"
+            >
+              {[1, 2, 3, 4].map(num => (
+                <option key={num} value={num}>{num} ภาพ ({num} เครดิต)</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Aspect Ratio - Dropdown */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-2">ขนาดภาพ</label>
+            <select
+              value={aspectRatio}
+              onChange={(e) => setAspectRatio(e.target.value)}
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+            >
+              <option value="1:1">⬛ จตุรัส 1:1</option>
+              <option value="16:9">▭ แนวนอน 16:9</option>
+              <option value="9:16">▯ แนวตั้ง 9:16</option>
+              <option value="4:3">▬ แนวนอน 4:3</option>
+              <option value="3:4">▮ แนวตั้ง 3:4</option>
+              <option value="21:9">▬ ไวด์ 21:9</option>
+            </select>
+          </div>
+
+          {/* Prompt Style - Dropdown */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-2">สไตล์ Prompt</label>
+            <select
+              value={selectedPromptStyle}
+              onChange={handleStyleChange}
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-pink-400 focus:border-transparent transition-all"
+            >
+              <option value="premium">🌟 Premium (หรูหรา)</option>
+              <option value="floating">🎈 Floating (ลอยอากาศ)</option>
+              <option value="moody">🌙 Moody (อารมณ์ลึกลับ)</option>
+              <option value="cinematic">🎬 Cinematic (โปสเตอร์)</option>
+              <option value="product-hero">📸 Product Hero</option>
+              <option value="custom">✏️ กรอกเอง</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Custom Prompt Textarea - Always Show */}
+        <div className="mt-4">
+          <label className="block text-xs font-bold text-gray-700 mb-2">
+            {selectedPromptStyle === 'custom' ? '✏️ เขียน Prompt ของคุณเอง (จำเป็น)' : '✏️ แก้ไข Prompt (ไม่บังคับ)'}
+          </label>
+          <div className="relative">
+            <textarea
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              placeholder={selectedPromptStyle === 'custom' ? 'เขียน Prompt ของคุณเองที่นี่...' : 'สามารถแก้ไข Prompt ได้ตรงนี้...'}
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none"
+              rows={selectedPromptStyle === 'custom' ? 4 : 3}
+            />
+            {preview && (
+              <a
+                href="https://chatgpt.com/g/g-68d4b28a81148191b1fe407432225d34-kh-prompt-aichthmaaphaaphsinkhaaopset-rkhaay-prompt-d"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute bottom-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-xs rounded-lg font-medium shadow-md transition-all duration-300 flex items-center gap-1 no-underline"
+              >
+                <Brain className="h-3 w-3" />
+                วิเคราะห์ AI
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Mode Selection */}
       {!preview && !readyToProcess && (
@@ -741,64 +845,10 @@ Focus on:
         </div>
       )}
 
-      {/* Process Controls */}
-      {readyToProcess && (
-        <div className="mt-5 p-5 bg-gradient-to-r from-yellow-100/50 to-amber-100/50 backdrop-blur-sm border-2 border-yellow-300/50 rounded-2xl shadow-lg">
-          <h3 className="font-bold text-gray-800 mb-4 text-lg">ตั้งค่าการสร้างภาพ</h3>
-              <div className="mb-5">
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  จำนวนภาพที่ต้องการสร้าง: <span className="text-yellow-600">{numberOfImages}</span>
-                </label>
-            <div className="grid grid-cols-4 gap-2">
-              {[1, 2, 3, 4].map(num => (
-                <button
-                  key={num}
-                  onClick={() => setNumberOfImages(num)}
-                  className={`px-4 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 ${
-                    numberOfImages === num
-                      ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg'
-                      : 'bg-white/50 backdrop-blur-sm text-gray-700 border border-white/30 hover:bg-white/70'
-                  }`}
-                >
-                  {num} ภาพ
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* Hidden: Old Process Controls - Moved to top as dropdowns */}
 
-          <div className="mb-5">
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
-              ขนาดรูปภาพ (Aspect Ratio): <span className="text-yellow-600">{aspectRatio}</span>
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { ratio: '1:1', label: 'จตุรัส 1:1', icon: '⬛' },
-                { ratio: '16:9', label: 'แนวนอน 16:9', icon: '▭' },
-                { ratio: '9:16', label: 'แนวตั้ง 9:16', icon: '▯' },
-                { ratio: '4:3', label: 'แนวนอน 4:3', icon: '▬' },
-                { ratio: '3:4', label: 'แนวตั้ง 3:4', icon: '▮' },
-                { ratio: '21:9', label: 'ไวด์ 21:9', icon: '▬' }
-              ].map(({ ratio, label, icon }) => (
-                <button
-                  key={ratio}
-                  onClick={() => setAspectRatio(ratio)}
-                  className={`px-3 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
-                    aspectRatio === ratio
-                      ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
-                      : 'bg-white/50 backdrop-blur-sm text-gray-700 border border-white/30 hover:bg-white/70'
-                  }`}
-                >
-                  <div className="text-xl mb-1">{icon}</div>
-                  <div className="text-xs">{label}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Advanced Settings - Auto shows when image uploaded */}
-      {preview && (
+      {/* Hidden: Old Advanced Settings - Now always visible at top */}
+      {false && preview && (
         <div className="mt-5">
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
@@ -1033,8 +1083,8 @@ Focus on:
         </div>
       )}
 
-      {/* Generate Button - Moved to bottom as final step */}
-      {readyToProcess && (
+      {/* Generate Button - Always show when mode is selected */}
+      {(readyToProcess || mode === 'promptOnly' || (mode === 'withImage' && preview)) && (
         <div className="mt-5 flex flex-col sm:flex-row gap-3">
           <button
             onClick={handleProcess}
@@ -1049,17 +1099,21 @@ Focus on:
             ) : (
               <span className="flex items-center justify-center">
                 <Wand2 className="h-5 w-5 mr-2" />
-                สร้างภาพโฆษณา ({numberOfImages} ภาพ - ใช้ {numberOfImages} เครดิต)
+                {preview
+                  ? `สร้างภาพจากรูป (${numberOfImages} ภาพ)`
+                  : `สร้างภาพจาก Prompt (${numberOfImages} ภาพ)`}
               </span>
             )}
           </button>
 
-          <button
-            onClick={handleReset}
-            className="px-6 py-4 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700 font-bold rounded-xl transition-all transform hover:scale-105 shadow-md"
-          >
-            <RefreshCw className="h-5 w-5" />
-          </button>
+          {preview && (
+            <button
+              onClick={handleReset}
+              className="px-6 py-4 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700 font-bold rounded-xl transition-all transform hover:scale-105 shadow-md"
+            >
+              <RefreshCw className="h-5 w-5" />
+            </button>
+          )}
         </div>
       )}
 
