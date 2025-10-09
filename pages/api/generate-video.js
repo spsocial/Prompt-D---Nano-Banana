@@ -45,14 +45,22 @@ export default async function handler(req, res) {
     console.log(`⏱️ Duration: ${duration}s, Resolution: ${resolution}, Aspect: ${aspectRatio}`)
 
     // Use model name from CometAPI: sora-2 or sora-2-hd
-    // NOTE: CometAPI doesn't support aspect ratio in model name (tested - returns 503 error)
-    // Will need to find another way to specify aspect ratio
     const modelName = resolution === '1080p' ? 'sora-2-hd' : 'sora-2'
 
     console.log(`🎯 Using model: ${modelName}`)
 
-    // Use clean prompt (Sora 2 doesn't support technical specs in prompt)
-    const cleanPrompt = prompt || 'Create a cinematic video'
+    // Append aspect ratio instruction to prompt
+    let aspectRatioInstruction = ''
+    if (aspectRatio === '16:9') {
+      aspectRatioInstruction = '\n\nขนาดวิดีโอ: 16:9 แนวนอน'
+    } else if (aspectRatio === '9:16') {
+      aspectRatioInstruction = '\n\nขนาดวิดีโอ: 9:16 แนวตั้ง'
+    }
+
+    // Add aspect ratio instruction to prompt
+    const cleanPrompt = (prompt || 'Create a cinematic video') + aspectRatioInstruction
+
+    console.log(`📐 Prompt with aspect ratio: ${cleanPrompt}`)
 
     // Prepare message content
     let messageContent
