@@ -162,8 +162,9 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000) // 5 minutes
 
+      let response
       try {
-        const response = await fetch(apiEndpoint, {
+        response = await fetch(apiEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -190,37 +191,38 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
           error.shouldRefund = errorData.shouldRefund !== false // Default to true unless API says otherwise
           throw error
         }
+
+        const data = await response.json()
+        console.log('✅ Video generated:', data)
+
+        setVideoResult(data)
+        setShowSuccessPopup(true) // Show success popup
+
+        // Auto-hide popup after 8 seconds
+        setTimeout(() => {
+          setShowSuccessPopup(false)
+        }, 8000)
+
+        // Save to history
+        try {
+          useStore.getState().addVideoToHistory({
+            videoUrl: data.videoUrl,
+            prompt: prompt,
+            mode: data.mode,
+            duration: data.duration,
+            resolution: data.resolution,
+            aspectRatio: data.aspectRatio,
+            sourceImage: mode === 'image' ? sourceImage : null,
+            timestamp: new Date().toISOString()
+          })
+        } catch (historyError) {
+          console.error('Error saving to history:', historyError)
+        }
+
       } catch (fetchError) {
         clearTimeout(timeoutId)
         // Re-throw to outer catch block
         throw fetchError
-      }
-
-      const data = await response.json()
-      console.log('✅ Video generated:', data)
-
-      setVideoResult(data)
-      setShowSuccessPopup(true) // Show success popup
-
-      // Auto-hide popup after 8 seconds
-      setTimeout(() => {
-        setShowSuccessPopup(false)
-      }, 8000)
-
-      // Save to history
-      try {
-        useStore.getState().addVideoToHistory({
-          videoUrl: data.videoUrl,
-          prompt: prompt,
-          mode: data.mode,
-          duration: data.duration,
-          resolution: data.resolution,
-          aspectRatio: data.aspectRatio,
-          sourceImage: mode === 'image' ? sourceImage : null,
-          timestamp: new Date().toISOString()
-        })
-      } catch (historyError) {
-        console.error('Error saving to history:', historyError)
       }
 
     } catch (error) {
