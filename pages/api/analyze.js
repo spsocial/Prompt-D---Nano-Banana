@@ -1,4 +1,5 @@
 // Don't import analytics here to avoid client-side dependencies
+import { safeLog, truncateDataUri } from '../../lib/logUtils';
 
 export const config = {
   api: {
@@ -25,6 +26,9 @@ export default async function handler(req, res) {
 
     // Convert base64 to proper format
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '')
+
+    // Log with truncated image data
+    console.log('📸 Analyzing image:', truncateDataUri(image))
 
     // Analyze image with Gemini using direct API call
     const analysisPrompt = `วิเคราะห์ภาพสินค้านี้และระบุรายละเอียดต่อไปนี้:
@@ -172,7 +176,8 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    console.error('Vision analysis error:', error)
+    console.error('Vision analysis error:', error.message)
+    // Don't log full error object which may contain image data
     res.status(500).json({
       error: error.message || 'Failed to analyze image',
       details: error.response?.data?.error || null

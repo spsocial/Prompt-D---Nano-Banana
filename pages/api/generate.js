@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai"
+import { safeLog, truncateDataUri } from '../../lib/logUtils';
 
 export const config = {
   api: {
@@ -74,6 +75,9 @@ export default async function handler(req, res) {
       const result = await (async () => {
         try {
           console.log(`🎨 Generating image ${index + 1}: ${promptData.style}`)
+          if (originalImage && index === 0) {
+            console.log('📸 Original image size:', truncateDataUri(originalImage))
+          }
 
           // Prepare request body with image if provided
           let requestBody
@@ -254,6 +258,7 @@ ${promptData.style} style with premium quality`
 
         } catch (error) {
           console.error(`❌ Error generating ${promptData.style}:`, error.message)
+          // Don't log full error object which may contain image data
 
           // Check if it's a quota error
           const errorStr = JSON.stringify(error.message)
@@ -343,7 +348,8 @@ ${promptData.style} style with premium quality`
     })
 
   } catch (error) {
-    console.error('❌ API Error:', error)
+    console.error('❌ API Error:', error.message)
+    // Don't log full error object which may contain image data
     res.status(500).json({
       error: error.message || 'Failed to generate images',
       details: error.toString(),

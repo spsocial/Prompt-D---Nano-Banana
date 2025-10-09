@@ -1,3 +1,5 @@
+import { safeLog, truncateDataUri } from '../../lib/logUtils';
+
 export const config = {
   api: {
     bodyParser: {
@@ -31,8 +33,11 @@ export default async function handler(req, res) {
     }
 
     console.log('🎨 Generating with gemini-2.0-flash-exp...')
-    console.log('📝 Prompt:', prompt)
+    console.log('📝 Prompt:', prompt.substring(0, 100) + '...')
     console.log('🖼️ Image provided:', !!image)
+    if (image) {
+      console.log('📸 Image size:', truncateDataUri(image))
+    }
     console.log('📐 Aspect Ratio:', aspectRatio)
 
     // Model name
@@ -172,7 +177,8 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    console.error('❌ Generation error:', error)
+    console.error('❌ Generation error:', error.message)
+    // Don't log full error object which may contain image data
 
     res.status(500).json({
       error: error.message || 'Failed to generate image',
