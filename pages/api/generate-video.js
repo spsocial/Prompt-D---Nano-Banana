@@ -64,8 +64,18 @@ export default async function handler(req, res) {
     console.log(`🎯 Using model: ${modelName}`)
     console.log(`📐 Video size: ${size}`)
 
-    // Use clean prompt
-    const cleanPrompt = prompt || 'Create a cinematic video'
+    // Append aspect ratio instruction to prompt
+    let aspectRatioInstruction = ''
+    if (aspectRatio === '16:9') {
+      aspectRatioInstruction = '\n\nขนาดวิดีโอ: 16:9 แนวนอน'
+    } else if (aspectRatio === '9:16') {
+      aspectRatioInstruction = '\n\nขนาดวิดีโอ: 9:16 แนวตั้ง'
+    }
+
+    // Use clean prompt and append aspect ratio instruction
+    const cleanPrompt = (prompt || 'Create a cinematic video') + aspectRatioInstruction
+
+    console.log(`📝 Final prompt: ${cleanPrompt}`)
 
     // Prepare message content
     let messageContent
