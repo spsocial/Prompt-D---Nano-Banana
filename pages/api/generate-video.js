@@ -27,13 +27,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Either prompt or image is required' })
     }
 
-    // Use CometAPI key (new approach)
-    const cometApiKey = apiKey || process.env.COMET_API_KEY || 'sk-UXGWQInXgWPRGoCZ6FJdsV3JCXAw8OrNkCAc5rquiViqx2oL'
+    // Use CometAPI key from environment variable only (no hardcoded key)
+    const cometApiKey = apiKey || process.env.COMET_API_KEY
 
     if (!cometApiKey) {
       return res.status(400).json({
         error: 'CometAPI key is required',
-        message: 'Please provide a CometAPI key to use Sora video generation'
+        message: 'กรุณาตั้งค่า COMET_API_KEY ใน Railway environment variables',
+        suggestion: '🔑 ไม่พบ API Key - กรุณาติดต่อผู้ดูแลระบบเพื่อเติมเครดิต CometAPI'
       })
     }
 
