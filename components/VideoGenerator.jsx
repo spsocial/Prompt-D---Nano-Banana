@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import useStore from '../lib/store'
 
 export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', model = 'sora-2' }) {
-  const [mode, setMode] = useState(sourceImage ? 'image' : 'text')
-  const [uploadedImage, setUploadedImage] = useState(sourceImage)
+  // Force text mode for Sora models (image-to-video not supported yet)
+  const isSoraModel = model === 'sora-2' || model === 'sora-2-hd'
+  const [mode, setMode] = useState(isSoraModel ? 'text' : (sourceImage ? 'image' : 'text'))
+  const [uploadedImage, setUploadedImage] = useState(isSoraModel ? null : sourceImage)
   const [prompt, setPrompt] = useState(sourcePrompt)
   const [duration, setDuration] = useState(model === 'veo3-fast' ? 8 : 5)
   const [resolution, setResolution] = useState('720p')
@@ -69,7 +71,11 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       setAspectRatio('16:9')
     }
 
-    // Note: Sora 2 now supports both text-to-video and image-to-video via CometAPI
+    // Force text mode for Sora models (image-to-video not supported yet)
+    if (isSoraModel && mode === 'image') {
+      setMode('text')
+      setUploadedImage(null)
+    }
   }, [model])
 
   // Auto-adjust resolution if not available for selected aspect ratio
@@ -372,6 +378,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             <div className="flex-1">
               <h3 className="text-base font-bold text-amber-900 mb-1">⚠️ โมเดล Sora 2 อยู่ในช่วงทดลอง (Beta)</h3>
               <div className="text-sm text-amber-800 space-y-1">
+                <p>• <strong>รองรับเฉพาะ Text-to-Video เท่านั้น</strong> - Image-to-Video ยังไม่รองรับ</p>
                 <p>• <strong>ระบบอาจไม่เสถียร</strong> - บางครั้งอาจใช้เวลานานหรือล้มเหลว</p>
                 <p>• <strong>API มีปัญหาเป็นครั้งคราว</strong> - หากล้มเหลว เครดิตจะถูกคืนอัตโนมัติ</p>
                 <p>• <strong>แนะนำ:</strong> ลองใหม่อีกครั้งหากประสบปัญหา หรือเปลี่ยนไปใช้ Veo 3 แทน</p>
@@ -381,7 +388,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         </div>
       )}
 
-      {/* Mode Selection - Show for all models (Sora 2 now supports image-to-video) */}
+      {/* Mode Selection - Hide Image to Video for Sora models (not supported yet) */}
       <div className="flex gap-3">
         <button
           onClick={() => setMode('text')}
@@ -395,19 +402,32 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
           <div className="font-bold">Text to Video</div>
           <div className="text-xs text-gray-600">สร้างจากข้อความ</div>
         </button>
-        <button
-          onClick={() => setMode('image')}
-          className={`flex-1 p-4 rounded-xl border-2 transition-all ${
-            mode === 'image'
-              ? 'border-red-500 bg-red-50'
-              : 'border-gray-300 hover:border-red-300'
-          }`}
+
+        {/* Hide Image to Video for Sora models (CometAPI doesn't support it yet - costs $0.08 per failed attempt) */}
+        {model !== 'sora-2' && model !== 'sora-2-hd' && (
+          <button
+            onClick={() => setMode('image')}
+            className={`flex-1 p-4 rounded-xl border-2 transition-all ${
+              mode === 'image'
+                ? 'border-red-500 bg-red-50'
+                : 'border-gray-300 hover:border-red-300'
+            }`}
           >
             <ImageIcon className="h-6 w-6 mx-auto mb-2 text-red-500" />
             <div className="font-bold">Image to Video</div>
             <div className="text-xs text-gray-600">สร้างจากรูปภาพ</div>
           </button>
-        </div>
+        )}
+
+        {/* Disabled placeholder for Sora models */}
+        {(model === 'sora-2' || model === 'sora-2-hd') && (
+          <div className="flex-1 p-4 rounded-xl border-2 border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed">
+            <ImageIcon className="h-6 w-6 mx-auto mb-2 text-gray-400" />
+            <div className="font-bold text-gray-500">Image to Video</div>
+            <div className="text-xs text-gray-500">ยังไม่รองรับ (Coming Soon)</div>
+          </div>
+        )}
+      </div>
 
       {/* Image Upload (for Image to Video mode) */}
       {mode === 'image' && (

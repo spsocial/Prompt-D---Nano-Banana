@@ -42,19 +42,19 @@ const VIDEO_MODELS = {
   'sora-2': {
     id: 'sora-2',
     name: 'Sora 2',
-    description: 'OpenAI - Text/Image to Video',
+    description: 'OpenAI - Text to Video Only',
     icon: '🎬',
-    requiresImage: false, // optional (รองรับทั้ง text และ image)
-    supportsImageToVideo: true,
+    requiresImage: false,
+    supportsImageToVideo: false, // ยังไม่รองรับ image-to-video ผ่าน CometAPI
     color: 'red'
   },
   'sora-2-hd': {
     id: 'sora-2-hd',
     name: 'Sora 2 HD',
-    description: 'OpenAI - 1080p Text/Image to Video',
+    description: 'OpenAI - 1080p Text to Video Only',
     icon: '💎',
-    requiresImage: false, // optional (รองรับทั้ง text และ image)
-    supportsImageToVideo: true,
+    requiresImage: false,
+    supportsImageToVideo: false, // ยังไม่รองรับ image-to-video ผ่าน CometAPI
     color: 'pink'
   },
   'veo3-fast': {
