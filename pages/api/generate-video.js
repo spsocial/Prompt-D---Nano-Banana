@@ -43,6 +43,8 @@ export default async function handler(req, res) {
     console.log(`⏱️ Duration: ${duration}s, Resolution: ${resolution}, Aspect: ${aspectRatio}`)
 
     // Use model name from CometAPI: sora-2 or sora-2-hd
+    // NOTE: CometAPI doesn't support aspect ratio in model name (tested - returns 503 error)
+    // Will need to find another way to specify aspect ratio
     const modelName = resolution === '1080p' ? 'sora-2-hd' : 'sora-2'
 
     console.log(`🎯 Using model: ${modelName}`)
@@ -50,39 +52,46 @@ export default async function handler(req, res) {
     // Use clean prompt (Sora 2 doesn't support technical specs in prompt)
     const cleanPrompt = prompt || 'Create a cinematic video'
 
-    // Convert aspect ratio to size format (official OpenAI format)
-    let videoSize
-    if (aspectRatio === '16:9') {
-      videoSize = resolution === '1080p' ? '1920x1080' : '1280x720'
-    } else if (aspectRatio === '9:16') {
-      videoSize = resolution === '1080p' ? '1080x1920' : '720x1280'
-    } else { // 1:1
-      videoSize = resolution === '1080p' ? '1080x1080' : '720x720'
+    // Prepare message content
+    let messageContent
+
+    if (image) {
+      // Image-to-Video: NOT officially supported by Sora 2, but try multimodal format
+      console.log('⚠️ Image-to-Video mode: Sora 2 may not support this (trying anyway)')
+      messageContent = [
+        {
+          type: 'text',
+          text: cleanPrompt
+        },
+        {
+          type: 'image_url',
+          image_url: {
+            url: image
+          }
+        }
+      ]
+    } else {
+      // Text-to-Video: simple string content (official format)
+      messageContent = cleanPrompt
     }
 
-    console.log(`📐 Video size: ${videoSize}`)
-
-    // Try official OpenAI format first (using /v1/videos endpoint with streaming)
-    // If it doesn't work, we'll fall back to chat completions
+    // Use streaming to avoid timeout (same as veo3)
     const requestPayload = {
       model: modelName,
-      prompt: cleanPrompt,
-      size: videoSize,
-      seconds: duration.toString(),
-      stream: true // Try streaming with videos endpoint
+      stream: true, // IMPORTANT: Use streaming to avoid timeout!
+      messages: [
+        {
+          role: 'user',
+          content: messageContent
+        }
+      ]
     }
 
-    // Add input_reference for image-to-video
-    if (image) {
-      console.log('📸 Image-to-Video mode: Using input_reference parameter')
-      requestPayload.input_reference = image // base64 or URL
-    }
+    console.log('🚀 Sending request to CometAPI with streaming...')
+    console.log('📦 Request payload:', JSON.stringify(requestPayload, null, 2))
 
-    console.log('🚀 Sending request to CometAPI /v1/videos endpoint...')
-    console.log('📦 Request payload:', JSON.stringify({ ...requestPayload, input_reference: image ? '[IMAGE DATA]' : undefined }, null, 2))
-
-    // Try official /v1/videos endpoint first
-    const createResponse = await fetch('https://api.cometapi.com/v1/videos', {
+    // Call CometAPI using OpenAI-compatible endpoint
+    const createResponse = await fetch('https://api.cometapi.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${cometApiKey}`,
