@@ -36,7 +36,8 @@
       "Bash(git revert:*)",
       "Bash(npx next lint:*)",
       "Bash(node:*)",
-      "WebFetch(domain:docs.aimlapi.com)"
+      "WebFetch(domain:docs.aimlapi.com)",
+      "WebFetch(domain:pic.in.th)"
     ],
     "deny": [],
     "ask": []

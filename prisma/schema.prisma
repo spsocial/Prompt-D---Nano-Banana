@@ -27,13 +27,16 @@ model User {
   totalGenerated Int      @default(0)
   totalSpent    Float    @default(0)
   credits       Int      @default(0)  // User's current credits
-  creditsUsed   Int      @default(0)  // Total credits used
+  creditsUsed   Int      @default(0)  // Total credits used (images)
+  videosGenerated Int    @default(0)  // Total videos generated
+  videoCreditsUsed Int   @default(0)  // Total credits used for videos
 
   // Relations
   accounts      Account[]
   sessions      Session[]
   transactions  Transaction[]
   images        ImageGeneration[]
+  videos        VideoGeneration[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -119,6 +122,47 @@ model ImageGeneration {
   @@index([createdAt])
 }
 
+// Video generation tracking
+model VideoGeneration {
+  id            String   @id @default(cuid())
+  userId        String
+  model         String   // sora-2, sora-2-hd, veo3-fast
+  mode          String   // text-to-video, image-to-video
+  prompt        String?  @db.Text
+  duration      Int      // seconds
+  aspectRatio   String   // 16:9, 9:16, 1:1
+  creditsUsed   Int      // 10, 15, etc.
+  success       Boolean  @default(true)
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [userId])
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([model])
+  @@index([createdAt])
+  @@index([success])
+}
+
+// Video generation errors/failures
+model VideoError {
+  id            String   @id @default(cuid())
+  userId        String
+  model         String   // sora-2, sora-2-hd, veo3-fast
+  mode          String   // text-to-video, image-to-video
+  errorType     String   // timeout, api_error, content_violation, etc.
+  errorMessage  String?  @db.Text
+  creditsRefunded Int    // Credits that were refunded
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([model])
+  @@index([errorType])
+  @@index([createdAt])
+}
+
 // Daily statistics (aggregated data)
 model DailyStats {
   id            String   @id @default(cuid())
@@ -126,6 +170,11 @@ model DailyStats {
   newUsers      Int      @default(0)
   activeUsers   Int      @default(0)
   totalImages   Int      @default(0)
+  totalVideos   Int      @default(0)
+  videosSora2   Int      @default(0)
+  videosSora2HD Int      @default(0)
+  videosVeo3    Int      @default(0)
+  videoErrors   Int      @default(0)
   totalRevenue  Float    @default(0)
   totalTransactions Int  @default(0)
 
@@ -141,6 +190,11 @@ model MonthlyStats {
   totalUsers    Int      @default(0)
   activeUsers   Int      @default(0)
   totalImages   Int      @default(0)
+  totalVideos   Int      @default(0)
+  videosSora2   Int      @default(0)
+  videosSora2HD Int      @default(0)
+  videosVeo3    Int      @default(0)
+  videoErrors   Int      @default(0)
   totalRevenue  Float    @default(0)
   totalTransactions Int  @default(0)
 

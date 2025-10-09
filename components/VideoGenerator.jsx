@@ -204,6 +204,28 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
           setShowSuccessPopup(false)
         }, 8000)
 
+        // Track successful video generation
+        try {
+          await fetch('/api/track-video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'success',
+              data: {
+                userId: localStorage.getItem('nano_user_id'),
+                model: model,
+                mode: mode === 'image' ? 'image-to-video' : 'text-to-video',
+                prompt: prompt,
+                duration: duration,
+                aspectRatio: aspectRatio,
+                creditsUsed: requiredCredits
+              }
+            })
+          }).catch(err => console.log('Analytics tracking failed:', err));
+        } catch (trackingError) {
+          console.log('Video tracking error:', trackingError);
+        }
+
         // Save to history
         try {
           useStore.getState().addVideoToHistory({
@@ -269,6 +291,32 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
           // Update local state immediately with the returned value
           if (store.setUserCredits) {
             store.setUserCredits(refundData.credits)
+          }
+
+          // Track video generation error
+          try {
+            const errorType = error.message.toLowerCase().includes('content') ? 'content_violation'
+                            : error.message.includes('timeout') ? 'timeout'
+                            : error.message.includes('quota') ? 'quota_exceeded'
+                            : 'api_error';
+
+            await fetch('/api/track-video', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'error',
+                data: {
+                  userId: localStorage.getItem('nano_user_id'),
+                  model: model,
+                  mode: mode === 'image' ? 'image-to-video' : 'text-to-video',
+                  errorType: errorType,
+                  errorMessage: error.message,
+                  creditsRefunded: requiredCredits
+                }
+              })
+            }).catch(err => console.log('Error tracking failed:', err));
+          } catch (trackingError) {
+            console.log('Error tracking error:', trackingError);
           }
         } catch (refundError) {
           console.error('❌ Failed to refund credits:', refundError)

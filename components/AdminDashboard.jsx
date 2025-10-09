@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Users, TrendingUp, DollarSign, Image,
   Calendar, Activity, Award, RefreshCw,
-  Download, ChevronDown, ChevronUp
+  Download, ChevronDown, ChevronUp, Film, AlertTriangle
 } from 'lucide-react';
 import { getAnalyticsSummary, getDetailedStats, exportAnalyticsData } from '../lib/analytics-client';
 
@@ -13,6 +13,7 @@ export default function AdminDashboard() {
     users: true,
     revenue: true,
     activity: true,
+    videos: true,
     topUsers: false,
     transactions: false
   });
@@ -315,7 +316,7 @@ export default function AdminDashboard() {
         >
           <h3 className="text-lg font-semibold flex items-center">
             <Image className="h-5 w-5 mr-2 text-purple-500" />
-            กิจกรรมวันนี้
+            กิจกรรมภาพวันนี้
           </h3>
           {expandedSections.activity ? <ChevronUp /> : <ChevronDown />}
         </div>
@@ -333,6 +334,52 @@ export default function AdminDashboard() {
                     {Object.entries(stats.images.styleBreakdown).map(([style, count]) => (
                       <div key={style} className="bg-gray-50 p-3 rounded-lg">
                         <p className="text-xs text-gray-600">{style}</p>
+                        <p className="text-lg font-semibold text-gray-800">{count}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Video Statistics */}
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200">
+        <div
+          className="p-6 flex justify-between items-center cursor-pointer"
+          onClick={() => toggleSection('videos')}
+        >
+          <h3 className="text-lg font-semibold flex items-center">
+            <Film className="h-5 w-5 mr-2 text-red-500" />
+            กิจกรรมวิดีโอวันนี้
+          </h3>
+          {expandedSections.videos ? <ChevronUp /> : <ChevronDown />}
+        </div>
+        {expandedSections.videos && stats.videos && (
+          <div className="px-6 pb-6 border-t">
+            <div className="mt-4">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="bg-red-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">วิดีโอที่สร้างวันนี้</p>
+                  <p className="text-3xl font-bold text-red-600">{stats.videos.today}</p>
+                </div>
+                <div className="bg-orange-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">วิดีโอ Error วันนี้</p>
+                  <p className="text-3xl font-bold text-orange-600">{stats.videos.errors}</p>
+                  <p className="text-xs text-orange-500 mt-1">
+                    สำหรับ claim credits จาก CometAPI
+                  </p>
+                </div>
+              </div>
+              {Object.keys(stats.videos.modelBreakdown).length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">แยกตามโมเดล:</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {Object.entries(stats.videos.modelBreakdown).map(([model, count]) => (
+                      <div key={model} className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs text-gray-600">{model}</p>
                         <p className="text-lg font-semibold text-gray-800">{count}</p>
                       </div>
                     ))}
@@ -363,8 +410,10 @@ export default function AdminDashboard() {
                 <thead>
                   <tr className="text-left text-sm text-gray-600">
                     <th className="pb-2">User ID</th>
-                    <th className="pb-2">ภาพที่สร้าง</th>
-                    <th className="pb-2">เครดิตที่ใช้</th>
+                    <th className="pb-2">ภาพ</th>
+                    <th className="pb-2">วิดีโอ</th>
+                    <th className="pb-2">เครดิต (ภาพ)</th>
+                    <th className="pb-2">เครดิต (วิดีโอ)</th>
                     <th className="pb-2">ใช้งานล่าสุด</th>
                   </tr>
                 </thead>
@@ -380,7 +429,9 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       <td className="py-2">{user.generated}</td>
+                      <td className="py-2">{user.videosGenerated || 0}</td>
                       <td className="py-2">{user.spent} เครดิต</td>
+                      <td className="py-2">{user.videoCreditsUsed || 0} เครดิต</td>
                       <td className="py-2 text-sm text-gray-600">
                         {formatDate(user.lastActive)}
                       </td>
