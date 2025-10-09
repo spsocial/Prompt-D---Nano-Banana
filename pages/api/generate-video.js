@@ -42,10 +42,13 @@ export default async function handler(req, res) {
     console.log(`📝 Mode: ${image ? 'Image to Video' : 'Text to Video'}`)
     console.log(`⏱️ Duration: ${duration}s, Resolution: ${resolution}, Aspect: ${aspectRatio}`)
 
-    // Use model name from CometAPI: sora-2 or sora-2-hd
-    const modelName = resolution === '1080p' ? 'sora-2-hd' : 'sora-2'
+    // Build model name with parameters (CometAPI format)
+    // Format: sora-2-{aspectRatio}-{resolution}-{duration}s
+    // Example: sora-2-16:9-720p-10s (landscape, 720p, 10 seconds)
+    const baseModel = resolution === '1080p' ? 'sora-2-hd' : 'sora-2'
+    const modelName = `${baseModel}-${aspectRatio}-${resolution}-${duration}s`
 
-    console.log(`🎯 Using model: ${modelName}`)
+    console.log(`🎯 Using model: ${modelName} (with aspect ratio, resolution, duration)`)
 
     // Use clean prompt (Sora 2 doesn't support technical specs in prompt)
     const cleanPrompt = prompt || 'Create a cinematic video'

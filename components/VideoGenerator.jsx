@@ -625,10 +625,13 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             <video
               src={videoResult.videoUrl}
               controls
+              autoPlay
+              loop
+              playsInline
               className={`rounded-xl border-2 border-gray-200 shadow-lg ${
                 videoResult.aspectRatio === '9:16'
-                  ? 'max-w-sm w-full' // Vertical: max 384px width
-                  : 'w-full max-w-4xl' // Horizontal: max 896px width
+                  ? 'max-w-sm w-full' // Vertical: max 384px width (9:16)
+                  : 'w-full max-w-2xl' // Horizontal: max 672px width (16:9) - ลดจาก 4xl
               }`}
             />
           </div>
