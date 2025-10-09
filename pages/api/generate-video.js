@@ -47,33 +47,30 @@ export default async function handler(req, res) {
 
     console.log(`🎯 Using model: ${modelName}`)
 
-    // Build prompt with specifications
-    let fullPrompt = prompt || 'Create a cinematic video'
+    // Use clean prompt (Sora 2 doesn't support technical specs in prompt)
+    const cleanPrompt = prompt || 'Create a cinematic video'
 
-    // Add video specifications to prompt
-    fullPrompt = `${fullPrompt}. Create a ${duration} second video in ${resolution} resolution with ${aspectRatio} aspect ratio.`
-
-    // Prepare message content based on mode (similar to Veo3)
+    // Prepare message content
     let messageContent
 
     if (image) {
-      // Image-to-Video: use array format with image and text
-      console.log('📸 Image-to-Video mode: Including image in request')
+      // Image-to-Video: NOT officially supported by Sora 2, but try multimodal format
+      console.log('⚠️ Image-to-Video mode: Sora 2 may not support this (trying anyway)')
       messageContent = [
         {
           type: 'text',
-          text: `${fullPrompt}. Animate this image with smooth camera movements and cinematic effects.`
+          text: cleanPrompt
         },
         {
           type: 'image_url',
           image_url: {
-            url: image  // base64 or URL
+            url: image
           }
         }
       ]
     } else {
-      // Text-to-Video: simple string content
-      messageContent = fullPrompt
+      // Text-to-Video: simple string content (official format)
+      messageContent = cleanPrompt
     }
 
     // Use streaming to avoid timeout (same as veo3)
