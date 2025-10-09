@@ -158,27 +158,42 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
 
       console.log('🔗 API Endpoint:', apiEndpoint)
 
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          image: mode === 'image' ? uploadedImage : null,
-          apiKey: apiKeys.openai || null,
-          duration: duration,
-          resolution: resolution,
-          aspectRatio: aspectRatio,
-          model: model
-        })
-      })
+      // Create AbortController with 5 minute timeout (same as API maxDuration)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000) // 5 minutes
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        // Use Thai suggestion if available, otherwise use error message
-        const errorMessage = errorData.suggestion || errorData.error || 'ไม่สามารถสร้างวิดีโอได้'
-        throw new Error(errorMessage)
+      try {
+        const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+            image: mode === 'image' ? uploadedImage : null,
+            apiKey: apiKeys.openai || null,
+            duration: duration,
+            resolution: resolution,
+            aspectRatio: aspectRatio,
+            model: model
+          }),
+          signal: controller.signal
+        })
+
+        clearTimeout(timeoutId) // Clear timeout if request completes
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          // Attach shouldRefund flag from API response
+          const errorMessage = errorData.suggestion || errorData.error || 'ไม่สามารถสร้างวิดีโอได้'
+          const error = new Error(errorMessage)
+          error.shouldRefund = errorData.shouldRefund !== false // Default to true unless API says otherwise
+          throw error
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId)
+        // Re-throw to outer catch block
+        throw fetchError
       }
 
       const data = await response.json()
@@ -211,48 +226,62 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     } catch (error) {
       console.error('❌ Video generation error:', error)
 
-      // Refund credits on error
-      try {
-        console.log(`💳 Refunding ${requiredCredits} credits due to error...`)
-        const refundResponse = await fetch('/api/credits', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: localStorage.getItem('nano_user_id'),
-            amount: requiredCredits,
-            isRefund: true // Flag to skip admin key check
+      // Check if error is network timeout or connection abort
+      const isNetworkError = error.name === 'AbortError' ||
+                            error.message.includes('Failed to fetch') ||
+                            error.message.includes('network')
+
+      // Only refund if API explicitly says to, or if it's not a network error
+      const shouldRefundCredits = error.shouldRefund !== false && !isNetworkError
+
+      if (shouldRefundCredits) {
+        // Refund credits on real API errors
+        try {
+          console.log(`💳 Refunding ${requiredCredits} credits due to API error...`)
+          const refundResponse = await fetch('/api/credits', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: localStorage.getItem('nano_user_id'),
+              amount: requiredCredits,
+              isRefund: true // Flag to skip admin key check
+            })
           })
-        })
 
-        if (!refundResponse.ok) {
-          const errorData = await refundResponse.json()
-          console.error('Refund API error:', errorData)
-          throw new Error(errorData.message || 'Refund failed')
+          if (!refundResponse.ok) {
+            const errorData = await refundResponse.json()
+            console.error('Refund API error:', errorData)
+            throw new Error(errorData.message || 'Refund failed')
+          }
+
+          const refundData = await refundResponse.json()
+          console.log(`✅ Refunded ${requiredCredits} credits successfully. New balance: ${refundData.credits}`)
+
+          // Force reload credits from database
+          const store = useStore.getState()
+          if (store.loadUserCredits) {
+            await store.loadUserCredits(localStorage.getItem('nano_user_id'))
+          }
+
+          // Update local state immediately with the returned value
+          if (store.setUserCredits) {
+            store.setUserCredits(refundData.credits)
+          }
+        } catch (refundError) {
+          console.error('❌ Failed to refund credits:', refundError)
+          alert(`⚠️ เกิดข้อผิดพลาดในการคืนเครดิต กรุณาติดต่อแอดมิน\nError: ${refundError.message}`)
         }
-
-        const refundData = await refundResponse.json()
-        console.log(`✅ Refunded ${requiredCredits} credits successfully. New balance: ${refundData.credits}`)
-
-        // Force reload credits from database
-        const store = useStore.getState()
-        if (store.loadUserCredits) {
-          await store.loadUserCredits(localStorage.getItem('nano_user_id'))
-        }
-
-        // Update local state immediately with the returned value
-        if (store.setUserCredits) {
-          store.setUserCredits(refundData.credits)
-        }
-      } catch (refundError) {
-        console.error('❌ Failed to refund credits:', refundError)
-        alert(`⚠️ เกิดข้อผิดพลาดในการคืนเครดิต กรุณาติดต่อแอดมิน\nError: ${refundError.message}`)
+      } else {
+        console.log(`⚠️ Network timeout/abort detected - NOT refunding credits (video may still be processing)`)
       }
 
-      // Check if API is not available
-      if (error.message.includes('not valid JSON') || error.message.includes('Unexpected token')) {
+      // Set error message based on error type
+      if (isNetworkError) {
+        setError(`⏱️ การเชื่อมต่อขาดหาย - วิดีโออาจกำลังสร้างอยู่ กรุณาตรวจสอบประวัติภายหลัง (ไม่มีการคืนเครดิต)`)
+      } else if (error.message.includes('not valid JSON') || error.message.includes('Unexpected token')) {
         setError(`⚠️ Sora API ยังไม่เปิดให้ใช้งานสาธารณะ - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)`)
       } else {
-        setError(`${error.message} - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)`)
+        setError(`${error.message}${shouldRefundCredits ? ` - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)` : ''}`)
       }
     } finally {
       setIsGenerating(false)

@@ -14,26 +14,30 @@ export default function History() {
     }
   }, [])
 
-  const handleDownload = async (imageUrl, id) => {
+  const handleDownload = async (url, id, isVideo = false) => {
     try {
-      // Handle case where image data was stripped to save space
-      if (imageUrl === 'base64_image_stripped' || !imageUrl) {
-        alert('ไม่สามารถดาวน์โหลดภาพนี้ได้ (ข้อมูลภาพถูกลบเพื่อประหยัดพื้นที่)')
+      // Handle case where data was stripped to save space
+      if (url === 'base64_image_stripped' || !url) {
+        alert(`ไม่สามารถดาวน์โหลด${isVideo ? 'วิดีโอ' : 'ภาพ'}นี้ได้ (ข้อมูลถูกลบเพื่อประหยัดพื้นที่)`)
         return
       }
 
       // Check if it's mobile device
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
-      // If it's a base64 image, convert to blob
-      if (imageUrl.startsWith('data:')) {
-        const response = await fetch(imageUrl)
+      // Determine file extension
+      const fileExt = isVideo ? 'mp4' : 'png'
+      const mimeType = isVideo ? 'video/mp4' : 'image/png'
+
+      // If it's a base64 or data URL
+      if (url.startsWith('data:')) {
+        const response = await fetch(url)
         const blob = await response.blob()
 
         // For mobile devices, try using share API first
         if (isMobile && navigator.share && navigator.canShare) {
-          const file = new File([blob], `nano-banana-history-${id}.png`, {
-            type: 'image/png'
+          const file = new File([blob], `nano-banana-history-${id}.${fileExt}`, {
+            type: mimeType
           })
 
           if (navigator.canShare({ files: [file] })) {
@@ -41,7 +45,7 @@ export default function History() {
               await navigator.share({
                 files: [file],
                 title: 'Nano Banana History',
-                text: `History Image ${id}`
+                text: `History ${isVideo ? 'Video' : 'Image'} ${id}`
               })
               return
             } catch (shareError) {
@@ -51,10 +55,10 @@ export default function History() {
         }
 
         // Fallback to blob URL download
-        const url = window.URL.createObjectURL(blob)
+        const blobUrl = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
-        link.href = url
-        link.download = `nano-banana-history-${id}.png`
+        link.href = blobUrl
+        link.download = `nano-banana-history-${id}.${fileExt}`
         link.style.display = 'none'
         document.body.appendChild(link)
         link.click()
@@ -62,20 +66,20 @@ export default function History() {
         // Clean up
         setTimeout(() => {
           document.body.removeChild(link)
-          window.URL.revokeObjectURL(url)
+          window.URL.revokeObjectURL(blobUrl)
         }, 100)
 
         // For mobile, also open in new tab as fallback
         if (isMobile) {
           setTimeout(() => {
-            window.open(url, '_blank')
+            window.open(blobUrl, '_blank')
           }, 200)
         }
       } else {
         // For regular URLs
         const link = document.createElement('a')
-        link.href = imageUrl
-        link.download = `nano-banana-history-${id}.png`
+        link.href = url
+        link.download = `nano-banana-history-${id}.${fileExt}`
         link.target = '_blank'
         link.style.display = 'none'
         document.body.appendChild(link)
@@ -87,16 +91,16 @@ export default function History() {
 
         // For mobile, also open in new tab
         if (isMobile) {
-          window.open(imageUrl, '_blank')
+          window.open(url, '_blank')
         }
       }
     } catch (error) {
       console.error('Download error:', error)
 
-      // If all else fails, open image in new tab
-      if (imageUrl && !imageUrl.includes('base64_image_stripped')) {
-        window.open(imageUrl, '_blank')
-        alert('กดค้างที่รูปภาพและเลือก "บันทึกรูปภาพ" เพื่อดาวน์โหลด')
+      // If all else fails, open in new tab
+      if (url && !url.includes('base64_image_stripped')) {
+        window.open(url, '_blank')
+        alert(`กดค้างที่${isVideo ? 'วิดีโอ' : 'รูปภาพ'}และเลือก "บันทึก${isVideo ? 'วิดีโอ' : 'รูปภาพ'}" เพื่อดาวน์โหลด`)
       } else {
         alert('ไม่สามารถดาวน์โหลดได้')
       }
@@ -165,17 +169,17 @@ export default function History() {
               exit={{ opacity: 0, scale: 0.9 }}
               className="group relative bg-gradient-to-br from-white/40 to-white/20 backdrop-blur-xl rounded-2xl border border-white/30 shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
             >
-              {/* Image Container */}
+              {/* Image/Video Container */}
               <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-gray-100/50 to-white/50 rounded-xl">
-                {/* Handle missing image data */}
-                {item.imageUrl === 'base64_image_stripped' || !item.imageUrl ? (
+                {/* Handle missing data */}
+                {(item.type === 'video' && !item.videoUrl) || (item.type !== 'video' && (item.imageUrl === 'base64_image_stripped' || !item.imageUrl)) ? (
                   <div className="w-full h-full flex items-center justify-center bg-gray-200/50">
                     <div className="text-center p-4">
-                      <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-500 text-sm">ภาพถูกลบเพื่อประหยัดพื้นที่</p>
+                      {item.type === 'video' ? <Film className="h-12 w-12 text-gray-400 mx-auto mb-2" /> : <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />}
+                      <p className="text-gray-500 text-sm">{item.type === 'video' ? 'วิดีโอถูกลบ' : 'ภาพถูกลบเพื่อประหยัดพื้นที่'}</p>
                       <p className="text-gray-400 text-xs mt-1">ระบบเก็บ Prompt และข้อมูลอื่นๆ ไว้</p>
                       <button
-                        onClick={() => handleDownload(item.imageUrl, item.id)}
+                        onClick={() => handleDownload(item.videoUrl || item.imageUrl, item.id, item.type === 'video')}
                         disabled
                         className="mt-2 px-3 py-1 text-xs bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
                       >
@@ -183,6 +187,57 @@ export default function History() {
                       </button>
                     </div>
                   </div>
+                ) : item.type === 'video' ? (
+                  <>
+                    {/* Video Player */}
+                    <video
+                      src={item.videoUrl}
+                      className="w-full h-full object-contain bg-black cursor-pointer"
+                      onClick={() => setSelectedImage(item)}
+                      controls
+                      loop
+                      playsInline
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.parentElement.innerHTML = `
+                          <div class="w-full h-full flex items-center justify-center bg-gray-200/50">
+                            <div class="text-center p-4">
+                              <p class="text-gray-500 text-sm">ไม่สามารถโหลดวิดีโอได้</p>
+                            </div>
+                          </div>
+                        `;
+                      }}
+                    />
+                    {/* Video Badge */}
+                    <div className="absolute top-2 left-2 px-2 py-1 bg-red-500/90 backdrop-blur-sm rounded-lg text-white text-xs font-bold flex items-center gap-1">
+                      <Film className="h-3 w-3" />
+                      VIDEO
+                    </div>
+
+                    {/* Mobile Buttons for Video */}
+                    <div className="md:hidden absolute top-2 right-2 flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedImage(item)
+                        }}
+                        className="p-2.5 bg-black/60 backdrop-blur-sm rounded-lg text-white shadow-lg"
+                        title="View fullscreen"
+                      >
+                        <Maximize2 className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDownload(item.videoUrl, item.id, true)
+                        }}
+                        className="p-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 backdrop-blur-sm rounded-lg text-white shadow-lg"
+                        title="Download Video"
+                      >
+                        <Download className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </>
                 ) : (
                   <>
                     <img
@@ -223,7 +278,7 @@ export default function History() {
                           <Maximize2 className="h-5 w-5" />
                         </button>
                         <button
-                          onClick={() => handleDownload(item.imageUrl, item.id)}
+                          onClick={() => handleDownload(item.imageUrl, item.id, false)}
                           className="p-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 backdrop-blur-sm rounded-lg text-white shadow-lg"
                           title="Download"
                         >
@@ -245,22 +300,25 @@ export default function History() {
 
                     {/* Action Buttons */}
                     <div className="flex space-x-1">
-                      <button
-                        onClick={() => handleCreateVideo(item)}
-                        className="p-1.5 bg-red-500/80 backdrop-blur-sm rounded hover:bg-red-600/90 transition-colors"
-                        title="สร้างวิดีโอ"
-                      >
-                        <Film className="h-4 w-4 text-white" />
-                      </button>
+                      {/* Only show "Create Video" button for images */}
+                      {item.type !== 'video' && (
+                        <button
+                          onClick={() => handleCreateVideo(item)}
+                          className="p-1.5 bg-red-500/80 backdrop-blur-sm rounded hover:bg-red-600/90 transition-colors"
+                          title="สร้างวิดีโอ"
+                        >
+                          <Film className="h-4 w-4 text-white" />
+                        </button>
+                      )}
                       <button
                         onClick={() => setSelectedImage(item)}
                         className="p-1.5 bg-white/20 backdrop-blur-sm rounded hover:bg-white/30 transition-colors"
-                        title="ดูภาพเต็ม"
+                        title={item.type === 'video' ? 'ดูวิดีโอเต็มจอ' : 'ดูภาพเต็ม'}
                       >
-                        <ImageIcon className="h-4 w-4 text-white" />
+                        {item.type === 'video' ? <Film className="h-4 w-4 text-white" /> : <ImageIcon className="h-4 w-4 text-white" />}
                       </button>
                       <button
-                        onClick={() => handleDownload(item.imageUrl, item.id)}
+                        onClick={() => handleDownload(item.type === 'video' ? item.videoUrl : item.imageUrl, item.id, item.type === 'video')}
                         className="p-1.5 bg-white/20 backdrop-blur-sm rounded hover:bg-white/30 transition-colors"
                         title="ดาวน์โหลด"
                       >
@@ -336,22 +394,22 @@ export default function History() {
                 </div>
               </div>
 
-              {/* Image Container - Responsive to aspect ratio */}
+              {/* Image/Video Container - Responsive to aspect ratio */}
               <div className="flex-1 flex items-center justify-center p-2 sm:p-4 min-h-0 overflow-hidden">
-                {/* Handle missing image data */}
-                {selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl ? (
+                {/* Handle missing data */}
+                {(selectedImage.type === 'video' && !selectedImage.videoUrl) || (selectedImage.type !== 'video' && (selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl)) ? (
                   <div className="flex flex-col items-center justify-center text-center p-8 bg-gray-800/50 rounded-xl">
-                    <ImageIcon className="h-16 w-16 text-gray-500 mb-4" />
-                    <h4 className="text-xl font-bold text-gray-300 mb-2">ภาพถูกลบเพื่อประหยัดพื้นที่</h4>
+                    {selectedImage.type === 'video' ? <Film className="h-16 w-16 text-gray-500 mb-4" /> : <ImageIcon className="h-16 w-16 text-gray-500 mb-4" />}
+                    <h4 className="text-xl font-bold text-gray-300 mb-2">{selectedImage.type === 'video' ? 'วิดีโอถูกลบ' : 'ภาพถูกลบเพื่อประหยัดพื้นที่'}</h4>
                     <p className="text-gray-400 max-w-md">
-                      ภาพนี้ถูกลบเพื่อประหยัดพื้นที่จัดเก็บ
+                      {selectedImage.type === 'video' ? 'วิดีโอนี้ถูกลบหรือไม่สามารถเข้าถึงได้' : 'ภาพนี้ถูกลบเพื่อประหยัดพื้นที่จัดเก็บ'}
                     </p>
                     <p className="text-gray-500 text-sm mt-2">ระบบเก็บข้อมูลอื่นๆ ไว้เพื่อประหยัดพื้นที่</p>
-                    <p className="text-gray-500 text-xs mt-1">แนะนำ: ดาวน์โหลดภาพเพื่อเก็บไว้ก่อนที่จะหายไป</p>
+                    <p className="text-gray-500 text-xs mt-1">แนะนำ: ดาวน์โหลดเพื่อเก็บไว้ก่อนที่จะหายไป</p>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleDownload(selectedImage.imageUrl, selectedImage.id)
+                        handleDownload(selectedImage.videoUrl || selectedImage.imageUrl, selectedImage.id, selectedImage.type === 'video')
                       }}
                       disabled
                       className="mt-4 px-4 py-2 text-sm bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed"
@@ -359,6 +417,24 @@ export default function History() {
                       ดาวน์โหลดไม่ได้
                     </button>
                   </div>
+                ) : selectedImage.type === 'video' ? (
+                  <video
+                    src={selectedImage.videoUrl}
+                    className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                    controls
+                    autoPlay
+                    loop
+                    playsInline
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.parentElement.innerHTML = `
+                        <div class="flex flex-col items-center justify-center text-center p-8 bg-gray-800/50 rounded-xl">
+                          <h4 class="text-xl font-bold text-gray-300 mb-2">ไม่สามารถโหลดวิดีโอได้</h4>
+                          <p class="text-gray-400">วิดีโออาจไม่สามารถเข้าถึงได้อีกต่อไป</p>
+                        </div>
+                      `;
+                    }}
+                  />
                 ) : (
                   <img
                     src={selectedImage.imageUrl}
@@ -382,35 +458,42 @@ export default function History() {
               {/* Modal Footer */}
               <div className="bg-gradient-to-t from-black/90 to-transparent p-4 rounded-b-2xl flex-shrink-0">
                 <div className="flex flex-col sm:flex-row justify-center gap-3">
+                  {/* Only show "Create Video" button for images */}
+                  {selectedImage.type !== 'video' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCreateVideo(selectedImage)
+                      }}
+                      disabled={selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl}
+                      className={`px-5 py-2.5 rounded-lg flex items-center justify-center space-x-2 transition-all font-bold shadow-lg text-sm ${
+                        selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl
+                          ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white'
+                      }`}
+                    >
+                      <Film className="h-4 w-4" />
+                      <span>สร้างวิดีโอจากภาพนี้</span>
+                    </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleCreateVideo(selectedImage)
+                      handleDownload(
+                        selectedImage.type === 'video' ? selectedImage.videoUrl : selectedImage.imageUrl,
+                        selectedImage.id,
+                        selectedImage.type === 'video'
+                      )
                     }}
-                    disabled={selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl}
+                    disabled={(selectedImage.type === 'video' && !selectedImage.videoUrl) || (selectedImage.type !== 'video' && (selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl))}
                     className={`px-5 py-2.5 rounded-lg flex items-center justify-center space-x-2 transition-all font-bold shadow-lg text-sm ${
-                      selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl
-                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white'
-                    }`}
-                  >
-                    <Film className="h-4 w-4" />
-                    <span>สร้างวิดีโอจากภาพนี้</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDownload(selectedImage.imageUrl, selectedImage.id)
-                    }}
-                    disabled={selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl}
-                    className={`px-5 py-2.5 rounded-lg flex items-center justify-center space-x-2 transition-all font-bold shadow-lg text-sm ${
-                      selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl
+                      (selectedImage.type === 'video' && !selectedImage.videoUrl) || (selectedImage.type !== 'video' && (selectedImage.imageUrl === 'base64_image_stripped' || !selectedImage.imageUrl))
                         ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                         : 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white'
                     }`}
                   >
                     <Download className="h-4 w-4" />
-                    <span>ดาวน์โหลดภาพ</span>
+                    <span>ดาวน์โหลด{selectedImage.type === 'video' ? 'วิดีโอ' : 'ภาพ'}</span>
                   </button>
                   <button
                     onClick={() => setSelectedImage(null)}
