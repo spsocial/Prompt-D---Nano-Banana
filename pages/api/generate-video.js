@@ -56,8 +56,8 @@ export default async function handler(req, res) {
     let messageContent
 
     if (image) {
-      // Image-to-Video: NOT officially supported by Sora 2, but try multimodal format
-      console.log('⚠️ Image-to-Video mode: Sora 2 may not support this (trying anyway)')
+      // Image-to-Video: Officially supported by CometAPI with multimodal format + max_tokens
+      console.log('📸 Image-to-Video mode: Using multimodal content format')
       messageContent = [
         {
           type: 'text',
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
         }
       ]
     } else {
-      // Text-to-Video: simple string content (official format)
+      // Text-to-Video: simple string content
       messageContent = cleanPrompt
     }
 
@@ -79,6 +79,7 @@ export default async function handler(req, res) {
     const requestPayload = {
       model: modelName,
       stream: true, // IMPORTANT: Use streaming to avoid timeout!
+      max_tokens: 3000, // Required by CometAPI for Sora 2 (especially for image-to-video)
       messages: [
         {
           role: 'user',
