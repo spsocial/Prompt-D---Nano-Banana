@@ -47,20 +47,25 @@ export default async function handler(req, res) {
     // Use model name from CometAPI: sora-2 or sora-2-hd
     const modelName = resolution === '1080p' ? 'sora-2-hd' : 'sora-2'
 
-    console.log(`🎯 Using model: ${modelName}`)
-
-    // Append aspect ratio instruction to prompt
-    let aspectRatioInstruction = ''
+    // Map aspect ratio + resolution to OpenAI size format (WIDTHxHEIGHT)
+    // Based on official OpenAI Sora spec: 720x1280, 1280x720, 1024x1792, 1792x1024
+    let size
     if (aspectRatio === '16:9') {
-      aspectRatioInstruction = '\n\nขนาดวิดีโอ: 16:9 แนวนอน'
+      // Landscape
+      size = resolution === '1080p' ? '1792x1024' : '1280x720'
     } else if (aspectRatio === '9:16') {
-      aspectRatioInstruction = '\n\nขนาดวิดีโอ: 9:16 แนวตั้ง'
+      // Portrait
+      size = resolution === '1080p' ? '1024x1792' : '720x1280'
+    } else {
+      // Default to landscape 720p
+      size = '1280x720'
     }
 
-    // Add aspect ratio instruction to prompt
-    const cleanPrompt = (prompt || 'Create a cinematic video') + aspectRatioInstruction
+    console.log(`🎯 Using model: ${modelName}`)
+    console.log(`📐 Video size: ${size}`)
 
-    console.log(`📐 Prompt with aspect ratio: ${cleanPrompt}`)
+    // Use clean prompt
+    const cleanPrompt = prompt || 'Create a cinematic video'
 
     // Prepare message content
     let messageContent
@@ -90,6 +95,8 @@ export default async function handler(req, res) {
       model: modelName,
       stream: true, // IMPORTANT: Use streaming to avoid timeout!
       max_tokens: 3000, // Required by CometAPI for Sora 2 (especially for image-to-video)
+      size: size, // IMPORTANT: Specify video dimensions (WIDTHxHEIGHT format)
+      seconds: String(duration), // Duration in seconds (must be string: '4', '8', '12')
       messages: [
         {
           role: 'user',
