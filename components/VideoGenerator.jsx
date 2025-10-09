@@ -283,6 +283,22 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         setError(`⏱️ การเชื่อมต่อขาดหาย - วิดีโออาจกำลังสร้างอยู่ กรุณาตรวจสอบประวัติภายหลัง (ไม่มีการคืนเครดิต)`)
       } else if (error.message.includes('not valid JSON') || error.message.includes('Unexpected token')) {
         setError(`⚠️ Sora API ยังไม่เปิดให้ใช้งานสาธารณะ - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)`)
+      } else if (
+        error.message.toLowerCase().includes('content') &&
+        (error.message.toLowerCase().includes('policy') ||
+         error.message.toLowerCase().includes('violation') ||
+         error.message.toLowerCase().includes('people') ||
+         error.message.toLowerCase().includes('photorealistic'))
+      ) {
+        // Content policy violation - likely photorealistic people
+        setError(`🚫 ไม่สามารถใช้รูปคนได้: Sora ไม่อนุญาตให้ใช้ภาพที่มีคนหรือใบหน้า (Content Policy) - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)\n\n💡 แนะนำ: ลองใช้รูปสินค้า วัตถุ ธรรมชาติ หรือฉากที่ไม่มีคนแทน`)
+      } else if (
+        aspectRatio === '9:16' &&
+        mode === 'image' &&
+        (model === 'sora-2' || model === 'sora-2-hd')
+      ) {
+        // Portrait mode failure - suggest landscape
+        setError(`📱 สร้างวิดีโอแนวตั้งไม่สำเร็จ - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)\n\n💡 แนะนำ: ลองสลับเป็น แนวนอน (16:9) แทน - Sora มักทำงานได้ดีกว่าในแนวนอน\n\nข้อผิดพลาด: ${error.message}`)
       } else {
         setError(`${error.message}${shouldRefundCredits ? ` - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)` : ''}`)
       }
@@ -413,7 +429,30 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
 
       {/* Image Upload (for Image to Video mode) */}
       {mode === 'image' && (
-        <div>
+        <div className="space-y-4">
+          {/* Sora Image-to-Video Limitations Warning */}
+          {(model === 'sora-2' || model === 'sora-2-hd') && (
+            <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl shadow-md">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-bold text-purple-900 mb-2">🚫 ข้อจำกัดของ Sora Image-to-Video</h3>
+                  <div className="text-sm text-purple-800 space-y-1.5">
+                    <p><strong>⚠️ ไม่สามารถใช้รูปคนได้:</strong> Sora ไม่รองรับภาพที่มีคนหรือใบหน้า (Content Policy)</p>
+                    <p><strong>📱 ปัญหาแนวตั้ง (9:16):</strong> ถ้าสร้างแนวตั้งไม่สำเร็จ ให้ลองสลับเป็น<strong className="text-purple-900"> แนวนอน (16:9)</strong> แทน</p>
+                    <p><strong>✅ แนะนำ:</strong> ใช้รูปสินค้า วัตถุ ธรรมชาติ หรือฉากที่ไม่มีคน</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {!uploadedImage ? (
             <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-red-400 transition-colors">
               <input
