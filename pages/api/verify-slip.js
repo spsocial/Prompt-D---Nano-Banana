@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { trackPayment } from '../../lib/analytics-db';
+import { safeLog, truncateDataUri } from '../../lib/logUtils';
 
 const prisma = new PrismaClient();
 
@@ -42,7 +43,7 @@ export default async function handler(req, res) {
     }
 
     const slipData = await easySlipResponse.json()
-    console.log('EasySlip Response:', slipData)
+    safeLog('EasySlip Response:', slipData)
 
     // ตรวจสอบผลการอ่านสลิป - รองรับ format ใหม่
     if (!slipData || !slipData.data) {
@@ -98,7 +99,7 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     }
 
-    console.log('Payment Record:', paymentRecord)
+    safeLog('Payment Record:', paymentRecord)
 
     // บันทึกลง database และเพิ่มเครดิตให้ user
     try {

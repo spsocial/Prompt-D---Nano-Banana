@@ -1,3 +1,5 @@
+import { safeStringify } from '../../lib/logUtils';
+
 export const config = {
   api: {
     bodyParser: {
@@ -78,7 +80,7 @@ export default async function handler(req, res) {
     }
 
     console.log('🚀 Sending request to CometAPI...')
-    console.log('📦 Request payload:', JSON.stringify(requestPayload, null, 2))
+    console.log('📦 Request payload:', safeStringify(requestPayload))
 
     // Call CometAPI with streaming
     const createResponse = await fetch('https://api.cometapi.com/v1/chat/completions', {
