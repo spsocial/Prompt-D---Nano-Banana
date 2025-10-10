@@ -163,6 +163,38 @@ model VideoError {
   @@index([createdAt])
 }
 
+// Video generation tasks (for async processing and recovery)
+model VideoTask {
+  id            String   @id @default(cuid())
+  userId        String
+  model         String   // sora-2, sora-2-hd, veo3-fast
+  mode          String   // text-to-video, image-to-video
+  prompt        String?  @db.Text
+  imageData     String?  @db.Text // Base64 image for image-to-video
+  duration      Int
+  resolution    String
+  aspectRatio   String
+  creditsUsed   Int
+
+  // Task status
+  status        String   @default("pending") // pending, processing, completed, failed
+  videoUrl      String?  @db.Text
+  previewUrl    String?  @db.Text
+  taskId        String?  // External API task ID if available
+  errorMessage  String?  @db.Text
+
+  // Timestamps
+  createdAt     DateTime @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  expiresAt     DateTime? // Video URL expiration (24 hours)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([expiresAt])
+}
+
 // Daily statistics (aggregated data)
 model DailyStats {
   id            String   @id @default(cuid())

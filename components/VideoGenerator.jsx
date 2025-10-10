@@ -16,6 +16,9 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
   const [error, setError] = useState(null)
   const [showSettings, setShowSettings] = useState(true)
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
+  const [currentTaskId, setCurrentTaskId] = useState(null)
+  const [pollingInterval, setPollingInterval] = useState(null)
+  const [generationProgress, setGenerationProgress] = useState('')
 
   const { apiKeys, userPlan, setIsGeneratingVideo, userCredits, useCredits } = useStore()
 
@@ -82,6 +85,155 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     }
   }
 
+  // Poll task status
+  const pollTaskStatus = async (taskId) => {
+    try {
+      const response = await fetch(`/api/video-task/${taskId}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch task status')
+      }
+
+      const data = await response.json()
+      console.log(`📊 [Task ${taskId}] Status: ${data.status}`)
+
+      if (data.status === 'completed') {
+        // Task completed!
+        setIsGenerating(false)
+        setIsGeneratingVideo(false)
+        setGenerationProgress('')
+
+        setVideoResult({
+          videoUrl: data.videoUrl,
+          previewUrl: data.previewUrl,
+          duration: data.duration,
+          resolution: data.resolution,
+          aspectRatio: data.aspectRatio,
+          mode: data.mode
+        })
+
+        setShowSuccessPopup(true)
+        setTimeout(() => setShowSuccessPopup(false), 8000)
+
+        // Save to history
+        try {
+          useStore.getState().addVideoToHistory({
+            videoUrl: data.videoUrl,
+            prompt: prompt,
+            mode: data.mode,
+            duration: data.duration,
+            resolution: data.resolution,
+            aspectRatio: data.aspectRatio,
+            sourceImage: mode === 'image' ? sourceImage : null,
+            timestamp: new Date().toISOString()
+          })
+        } catch (historyError) {
+          console.error('Error saving to history:', historyError)
+        }
+
+        // Stop polling
+        if (pollingInterval) {
+          clearInterval(pollingInterval)
+          setPollingInterval(null)
+        }
+        setCurrentTaskId(null)
+        localStorage.removeItem('video_task_id')
+
+        return true // Task complete
+      } else if (data.status === 'failed') {
+        // Task failed
+        setIsGenerating(false)
+        setIsGeneratingVideo(false)
+        setGenerationProgress('')
+        setError(`❌ การสร้างวิดีโอล้มเหลว: ${data.errorMessage || 'Unknown error'}\n\nเครดิตได้ถูกคืนให้แล้ว`)
+
+        // Stop polling
+        if (pollingInterval) {
+          clearInterval(pollingInterval)
+          setPollingInterval(null)
+        }
+        setCurrentTaskId(null)
+        localStorage.removeItem('video_task_id')
+
+        // Reload credits
+        const store = useStore.getState()
+        if (store.loadUserCredits) {
+          await store.loadUserCredits(localStorage.getItem('nano_user_id'))
+        }
+
+        return true // Task complete (failed)
+      } else {
+        // Still processing
+        const elapsed = Math.floor((Date.now() - new Date(data.createdAt).getTime()) / 1000)
+        setGenerationProgress(`⏱️ กำลังสร้างวิดีโอ... (${elapsed} วินาที) - สามารถปิดหน้านี้ได้ วิดีโอจะปรากฏในประวัติเมื่อเสร็จ`)
+        return false // Still processing
+      }
+
+    } catch (error) {
+      console.error('Error polling task status:', error)
+      // Don't stop polling on network errors - might recover
+      return false
+    }
+  }
+
+  // Start polling for a task
+  const startPolling = (taskId) => {
+    console.log(`🔄 Starting polling for task ${taskId}`)
+    setCurrentTaskId(taskId)
+    localStorage.setItem('video_task_id', taskId)
+
+    // Poll immediately
+    pollTaskStatus(taskId)
+
+    // Then poll every 3 seconds
+    const interval = setInterval(async () => {
+      const isComplete = await pollTaskStatus(taskId)
+      if (isComplete) {
+        clearInterval(interval)
+      }
+    }, 3000)
+
+    setPollingInterval(interval)
+  }
+
+  // Check for pending tasks on mount
+  useEffect(() => {
+    const resumePendingTask = async () => {
+      const savedTaskId = localStorage.getItem('video_task_id')
+      if (savedTaskId) {
+        console.log(`🔄 Resuming task ${savedTaskId}`)
+        setIsGenerating(true)
+        setIsGeneratingVideo(true)
+        setGenerationProgress('⏱️ กำลังกู้คืนงานที่ค้างไว้...')
+        startPolling(savedTaskId)
+      }
+    }
+
+    resumePendingTask()
+
+    // Cleanup on unmount
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval)
+      }
+    }
+  }, [])
+
+  // Handle visibility change (user returns to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && currentTaskId) {
+        console.log(`👀 Page visible again, resuming poll for ${currentTaskId}`)
+        // Poll immediately when page becomes visible
+        pollTaskStatus(currentTaskId)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [currentTaskId])
+
   // Handle image upload
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0]
@@ -146,213 +298,73 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     setIsGeneratingVideo(true) // Lock mode switching
     setError(null)
     setVideoResult(null)
+    setGenerationProgress('⏱️ กำลังเริ่มต้นสร้างวิดีโอ...')
 
     try {
       console.log('🎬 Starting video generation...')
       console.log('📝 Model:', model)
       console.log(`💳 Deducted ${requiredCredits} credits (Remaining: ${userCredits - requiredCredits})`)
 
-      // Select API endpoint based on model
-      const apiEndpoint = model === 'veo3-fast'
-        ? '/api/generate-video-veo3'
-        : '/api/generate-video'
-
-      console.log('🔗 API Endpoint:', apiEndpoint)
-
-      // Create AbortController with 5 minute timeout (same as API maxDuration)
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000) // 5 minutes
-
-      let response
-      try {
-        response = await fetch(apiEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            prompt: prompt,
-            image: mode === 'image' ? uploadedImage : null,
-            apiKey: apiKeys.openai || null,
-            duration: duration,
-            resolution: resolution,
-            aspectRatio: aspectRatio,
-            model: model
-          }),
-          signal: controller.signal
+      // Create async task
+      const response = await fetch('/api/video-task/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: localStorage.getItem('nano_user_id'),
+          prompt: prompt,
+          image: mode === 'image' ? uploadedImage : null,
+          model: model,
+          duration: duration,
+          resolution: resolution,
+          aspectRatio: aspectRatio,
+          creditsUsed: requiredCredits
         })
+      })
 
-        clearTimeout(timeoutId) // Clear timeout if request completes
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          // Attach shouldRefund flag from API response
-          const errorMessage = errorData.suggestion || errorData.error || 'ไม่สามารถสร้างวิดีโอได้'
-          const error = new Error(errorMessage)
-          error.shouldRefund = errorData.shouldRefund !== false // Default to true unless API says otherwise
-          throw error
-        }
-
-        const data = await response.json()
-        console.log('✅ Video generated:', data)
-
-        setVideoResult(data)
-        setShowSuccessPopup(true) // Show success popup
-
-        // Auto-hide popup after 8 seconds
-        setTimeout(() => {
-          setShowSuccessPopup(false)
-        }, 8000)
-
-        // Track successful video generation
-        try {
-          await fetch('/api/track-video', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'success',
-              data: {
-                userId: localStorage.getItem('nano_user_id'),
-                model: model,
-                mode: mode === 'image' ? 'image-to-video' : 'text-to-video',
-                prompt: prompt,
-                duration: duration,
-                aspectRatio: aspectRatio,
-                creditsUsed: requiredCredits
-              }
-            })
-          }).catch(err => console.log('Analytics tracking failed:', err));
-        } catch (trackingError) {
-          console.log('Video tracking error:', trackingError);
-        }
-
-        // Save to history
-        try {
-          useStore.getState().addVideoToHistory({
-            videoUrl: data.videoUrl,
-            prompt: prompt,
-            mode: data.mode,
-            duration: data.duration,
-            resolution: data.resolution,
-            aspectRatio: data.aspectRatio,
-            sourceImage: mode === 'image' ? sourceImage : null,
-            timestamp: new Date().toISOString()
-          })
-        } catch (historyError) {
-          console.error('Error saving to history:', historyError)
-        }
-
-      } catch (fetchError) {
-        clearTimeout(timeoutId)
-        // Re-throw to outer catch block
-        throw fetchError
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create video task')
       }
 
+      const data = await response.json()
+      console.log('✅ Task created:', data.taskId)
+
+      // Start polling
+      startPolling(data.taskId)
+
     } catch (error) {
-      console.error('❌ Video generation error:', error)
+      console.error('❌ Error creating task:', error)
+      setIsGenerating(false)
+      setIsGeneratingVideo(false)
+      setGenerationProgress('')
 
-      // Check if error is network timeout or connection abort
-      const isNetworkError = error.name === 'AbortError' ||
-                            error.message.includes('Failed to fetch') ||
-                            error.message.includes('network')
-
-      // Only refund if API explicitly says to, or if it's not a network error
-      const shouldRefundCredits = error.shouldRefund !== false && !isNetworkError
-
-      if (shouldRefundCredits) {
-        // Refund credits on real API errors
-        try {
-          console.log(`💳 Refunding ${requiredCredits} credits due to API error...`)
-          const refundResponse = await fetch('/api/credits', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: localStorage.getItem('nano_user_id'),
-              amount: requiredCredits,
-              isRefund: true // Flag to skip admin key check
-            })
+      // Refund credits on error
+      try {
+        console.log(`💳 Refunding ${requiredCredits} credits...`)
+        const refundResponse = await fetch('/api/credits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: localStorage.getItem('nano_user_id'),
+            amount: requiredCredits,
+            isRefund: true
           })
+        })
 
-          if (!refundResponse.ok) {
-            const errorData = await refundResponse.json()
-            console.error('Refund API error:', errorData)
-            throw new Error(errorData.message || 'Refund failed')
-          }
-
+        if (refundResponse.ok) {
           const refundData = await refundResponse.json()
-          console.log(`✅ Refunded ${requiredCredits} credits successfully. New balance: ${refundData.credits}`)
-
-          // Force reload credits from database
           const store = useStore.getState()
-          if (store.loadUserCredits) {
-            await store.loadUserCredits(localStorage.getItem('nano_user_id'))
-          }
-
-          // Update local state immediately with the returned value
           if (store.setUserCredits) {
             store.setUserCredits(refundData.credits)
           }
-
-          // Track video generation error
-          try {
-            const errorType = error.message.toLowerCase().includes('content') ? 'content_violation'
-                            : error.message.includes('timeout') ? 'timeout'
-                            : error.message.includes('quota') ? 'quota_exceeded'
-                            : 'api_error';
-
-            await fetch('/api/track-video', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'error',
-                data: {
-                  userId: localStorage.getItem('nano_user_id'),
-                  model: model,
-                  mode: mode === 'image' ? 'image-to-video' : 'text-to-video',
-                  errorType: errorType,
-                  errorMessage: error.message,
-                  creditsRefunded: requiredCredits
-                }
-              })
-            }).catch(err => console.log('Error tracking failed:', err));
-          } catch (trackingError) {
-            console.log('Error tracking error:', trackingError);
-          }
-        } catch (refundError) {
-          console.error('❌ Failed to refund credits:', refundError)
-          alert(`⚠️ เกิดข้อผิดพลาดในการคืนเครดิต กรุณาติดต่อแอดมิน\nError: ${refundError.message}`)
         }
-      } else {
-        console.log(`⚠️ Network timeout/abort detected - NOT refunding credits (video may still be processing)`)
+      } catch (refundError) {
+        console.error('❌ Failed to refund credits:', refundError)
       }
 
-      // Set error message based on error type
-      if (isNetworkError) {
-        setError(`⏱️ การเชื่อมต่อขาดหาย - วิดีโออาจกำลังสร้างอยู่ กรุณาตรวจสอบประวัติภายหลัง (ไม่มีการคืนเครดิต)`)
-      } else if (error.message.includes('not valid JSON') || error.message.includes('Unexpected token')) {
-        setError(`⚠️ Sora API ยังไม่เปิดให้ใช้งานสาธารณะ - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)`)
-      } else if (
-        error.message.toLowerCase().includes('content') &&
-        (error.message.toLowerCase().includes('policy') ||
-         error.message.toLowerCase().includes('violation') ||
-         error.message.toLowerCase().includes('people') ||
-         error.message.toLowerCase().includes('photorealistic'))
-      ) {
-        // Content policy violation - likely photorealistic people
-        setError(`🚫 ไม่สามารถใช้รูปคนได้: Sora ไม่อนุญาตให้ใช้ภาพที่มีคนหรือใบหน้า (Content Policy) - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)\n\n💡 แนะนำ: ลองใช้รูปสินค้า วัตถุ ธรรมชาติ หรือฉากที่ไม่มีคนแทน`)
-      } else if (
-        aspectRatio === '9:16' &&
-        mode === 'image' &&
-        (model === 'sora-2' || model === 'sora-2-hd')
-      ) {
-        // Portrait mode failure - suggest landscape
-        setError(`📱 สร้างวิดีโอแนวตั้งไม่สำเร็จ - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)\n\n💡 แนะนำ: ลองสลับเป็น แนวนอน (16:9) แทน - Sora มักทำงานได้ดีกว่าในแนวนอน\n\nข้อผิดพลาด: ${error.message}`)
-      } else {
-        setError(`${error.message}${shouldRefundCredits ? ` - เครดิตถูกคืนแล้ว (${requiredCredits} เครดิต)` : ''}`)
-      }
-    } finally {
-      setIsGenerating(false)
-      setIsGeneratingVideo(false) // Unlock mode switching
+      setError(`❌ เกิดข้อผิดพลาด: ${error.message}\n\nเครดิตได้ถูกคืนให้แล้ว`)
     }
   }
 
@@ -650,12 +662,22 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         </div>
       )}
 
+      {/* Generation Progress */}
+      {generationProgress && (
+        <div className="p-4 bg-blue-100 border border-blue-300 rounded-xl text-blue-800">
+          <div className="flex items-start">
+            <Loader2 className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5 animate-spin" />
+            <div className="text-sm whitespace-pre-line">{generationProgress}</div>
+          </div>
+        </div>
+      )}
+
       {/* Error Display */}
       {error && (
         <div className="p-4 bg-red-100 border border-red-300 rounded-xl text-red-800">
           <div className="flex items-start">
             <X className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-            <div className="text-sm">{error}</div>
+            <div className="text-sm whitespace-pre-line">{error}</div>
           </div>
         </div>
       )}
