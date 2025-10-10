@@ -2,18 +2,23 @@ import { useState, useEffect } from 'react';
 import {
   Users, TrendingUp, DollarSign, Image,
   Calendar, Activity, Award, RefreshCw,
-  Download, ChevronDown, ChevronUp, Film, AlertTriangle
+  Download, ChevronDown, ChevronUp, Film, AlertTriangle,
+  BarChart3, Clock
 } from 'lucide-react';
 import { getAnalyticsSummary, getDetailedStats, exportAnalyticsData } from '../lib/analytics-client';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [historicalData, setHistoricalData] = useState(null);
+  const [historicalRange, setHistoricalRange] = useState('7');
+  const [loadingHistorical, setLoadingHistorical] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     users: true,
     revenue: true,
     activity: true,
     videos: true,
+    historical: false,
     topUsers: false,
     transactions: false
   });
@@ -24,10 +29,31 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadStats();
+    loadHistoricalData();
     // Auto-refresh every 30 seconds
     const interval = setInterval(loadStats, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const loadHistoricalData = async (range = historicalRange) => {
+    try {
+      setLoadingHistorical(true);
+      const response = await fetch(`/api/analytics/historical?range=${range}`);
+      if (response.ok) {
+        const data = await response.json();
+        setHistoricalData(data);
+      }
+    } catch (error) {
+      console.error('Error loading historical data:', error);
+    } finally {
+      setLoadingHistorical(false);
+    }
+  };
+
+  const handleRangeChange = (range) => {
+    setHistoricalRange(range);
+    loadHistoricalData(range);
+  };
 
   const loadStats = async () => {
     try {
@@ -439,6 +465,146 @@ export default function AdminDashboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Historical Data */}
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200">
+        <div
+          className="p-6 flex justify-between items-center cursor-pointer"
+          onClick={() => toggleSection('historical')}
+        >
+          <h3 className="text-lg font-semibold flex items-center">
+            <BarChart3 className="h-5 w-5 mr-2 text-cyan-500" />
+            📈 สถิติย้อนหลัง
+          </h3>
+          {expandedSections.historical ? <ChevronUp /> : <ChevronDown />}
+        </div>
+        {expandedSections.historical && (
+          <div className="px-6 pb-6 border-t">
+            <div className="mt-4">
+              {/* Range Selector */}
+              <div className="flex space-x-2 mb-4">
+                <button
+                  onClick={() => handleRangeChange('7')}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    historicalRange === '7'
+                      ? 'bg-cyan-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  7 วัน
+                </button>
+                <button
+                  onClick={() => handleRangeChange('30')}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    historicalRange === '30'
+                      ? 'bg-cyan-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  30 วัน
+                </button>
+                <button
+                  onClick={() => handleRangeChange('all')}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    historicalRange === 'all'
+                      ? 'bg-cyan-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  ทั้งหมด
+                </button>
+              </div>
+
+              {loadingHistorical ? (
+                <div className="flex items-center justify-center p-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-cyan-500" />
+                </div>
+              ) : historicalData ? (
+                <div>
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">ภาพทั้งหมด</p>
+                      <p className="text-2xl font-bold text-purple-600">{historicalData.totals.images}</p>
+                    </div>
+                    <div className="bg-red-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">วิดีโอทั้งหมด</p>
+                      <p className="text-2xl font-bold text-red-600">{historicalData.totals.videos}</p>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">วิดีโอ Error</p>
+                      <p className="text-2xl font-bold text-orange-600">{historicalData.totals.videoErrors}</p>
+                      <p className="text-xs text-orange-500 mt-1">สำหรับ claim CometAPI</p>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">รายได้</p>
+                      <p className="text-2xl font-bold text-green-600">{formatCurrency(historicalData.totals.revenue)}</p>
+                    </div>
+                  </div>
+
+                  {/* Video Models Breakdown */}
+                  <div className="mb-6">
+                    <p className="text-sm font-medium text-gray-700 mb-2">วิดีโอแยกตามโมเดล:</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs text-gray-600">Sora 2</p>
+                        <p className="text-lg font-semibold text-gray-800">{historicalData.totals.videosSora2}</p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs text-gray-600">Sora 2 HD</p>
+                        <p className="text-lg font-semibold text-gray-800">{historicalData.totals.videosSora2HD}</p>
+                      </div>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <p className="text-xs text-gray-600">Veo3</p>
+                        <p className="text-lg font-semibold text-gray-800">{historicalData.totals.videosVeo3}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Daily Data Table */}
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-2">ข้อมูลรายวัน:</p>
+                    <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                      <table className="min-w-full text-sm">
+                        <thead className="sticky top-0 bg-gray-100">
+                          <tr className="text-left text-xs text-gray-600">
+                            <th className="p-2">วันที่</th>
+                            <th className="p-2">ภาพ</th>
+                            <th className="p-2">วิดีโอ</th>
+                            <th className="p-2">Sora 2</th>
+                            <th className="p-2">Sora 2 HD</th>
+                            <th className="p-2">Veo3</th>
+                            <th className="p-2">Error</th>
+                            <th className="p-2">User ใหม่</th>
+                            <th className="p-2">รายได้</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {historicalData.chartData.slice().reverse().map((day, index) => (
+                            <tr key={day.date} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                              <td className="p-2 font-mono text-xs">{day.date}</td>
+                              <td className="p-2">{day.images}</td>
+                              <td className="p-2 font-semibold text-red-600">{day.videos}</td>
+                              <td className="p-2">{day.videosSora2}</td>
+                              <td className="p-2">{day.videosSora2HD}</td>
+                              <td className="p-2">{day.videosVeo3}</td>
+                              <td className="p-2 text-orange-600">{day.videoErrors}</td>
+                              <td className="p-2">{day.newUsers}</td>
+                              <td className="p-2 text-green-600">{formatCurrency(day.revenue)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-center text-gray-500 py-4">ไม่มีข้อมูลย้อนหลัง</p>
+              )}
             </div>
           </div>
         )}
