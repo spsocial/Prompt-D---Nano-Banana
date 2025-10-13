@@ -359,6 +359,69 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
 
   return (
     <div className="space-y-6">
+      {/* Loading Popup - Show while generating */}
+      <AnimatePresence>
+        {isGenerating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full"
+            >
+              <div className="text-center">
+                {/* Animated Spinner */}
+                <div className="mx-auto w-20 h-20 mb-6">
+                  <Loader2 className="w-20 h-20 text-red-500 animate-spin" />
+                </div>
+
+                {/* Title */}
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  🎬 กำลังสร้างวิดีโอ...
+                </h3>
+
+                {/* Description */}
+                <p className="text-gray-600 mb-6">
+                  กรุณารอสักครู่ (อาจใช้เวลา 1-3 นาที)
+                </p>
+
+                {/* Warning for Mobile */}
+                <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl">
+                  <div className="flex items-start space-x-3">
+                    <span className="text-2xl flex-shrink-0">⚠️</span>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-bold text-amber-900 mb-2">
+                        สำคัญ! สำหรับมือถือ
+                      </p>
+                      <div className="text-sm text-amber-800 space-y-1">
+                        <p>• <strong>อย่าสลับหน้าจอ</strong></p>
+                        <p>• <strong>อย่าปิดแอพ</strong></p>
+                        <p>• <strong>อย่าล็อคหน้าจอ</strong></p>
+                        <p className="mt-2 text-xs">รอจนกว่าวิดีโอจะสร้างเสร็จ</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress indicator */}
+                <div className="mt-6">
+                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Success Popup */}
       <AnimatePresence>
         {showSuccessPopup && (
