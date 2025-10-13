@@ -16,6 +16,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
   const [error, setError] = useState(null)
   const [showSettings, setShowSettings] = useState(true)
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
+  const [showMobileDownloadInstructions, setShowMobileDownloadInstructions] = useState(false)
 
   const { apiKeys, userPlan, setIsGeneratingVideo, userCredits, useCredits } = useStore()
 
@@ -110,6 +111,33 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
 
   const handleRemoveImage = () => {
     setUploadedImage(null)
+  }
+
+  // Handle video download - with mobile support
+  const handleVideoDownload = (videoUrl) => {
+    // Check if mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+    if (isMobile) {
+      // Show instructions modal for mobile users
+      setShowMobileDownloadInstructions(true)
+      // Open video in new tab
+      setTimeout(() => {
+        window.open(videoUrl, '_blank')
+      }, 500)
+    } else {
+      // Desktop: try direct download
+      const link = document.createElement('a')
+      link.href = videoUrl
+      link.download = `${model}-video-${Date.now()}.mp4`
+      link.target = '_blank'
+      link.style.display = 'none'
+      document.body.appendChild(link)
+      link.click()
+      setTimeout(() => {
+        document.body.removeChild(link)
+      }, 100)
+    }
   }
 
   const handleGenerate = async () => {
@@ -359,6 +387,87 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
 
   return (
     <div className="space-y-6">
+      {/* Mobile Download Instructions Modal */}
+      <AnimatePresence>
+        {showMobileDownloadInstructions && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowMobileDownloadInstructions(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                {/* Icon */}
+                <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-4">
+                  <Download className="w-8 h-8 text-white" />
+                </div>
+
+                {/* Title */}
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  📱 วิธีดาวน์โหลดวิดีโอบนมือถือ
+                </h3>
+
+                {/* Instructions */}
+                <div className="text-left bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-xl p-4 mb-4">
+                  <p className="text-sm font-bold text-blue-900 mb-3">
+                    ✨ ทำตามขั้นตอนเหล่านี้:
+                  </p>
+                  <div className="space-y-2 text-sm text-blue-800">
+                    <div className="flex items-start space-x-2">
+                      <span className="font-bold text-lg flex-shrink-0">1️⃣</span>
+                      <p>วิดีโอจะเปิดในแท็บใหม่</p>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <span className="font-bold text-lg flex-shrink-0">2️⃣</span>
+                      <p><strong>กดค้าง</strong> ที่วิดีโอ (ประมาณ 1-2 วินาที)</p>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <span className="font-bold text-lg flex-shrink-0">3️⃣</span>
+                      <div>
+                        <p className="mb-1">เมนูจะขึ้นมา ให้เลือก:</p>
+                        <ul className="list-disc list-inside pl-2 space-y-0.5">
+                          <li><strong>"บันทึกวิดีโอ"</strong> (iOS/Safari)</li>
+                          <li><strong>"Download video"</strong> (Android/Chrome)</li>
+                          <li><strong>"Save video"</strong> (อื่นๆ)</li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <span className="font-bold text-lg flex-shrink-0">4️⃣</span>
+                      <p>วิดีโอจะถูกบันทึกในแกลเลอรี่ของคุณ! 🎉</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Warning */}
+                <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-3 mb-4">
+                  <p className="text-sm text-amber-900">
+                    <strong>⚠️ สำคัญ:</strong> วิดีโอนี้หมดอายุใน 24 ชั่วโมง!<br />
+                    ดาวน์โหลดเก็บไว้ทันที
+                  </p>
+                </div>
+
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowMobileDownloadInstructions(false)}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-xl font-bold transition-all shadow-lg"
+                >
+                  เข้าใจแล้ว!
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Loading Popup - Show while generating */}
       <AnimatePresence>
         {isGenerating && (
@@ -761,16 +870,13 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
               <Play className="h-5 w-5 mr-2 text-red-500" />
               วิดีโอที่สร้างเสร็จแล้ว
             </h3>
-            <a
-              href={videoResult.videoUrl}
-              download={`${model}-video-${Date.now()}.mp4`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => handleVideoDownload(videoResult.videoUrl)}
               className="px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold flex items-center space-x-2 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 animate-bounce"
             >
               <Download className="h-5 w-5" />
               <span>ดาวน์โหลดทันที!</span>
-            </a>
+            </button>
           </div>
 
           <div className="flex justify-center">

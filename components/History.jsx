@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 export default function History() {
   const { history, removeFromHistory, loadHistory, setUploadedImage } = useStore()
   const [selectedImage, setSelectedImage] = useState(null)
+  const [showMobileDownloadInstructions, setShowMobileDownloadInstructions] = useState(false)
 
   // Load history from IndexedDB on mount
   useEffect(() => {
@@ -24,6 +25,16 @@ export default function History() {
 
       // Check if it's mobile device
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+      // For video on mobile - show instructions modal
+      if (isVideo && isMobile && !url.startsWith('data:')) {
+        setShowMobileDownloadInstructions(true)
+        // Open video in new tab after a short delay
+        setTimeout(() => {
+          window.open(url, '_blank')
+        }, 500)
+        return
+      }
 
       // Determine file extension
       const fileExt = isVideo ? 'mp4' : 'png'
@@ -159,6 +170,87 @@ export default function History() {
 
   return (
     <>
+      {/* Mobile Download Instructions Modal */}
+      <AnimatePresence>
+        {showMobileDownloadInstructions && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowMobileDownloadInstructions(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                {/* Icon */}
+                <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-4">
+                  <Download className="w-8 h-8 text-white" />
+                </div>
+
+                {/* Title */}
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  📱 วิธีดาวน์โหลดวิดีโอบนมือถือ
+                </h3>
+
+                {/* Instructions */}
+                <div className="text-left bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-xl p-4 mb-4">
+                  <p className="text-sm font-bold text-blue-900 mb-3">
+                    ✨ ทำตามขั้นตอนเหล่านี้:
+                  </p>
+                  <div className="space-y-2 text-sm text-blue-800">
+                    <div className="flex items-start space-x-2">
+                      <span className="font-bold text-lg flex-shrink-0">1️⃣</span>
+                      <p>วิดีโอจะเปิดในแท็บใหม่</p>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <span className="font-bold text-lg flex-shrink-0">2️⃣</span>
+                      <p><strong>กดค้าง</strong> ที่วิดีโอ (ประมาณ 1-2 วินาที)</p>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <span className="font-bold text-lg flex-shrink-0">3️⃣</span>
+                      <div>
+                        <p className="mb-1">เมนูจะขึ้นมา ให้เลือก:</p>
+                        <ul className="list-disc list-inside pl-2 space-y-0.5">
+                          <li><strong>"บันทึกวิดีโอ"</strong> (iOS/Safari)</li>
+                          <li><strong>"Download video"</strong> (Android/Chrome)</li>
+                          <li><strong>"Save video"</strong> (อื่นๆ)</li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <span className="font-bold text-lg flex-shrink-0">4️⃣</span>
+                      <p>วิดีโอจะถูกบันทึกในแกลเลอรี่ของคุณ! 🎉</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Warning */}
+                <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-3 mb-4">
+                  <p className="text-sm text-amber-900">
+                    <strong>⚠️ สำคัญ:</strong> วิดีโอนี้หมดอายุใน 24 ชั่วโมง!<br />
+                    ดาวน์โหลดเก็บไว้ทันที
+                  </p>
+                </div>
+
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowMobileDownloadInstructions(false)}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-xl font-bold transition-all shadow-lg"
+                >
+                  เข้าใจแล้ว!
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <AnimatePresence>
           {history.map((item) => (
