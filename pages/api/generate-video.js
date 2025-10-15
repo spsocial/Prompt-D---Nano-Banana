@@ -179,6 +179,11 @@ export default async function handler(req, res) {
       // Match various URL formats in markdown or plain text
       // IMPORTANT: Include query parameters (everything after .mp4 until space/bracket/etc)
       const urlPatterns = [
+        // NEW: AsyncData.net URLs (CometAPI's new format) - match first!
+        /https?:\/\/asyncdata\.net\/(?:web|source)\/task_[a-zA-Z0-9]+/,  // https://asyncdata.net/web/task_XXXXX
+        /!\[([^\]]*)\]\((https?:\/\/asyncdata\.net\/(?:web|source)\/task_[a-zA-Z0-9]+)\)/,  // ![text](asyncdata url)
+        /\[([^\]]*)\]\((https?:\/\/asyncdata\.net\/(?:web|source)\/task_[a-zA-Z0-9]+)\)/,  // [text](asyncdata url)
+        // Classic mp4 URLs
         /!\[([^\]]*)\]\((https?:\/\/[^\)]+\.mp4[^\)]*)\)/,  // ![text](url) with query params
         /!\[(https?:\/\/[^\]]+\.mp4[^\]]*)\]/,               // ![url] with query params
         /\[Play online[^\]]*\]\((https?:\/\/[^\)]+\.mp4[^\)]*)\)/i,  // [Play online▶️](url)
@@ -188,10 +193,13 @@ export default async function handler(req, res) {
       for (const pattern of urlPatterns) {
         const match = content.match(pattern)
         if (match) {
+          // Extract URL from different capture groups
           const url = match[2] || match[1] || match[0]
           if (url && url.startsWith('http')) {
             // Clean up any trailing markdown characters
-            const cleanUrl = url.replace(/[\]\)]+$/, '')
+            const cleanUrl = url.replace(/[\]\)]+$/, '').trim()
+            console.log(`🔍 Pattern matched: ${pattern.source.substring(0, 50)}...`)
+            console.log(`✅ Extracted URL: ${cleanUrl}`)
             return cleanUrl
           }
         }
@@ -297,13 +305,21 @@ export default async function handler(req, res) {
       console.log('🔍 Searching for URL in accumulated content (final check)...')
       console.log('📄 Full content length:', accumulatedContent.length, 'characters')
 
+      // Log full content for debugging (truncate if too long)
+      if (accumulatedContent.length <= 2000) {
+        console.log('📄 Full content:', accumulatedContent)
+      } else {
+        console.log('📄 First 1000 chars:', accumulatedContent.substring(0, 1000))
+        console.log('📄 Last 1000 chars:', accumulatedContent.substring(accumulatedContent.length - 1000))
+      }
+
       // Use the same helper function
       const foundUrl = searchForUrl(accumulatedContent)
       if (foundUrl) {
         finalUrl = foundUrl
         console.log(`✅ Found URL in final content search: ${finalUrl}`)
       } else {
-        console.log('📄 Full content preview:', accumulatedContent.substring(accumulatedContent.length - 500))
+        console.log('❌ No URL pattern matched in accumulated content')
       }
     }
 
