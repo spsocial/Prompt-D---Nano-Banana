@@ -46,12 +46,21 @@ async function pollAsyncDataForVideo(taskId, maxAttempts = 60) {
 
       // Check if completed
       if (status === 'completed' || status === 'success' || isCompleted === true) {
-        // Extract direct video URL (AsyncData.net uses 'url' field)
-        const videoUrl = data.url ||
+        // Extract direct video URL from multiple possible locations
+        const videoUrl = data.url ||  // Top level url (filesystem.site MP4)
+                        data.content?.url ||  // Content.url (OpenAI CDN)
+                        data.content?.downloadable_url ||  // Downloadable URL
+                        data.content?.encodings?.source?.path ||  // Source encoding path
+                        data.content?.encodings?.source_wm?.path ||  // Source with watermark
                         data.videoUrl ||
                         data.video_url ||
                         data.result?.url ||
                         data.output?.url
+
+        console.log(`🔍 Checking for video URL in response...`)
+        console.log(`  - data.url: ${data.url?.substring(0, 80)}...`)
+        console.log(`  - data.content?.url: ${data.content?.url?.substring(0, 80)}...`)
+        console.log(`  - data.content?.downloadable_url: ${data.content?.downloadable_url?.substring(0, 80)}...`)
 
         if (videoUrl && (videoUrl.includes('.mp4') || videoUrl.includes('filesystem.site'))) {
           console.log(`✅ Video completed! Direct URL: ${videoUrl}`)
