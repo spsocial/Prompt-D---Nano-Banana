@@ -192,7 +192,19 @@ export default async function handler(req, res) {
       }
 
       const statusData = await statusResponse.json()
-      const state = statusData.state || statusData.status
+
+      // DEBUG: Log first polling response to see structure
+      if (attempts === 1) {
+        console.log('📄 First Polling Response:', safeStringify(statusData))
+      }
+
+      // Try multiple possible field names for state
+      const state = statusData.state ||
+                    statusData.status ||
+                    statusData.data?.state ||
+                    statusData.data?.status ||
+                    statusData.result?.state ||
+                    statusData.result?.status
 
       console.log(`📊 Task state: ${state}`)
 
@@ -201,26 +213,37 @@ export default async function handler(req, res) {
         console.log('📄 Status Response:', safeStringify(statusData))
       }
 
-      if (state === 'completed' || state === 'success' || state === 'SUCCESS') {
+      if (state === 'completed' || state === 'success' || state === 'SUCCESS' || state === '3') {
         // Extract video URL from result
-        const resultJson = statusData.resultJson || statusData.result || statusData.output
+        const resultJson = statusData.resultJson ||
+                          statusData.result ||
+                          statusData.output ||
+                          statusData.data?.resultJson ||
+                          statusData.data?.result
 
         if (resultJson) {
           if (typeof resultJson === 'string') {
             try {
               const parsed = JSON.parse(resultJson)
-              videoUrl = parsed.video_url || parsed.videoUrl || parsed.url
+              videoUrl = parsed.video_url || parsed.videoUrl || parsed.url || parsed.videoSrc
             } catch (e) {
               videoUrl = resultJson
             }
           } else {
-            videoUrl = resultJson.video_url || resultJson.videoUrl || resultJson.url
+            videoUrl = resultJson.video_url ||
+                      resultJson.videoUrl ||
+                      resultJson.url ||
+                      resultJson.videoSrc
           }
         }
 
         // Also check direct fields
         if (!videoUrl) {
-          videoUrl = statusData.video_url || statusData.videoUrl || statusData.url
+          videoUrl = statusData.video_url ||
+                    statusData.videoUrl ||
+                    statusData.url ||
+                    statusData.data?.videoUrl ||
+                    statusData.data?.video_url
         }
 
         if (videoUrl) {
