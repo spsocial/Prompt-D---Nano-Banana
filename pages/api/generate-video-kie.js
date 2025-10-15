@@ -138,10 +138,24 @@ export default async function handler(req, res) {
     }
 
     const createData = await createResponse.json()
-    const taskId = createData.taskId || createData.task_id || createData.id
+
+    // DEBUG: Log full response to see structure
+    console.log('📄 KIE.AI Create Response:', safeStringify(createData))
+
+    // Try multiple possible field names for taskId
+    const taskId = createData.taskId ||
+                   createData.task_id ||
+                   createData.id ||
+                   createData.data?.taskId ||
+                   createData.data?.task_id ||
+                   createData.data?.id ||
+                   createData.result?.taskId ||
+                   createData.result?.task_id ||
+                   createData.result?.id
 
     if (!taskId) {
       console.error('❌ No task ID received from KIE.AI')
+      console.error('📄 Full response:', safeStringify(createData))
       if (useFallback) {
         console.log('🔄 No task ID, falling back to CometAPI...')
         return fallbackToCometAPI(req, res)
@@ -181,6 +195,11 @@ export default async function handler(req, res) {
       const state = statusData.state || statusData.status
 
       console.log(`📊 Task state: ${state}`)
+
+      // DEBUG: Log full status response every 10 attempts
+      if (attempts % 10 === 0) {
+        console.log('📄 Status Response:', safeStringify(statusData))
+      }
 
       if (state === 'completed' || state === 'success' || state === 'SUCCESS') {
         // Extract video URL from result
