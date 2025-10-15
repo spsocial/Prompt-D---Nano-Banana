@@ -215,9 +215,9 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       console.log('🔗 API Endpoint:', apiEndpoint)
       console.log('🌐 Primary Provider: CometAPI (with KIE.AI fallback if needed)')
 
-      // Create AbortController with 5 minute timeout (same as API maxDuration)
+      // Create AbortController with 10 minute timeout (longer than API maxDuration to avoid false timeouts)
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000) // 5 minutes
+      const timeoutId = setTimeout(() => controller.abort(), 10 * 60 * 1000) // 10 minutes (extended for slow video generation)
 
       let response
       try {

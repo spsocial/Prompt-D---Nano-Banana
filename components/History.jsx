@@ -158,12 +158,12 @@ export default function History() {
     return (
       <div className="text-center py-12">
         <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <ImageIcon className="h-8 w-8 text-gray-400" />
+          <Film className="h-8 w-8 text-gray-400" />
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-1">ยังไม่มีประวัติ</h3>
-        <p className="text-gray-500">รูปภาพที่คุณสร้างจะแสดงที่นี่</p>
-        <p className="text-sm text-gray-400 mt-2">ระบบจะเก็บประวัติล่าสุด 30 รายการ</p>
-        <p className="text-xs text-gray-400 mt-1">ใช้ IndexedDB เก็บภาพคุณภาพเต็ม</p>
+        <p className="text-gray-500">คอนเทนต์ที่คุณสร้างจะแสดงที่นี่ (รูปภาพ + วิดีโอ)</p>
+        <p className="text-sm text-gray-400 mt-2">ระบบจะเก็บประวัติอัตโนมัติล่าสุด 30 รายการ</p>
+        <p className="text-xs text-gray-400 mt-1">ใช้ IndexedDB เก็บไฟล์คุณภาพเต็ม</p>
       </div>
     )
   }
