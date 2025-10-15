@@ -37,38 +37,46 @@ async function pollAsyncDataForVideo(taskId, maxAttempts = 60) {
 
       const data = await response.json()
 
+      // Log full response on first few attempts for debugging
+      if (attempt <= 3) {
+        console.log(`📄 Full API response (attempt ${attempt}):`, JSON.stringify(data).substring(0, 500))
+      }
+
       // Log status (AsyncData.net uses 'status', not 'state')
-      const status = data.status
+      const status = data.status || data.content?.status
       const progress = data.progress || 0
-      const isCompleted = data.is_completed
+      const isCompleted = data.is_completed || data.completed
 
       console.log(`📊 Status: ${status}, Progress: ${progress}%, Completed: ${isCompleted}`)
 
+      // IMPORTANT: Try to extract video URL even if not marked as completed yet
+      // Sometimes the MP4 URL is available before status changes to "completed"
+      const videoUrl = data.url ||  // Top level url (filesystem.site MP4)
+                      data.content?.url ||  // Content.url (OpenAI CDN)
+                      data.content?.downloadable_url ||  // Downloadable URL
+                      data.content?.encodings?.source?.path ||  // Source encoding path
+                      data.content?.encodings?.source_wm?.path ||  // Source with watermark
+                      data.videoUrl ||
+                      data.video_url ||
+                      data.result?.url ||
+                      data.output?.url
+
+      // Check if we have a valid MP4 URL
+      if (videoUrl && (videoUrl.includes('.mp4') || videoUrl.includes('filesystem.site'))) {
+        console.log(`🔍 Found video URL in response!`)
+        console.log(`  - URL: ${videoUrl.substring(0, 100)}...`)
+        console.log(`✅ Video ready! Returning URL even if status is: ${status}`)
+        return videoUrl
+      }
+
       // Check if completed
       if (status === 'completed' || status === 'success' || isCompleted === true) {
-        // Extract direct video URL from multiple possible locations
-        const videoUrl = data.url ||  // Top level url (filesystem.site MP4)
-                        data.content?.url ||  // Content.url (OpenAI CDN)
-                        data.content?.downloadable_url ||  // Downloadable URL
-                        data.content?.encodings?.source?.path ||  // Source encoding path
-                        data.content?.encodings?.source_wm?.path ||  // Source with watermark
-                        data.videoUrl ||
-                        data.video_url ||
-                        data.result?.url ||
-                        data.output?.url
-
-        console.log(`🔍 Checking for video URL in response...`)
+        console.log(`🔍 Task marked as completed, but no video URL found`)
         console.log(`  - data.url: ${data.url?.substring(0, 80)}...`)
         console.log(`  - data.content?.url: ${data.content?.url?.substring(0, 80)}...`)
         console.log(`  - data.content?.downloadable_url: ${data.content?.downloadable_url?.substring(0, 80)}...`)
-
-        if (videoUrl && (videoUrl.includes('.mp4') || videoUrl.includes('filesystem.site'))) {
-          console.log(`✅ Video completed! Direct URL: ${videoUrl}`)
-          return videoUrl
-        } else {
-          console.log('⚠️ Task completed but no video URL found')
-          console.log('📄 Full response:', JSON.stringify(data))
-        }
+        console.log('⚠️ Task completed but no video URL found')
+        console.log('📄 Full response:', JSON.stringify(data).substring(0, 1000))
       } else if (status === 'failed' || status === 'error') {
         const errorMsg = data.error || data.error_message || 'Unknown error'
         console.error(`❌ AsyncData.net task failed: ${errorMsg}`)
