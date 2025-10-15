@@ -10,6 +10,71 @@ export const config = {
   maxDuration: 300, // 5 minutes timeout for video generation
 }
 
+// Helper function to poll AsyncData.net for actual video URL
+async function pollAsyncDataForVideo(taskId, maxAttempts = 60) {
+  console.log(`🔍 Polling AsyncData.net for task: ${taskId}`)
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      // Wait 5 seconds between polls
+      await new Promise(resolve => setTimeout(resolve, 5000))
+
+      console.log(`📡 Poll attempt ${attempt}/${maxAttempts} for ${taskId}`)
+
+      // Fetch the API endpoint
+      const apiUrl = `https://asyncdata.net/api/share/${taskId}`
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0'
+        }
+      })
+
+      if (!response.ok) {
+        console.log(`⚠️ API returned ${response.status}, retrying...`)
+        continue
+      }
+
+      const data = await response.json()
+
+      // Log status
+      const status = data.status || data.state
+      const progress = data.progress || 0
+      console.log(`📊 Status: ${status}, Progress: ${progress}%`)
+
+      // Check if completed
+      if (status === 'completed' || status === 'success') {
+        // Try to extract direct video URL
+        const videoUrl = data.videoUrl ||
+                        data.video_url ||
+                        data.url ||
+                        data.result?.videoUrl ||
+                        data.result?.video_url ||
+                        data.output?.url
+
+        if (videoUrl && videoUrl.endsWith('.mp4')) {
+          console.log(`✅ Video completed! URL: ${videoUrl}`)
+          return videoUrl
+        } else {
+          console.log('⚠️ Task completed but no direct video URL found')
+          console.log('📄 Response data:', JSON.stringify(data).substring(0, 500))
+        }
+      } else if (status === 'failed' || status === 'error') {
+        console.error(`❌ AsyncData.net task failed: ${data.error || 'Unknown error'}`)
+        return null
+      }
+
+      // Continue polling if still processing
+    } catch (error) {
+      console.error(`⚠️ Poll error (attempt ${attempt}):`, error.message)
+      // Continue polling despite errors
+    }
+  }
+
+  console.log('⏱️ Polling timeout - video may still be processing')
+  return null
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -324,7 +389,33 @@ export default async function handler(req, res) {
     }
 
     // Use final URL if available, otherwise preview
-    const videoUrl = finalUrl || previewUrl
+    let videoUrl = finalUrl || previewUrl
+
+    // NEW: If we got an AsyncData.net URL, we need to poll for the actual video
+    if (videoUrl && videoUrl.includes('asyncdata.net/web/task_')) {
+      console.log('🔄 AsyncData.net URL detected, polling for actual video...')
+
+      try {
+        // Extract task ID from URL
+        const taskIdMatch = videoUrl.match(/task_([a-zA-Z0-9]+)/)
+        if (taskIdMatch) {
+          const asyncTaskId = taskIdMatch[0] // task_XXXXX
+          console.log(`📋 Async Task ID: ${asyncTaskId}`)
+
+          // Poll AsyncData.net API for the actual video URL
+          const actualVideoUrl = await pollAsyncDataForVideo(asyncTaskId)
+          if (actualVideoUrl) {
+            videoUrl = actualVideoUrl
+            console.log(`✅ Got actual video URL: ${actualVideoUrl}`)
+          } else {
+            console.log('⚠️ Polling timeout, using preview URL')
+          }
+        }
+      } catch (pollError) {
+        console.error('⚠️ Error polling AsyncData.net:', pollError.message)
+        // Continue with preview URL if polling fails
+      }
+    }
 
     // Check for API system errors in accumulated content
     if (!videoUrl && accumulatedContent) {
