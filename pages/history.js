@@ -17,7 +17,7 @@ export default function HistoryPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50">
       <Head>
-        <title>ประวัติผลงาน - Auto Nano Banana</title>
+        <title>ประวัติผลงาน - Nano Banana AI</title>
         <meta name="description" content="ประวัติการสร้างภาพและวิดีโอด้วย AI" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -96,7 +96,7 @@ export default function HistoryPage() {
       <footer className="mt-12 border-t border-white/20 bg-gradient-to-r from-yellow-50/30 to-amber-50/30 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="text-center text-sm text-gray-600">
-            <p>Auto Nano Banana - สร้างโฆษณาสินค้าด้วย AI</p>
+            <p>Nano Banana AI - สร้างภาพและวิดีโอด้วย AI</p>
           </div>
         </div>
       </footer>
