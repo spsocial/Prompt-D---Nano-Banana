@@ -37,7 +37,10 @@
       "Bash(npx next lint:*)",
       "Bash(node:*)",
       "WebFetch(domain:docs.aimlapi.com)",
-      "WebFetch(domain:pic.in.th)"
+      "WebFetch(domain:pic.in.th)",
+      "WebFetch(domain:kie.ai)",
+      "WebFetch(domain:docs.kie.ai)",
+      "WebFetch(domain:www.technology.org)"
     ],
     "deny": [],
     "ask": []

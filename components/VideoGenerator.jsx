@@ -8,7 +8,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
   const [mode, setMode] = useState(sourceImage ? 'image' : 'text')
   const [uploadedImage, setUploadedImage] = useState(sourceImage)
   const [prompt, setPrompt] = useState(sourcePrompt)
-  const [duration, setDuration] = useState(model === 'veo3-fast' ? 8 : 5)
+  const [duration, setDuration] = useState(model === 'veo3-fast' ? 8 : 10)
   const [resolution, setResolution] = useState('720p')
   const [aspectRatio, setAspectRatio] = useState('16:9')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -17,6 +17,8 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
   const [showSettings, setShowSettings] = useState(true)
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const [showMobileDownloadInstructions, setShowMobileDownloadInstructions] = useState(false)
+  const [apiProvider, setApiProvider] = useState('kie') // 'kie' or 'comet'
+  const [removeWatermark, setRemoveWatermark] = useState(false)
 
   const { apiKeys, userPlan, setIsGeneratingVideo, userCredits, useCredits } = useStore()
 
@@ -30,25 +32,48 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         '9:16': ['720p'],
         '1:1': ['720p']
       },
-      aspectRatios: ['16:9', '9:16', '1:1']
+      aspectRatios: ['16:9', '9:16', '1:1'],
+      credits: 15
     },
     'sora-2': {
-      name: 'Sora 2',
+      name: 'Sora 2 (Standard 720p)',
       durations: [10], // Fixed 10 seconds only
       resolutions: {
         '16:9': ['720p'], // Fixed 720p
         '9:16': ['720p']  // Fixed 720p
       },
-      aspectRatios: ['16:9', '9:16'] // Only horizontal and vertical
+      aspectRatios: ['16:9', '9:16'], // Only horizontal and vertical
+      credits: 10 // KIE: $0.15/10s = 10 credits
+    },
+    'sora-2-pro': {
+      name: 'Sora 2 Pro (720p)',
+      durations: [10, 15], // 10 or 15 seconds
+      resolutions: {
+        '16:9': ['720p'],
+        '9:16': ['720p']
+      },
+      aspectRatios: ['16:9', '9:16'],
+      credits: 25 // KIE: $0.45/10s = 25 credits
+    },
+    'sora-2-pro-1080p': {
+      name: 'Sora 2 Pro (1080p)',
+      durations: [10, 15], // 10 or 15 seconds
+      resolutions: {
+        '16:9': ['1080p'],
+        '9:16': ['1080p']
+      },
+      aspectRatios: ['16:9', '9:16'],
+      credits: 60 // KIE: $1.00-1.30/10s = 60 credits
     },
     'sora-2-hd': {
-      name: 'Sora 2 HD',
+      name: 'Sora 2 HD (1080p - CometAPI)',
       durations: [10], // Fixed 10 seconds only
       resolutions: {
         '16:9': ['1080p'], // Fixed 1080p
         '9:16': ['1080p']  // Fixed 1080p
       },
-      aspectRatios: ['16:9', '9:16'] // Only horizontal and vertical
+      aspectRatios: ['16:9', '9:16'], // Only horizontal and vertical
+      credits: 15 // CometAPI pricing
     }
   }
 
@@ -151,11 +176,8 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       return
     }
 
-    // Calculate required credits based on model
-    const requiredCredits =
-      model === 'sora-2-hd' ? 15 :     // Sora-2 HD: 15 credits
-      model === 'veo3-fast' ? 15 :     // Veo3-fast: 15 credits (updated)
-      10                                // Sora-2: 10 credits
+    // Calculate required credits based on model config
+    const requiredCredits = currentConfig.credits || 10
 
     // Check if user has enough credits
     if (userCredits < requiredCredits) {
@@ -181,11 +203,20 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       console.log(`💳 Deducted ${requiredCredits} credits (Remaining: ${userCredits - requiredCredits})`)
 
       // Select API endpoint based on model
-      const apiEndpoint = model === 'veo3-fast'
-        ? '/api/generate-video-veo3'
-        : '/api/generate-video'
+      // Use KIE API for Sora 2 models, CometAPI for others
+      let apiEndpoint
+      if (model === 'veo3-fast') {
+        apiEndpoint = '/api/generate-video-veo3'
+      } else if (model.startsWith('sora-2') && model !== 'sora-2-hd') {
+        // Use KIE.AI for new Sora 2 models (not sora-2-hd which is CometAPI)
+        apiEndpoint = '/api/generate-video-kie'
+      } else {
+        // Use CometAPI for sora-2-hd and other models
+        apiEndpoint = '/api/generate-video'
+      }
 
       console.log('🔗 API Endpoint:', apiEndpoint)
+      console.log('🌐 Provider:', apiEndpoint.includes('kie') ? 'KIE.AI' : 'CometAPI')
 
       // Create AbortController with 5 minute timeout (same as API maxDuration)
       const controller = new AbortController()
@@ -205,7 +236,9 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             duration: duration,
             resolution: resolution,
             aspectRatio: aspectRatio,
-            model: model
+            model: model,
+            removeWatermark: removeWatermark,
+            useFallback: true // Enable automatic fallback to CometAPI
           }),
           signal: controller.signal
         })
