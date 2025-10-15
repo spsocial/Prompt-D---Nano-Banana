@@ -225,15 +225,26 @@ export default async function handler(req, res) {
           if (typeof resultJson === 'string') {
             try {
               const parsed = JSON.parse(resultJson)
-              videoUrl = parsed.video_url || parsed.videoUrl || parsed.url || parsed.videoSrc
+              // Check for resultUrls array (KIE.AI format)
+              if (parsed.resultUrls && Array.isArray(parsed.resultUrls) && parsed.resultUrls.length > 0) {
+                videoUrl = parsed.resultUrls[0]
+              } else {
+                videoUrl = parsed.video_url || parsed.videoUrl || parsed.url || parsed.videoSrc
+              }
             } catch (e) {
+              console.error('Failed to parse resultJson:', e)
               videoUrl = resultJson
             }
           } else {
-            videoUrl = resultJson.video_url ||
-                      resultJson.videoUrl ||
-                      resultJson.url ||
-                      resultJson.videoSrc
+            // Check for resultUrls array
+            if (resultJson.resultUrls && Array.isArray(resultJson.resultUrls) && resultJson.resultUrls.length > 0) {
+              videoUrl = resultJson.resultUrls[0]
+            } else {
+              videoUrl = resultJson.video_url ||
+                        resultJson.videoUrl ||
+                        resultJson.url ||
+                        resultJson.videoSrc
+            }
           }
         }
 
