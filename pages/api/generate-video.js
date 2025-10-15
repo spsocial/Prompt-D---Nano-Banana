@@ -336,9 +336,9 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    console.error('❌ Video generation error:', error)
+    console.error('❌ CometAPI Video generation error:', error)
 
-    // Check if it's an API system error (should refund credits automatically)
+    // Check if it's an API system error
     const isSystemError = error.message.includes('API_SYSTEM_ERROR') ||
                          error.message.includes('network fluctuations') ||
                          error.message.includes('high load') ||
@@ -350,6 +350,26 @@ export default async function handler(req, res) {
     const isApiNotAvailable = error.message.includes('Sora API is not available') ||
                                error.message.includes('not valid JSON') ||
                                error.message.includes('Unexpected token')
+
+    // Check for quota/credit errors
+    const isQuotaError = error.message.includes('quota') ||
+                        error.message.includes('insufficient') ||
+                        error.message.includes('not enough')
+
+    // Try fallback to KIE.AI if enabled and it's a system error or quota issue
+    const shouldTryFallback = (isSystemError || isApiNotAvailable || isQuotaError) &&
+                             process.env.KIE_API_KEY
+
+    if (shouldTryFallback) {
+      console.log('🔄 CometAPI failed, attempting fallback to KIE.AI...')
+
+      try {
+        return await fallbackToKieAI(req, res)
+      } catch (fallbackError) {
+        console.error('❌ KIE.AI fallback also failed:', fallbackError)
+        // Continue to normal error handling
+      }
+    }
 
     // Check for timeout errors
     const isTimeout = error.message.includes('504') ||
@@ -371,9 +391,137 @@ export default async function handler(req, res) {
         ? '⏱️ การสร้างวิดีโอใช้เวลานาน (1-3 นาที) แต่ API timeout ก่อน - เครดิตจะถูกคืนอัตโนมัติ ลองใหม่อีกครั้งหรือติดต่อ CometAPI Support'
         : isApiNotAvailable
         ? '⚠️ Sora API ยังไม่เปิดให้ใช้งานทั่วไป - เครดิตจะถูกคืนอัตโนมัติ กรุณารอ OpenAI เปิดให้ใช้งาน'
+        : isQuotaError
+        ? '💳 CometAPI เครดิตไม่เพียงพอ - กรุณาเติมเครดิต CometAPI หรือรอระบบลอง KIE.AI'
         : 'เกิดข้อผิดพลาด - เครดิตจะถูกคืนอัตโนมัติ',
-      apiStatus: isSystemError ? 'system_error' : isTimeout ? 'timeout' : isApiNotAvailable ? 'not_available' : 'unknown_error',
+      apiStatus: isSystemError ? 'system_error' : isTimeout ? 'timeout' : isApiNotAvailable ? 'not_available' : isQuotaError ? 'quota_error' : 'unknown_error',
       shouldRefund: true // Always refund on error
     })
   }
+}
+
+// Fallback function to use KIE.AI when CometAPI fails
+async function fallbackToKieAI(req, res) {
+  console.log('🔄 Executing KIE.AI fallback...')
+
+  const {
+    prompt,
+    image,
+    duration = 10,
+    resolution = '720p',
+    aspectRatio = '16:9',
+    model = 'sora-2',
+    removeWatermark = false
+  } = req.body
+
+  const kieApiKey = process.env.KIE_API_KEY
+
+  if (!kieApiKey) {
+    throw new Error('KIE.AI API key not configured for fallback')
+  }
+
+  console.log(`🎬 Fallback: Starting video generation via KIE.AI...`)
+
+  // Determine model name
+  let modelName
+  if (image) {
+    modelName = model.includes('pro') ? 'sora-2-pro-image-to-video' : 'sora-2-image-to-video'
+  } else {
+    modelName = model.includes('pro') ? 'sora-2-pro-text-to-video' : 'sora-2-text-to-video'
+  }
+
+  const kieAspectRatio = aspectRatio === '16:9' ? 'landscape' : 'portrait'
+
+  const requestBody = {
+    model: modelName,
+    input: {
+      prompt: prompt || 'Create a cinematic video',
+      aspect_ratio: kieAspectRatio,
+      remove_watermark: removeWatermark
+    }
+  }
+
+  // Image not supported as base64 in KIE.AI - skip fallback for image mode
+  if (image) {
+    throw new Error('KIE.AI requires image URLs, not base64 - cannot fallback for image-to-video')
+  }
+
+  console.log('🚀 Fallback: Creating task on KIE.AI...')
+
+  const createResponse = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${kieApiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(requestBody)
+  })
+
+  if (!createResponse.ok) {
+    const errorText = await createResponse.text()
+    throw new Error(`KIE.AI createTask failed: ${errorText}`)
+  }
+
+  const createData = await createResponse.json()
+  const taskId = createData.data?.taskId
+
+  if (!taskId) {
+    throw new Error('No taskId from KIE.AI')
+  }
+
+  console.log(`✅ Fallback: Task created on KIE.AI: ${taskId}`)
+
+  // Poll for results
+  const maxAttempts = 60
+  let attempts = 0
+  let videoUrl = null
+
+  while (attempts < maxAttempts) {
+    attempts++
+    await new Promise(resolve => setTimeout(resolve, 5000))
+
+    const statusResponse = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+      headers: { 'Authorization': `Bearer ${kieApiKey}` }
+    })
+
+    if (!statusResponse.ok) continue
+
+    const statusData = await statusResponse.json()
+    const state = statusData.data?.state
+
+    if (state === 'success') {
+      const resultJson = statusData.data?.resultJson
+
+      if (resultJson) {
+        const parsed = typeof resultJson === 'string' ? JSON.parse(resultJson) : resultJson
+        if (parsed.resultUrls?.[0]) {
+          videoUrl = parsed.resultUrls[0]
+          break
+        }
+      }
+    }
+  }
+
+  if (!videoUrl) {
+    throw new Error('KIE.AI fallback timeout')
+  }
+
+  console.log(`🎉 Fallback successful via KIE.AI!`)
+  console.log(`⚠️ Note: Video may have watermark (remove_watermark=${removeWatermark})`)
+
+  return res.status(200).json({
+    success: true,
+    videoUrl: videoUrl,
+    duration: duration,
+    resolution: resolution,
+    aspectRatio: aspectRatio,
+    mode: image ? 'image-to-video' : 'text-to-video',
+    model: model,
+    message: removeWatermark
+      ? '✨ Video generated via KIE.AI (Fallback) - No watermark'
+      : '⚠️ Video generated via KIE.AI (Fallback) - May have watermark',
+    provider: 'KIE.AI (Fallback from CometAPI)',
+    wasFallback: true,
+    hasWatermark: !removeWatermark
+  })
 }

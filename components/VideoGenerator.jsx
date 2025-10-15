@@ -203,20 +203,17 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       console.log(`💳 Deducted ${requiredCredits} credits (Remaining: ${userCredits - requiredCredits})`)
 
       // Select API endpoint based on model
-      // Use KIE API for Sora 2 models, CometAPI for others
+      // Use CometAPI as primary for all Sora 2 models (has KIE.AI fallback)
       let apiEndpoint
       if (model === 'veo3-fast') {
         apiEndpoint = '/api/generate-video-veo3'
-      } else if (model.startsWith('sora-2') && model !== 'sora-2-hd') {
-        // Use KIE.AI for new Sora 2 models (not sora-2-hd which is CometAPI)
-        apiEndpoint = '/api/generate-video-kie'
       } else {
-        // Use CometAPI for sora-2-hd and other models
+        // Use CometAPI for all Sora 2 models (includes automatic KIE.AI fallback)
         apiEndpoint = '/api/generate-video'
       }
 
       console.log('🔗 API Endpoint:', apiEndpoint)
-      console.log('🌐 Provider:', apiEndpoint.includes('kie') ? 'KIE.AI' : 'CometAPI')
+      console.log('🌐 Primary Provider: CometAPI (with KIE.AI fallback if needed)')
 
       // Create AbortController with 5 minute timeout (same as API maxDuration)
       const controller = new AbortController()
@@ -941,6 +938,55 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
               <span className="font-bold">โหมด:</span> {videoResult.mode === 'image-to-video' ? 'Image→Video' : 'Text→Video'}
             </div>
           </div>
+
+          {/* Provider Information */}
+          {videoResult.provider && (
+            <div className={`mt-4 p-4 rounded-xl border-2 ${
+              videoResult.wasFallback
+                ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300'
+                : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300'
+            }`}>
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    videoResult.wasFallback ? 'bg-amber-500' : 'bg-blue-500'
+                  }`}>
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      {videoResult.wasFallback ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      )}
+                    </svg>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className={`text-sm font-bold mb-1 ${
+                    videoResult.wasFallback ? 'text-amber-900' : 'text-blue-900'
+                  }`}>
+                    {videoResult.wasFallback ? '🔄 สร้างผ่าน Backup Provider' : '✅ สร้างผ่าน Primary Provider'}
+                  </h4>
+                  <p className={`text-sm ${
+                    videoResult.wasFallback ? 'text-amber-800' : 'text-blue-800'
+                  }`}>
+                    <span className="font-bold">Provider:</span> {videoResult.provider}
+                  </p>
+                  {videoResult.message && (
+                    <p className={`text-sm mt-1 ${
+                      videoResult.wasFallback ? 'text-amber-800' : 'text-blue-800'
+                    }`}>
+                      {videoResult.message}
+                    </p>
+                  )}
+                  {videoResult.hasWatermark && (
+                    <p className="text-sm mt-2 font-bold text-amber-900">
+                      ⚠️ วิดีโอนี้อาจมีลายน้ำ (Watermark)
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
