@@ -31,7 +31,7 @@ export default function ResultGallery() {
 
         // For mobile devices, try using share API first
         if (isMobile && navigator.share && navigator.canShare) {
-          const file = new File([blob], `nano-banana-${style.toLowerCase().replace(/\s+/g, '-')}.png`, {
+          const file = new File([blob], `prompt-d-${style.toLowerCase().replace(/\s+/g, '-')}.png`, {
             type: 'image/png'
           })
 
@@ -39,7 +39,7 @@ export default function ResultGallery() {
             try {
               await navigator.share({
                 files: [file],
-                title: 'Nano Banana Image',
+                title: 'Prompt D - AI Image',
                 text: `Image: ${style}`
               })
               return
@@ -53,7 +53,7 @@ export default function ResultGallery() {
         const url = window.URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = `nano-banana-${style.toLowerCase().replace(/\s+/g, '-')}.png`
+        link.download = `prompt-d-${style.toLowerCase().replace(/\s+/g, '-')}.png`
         link.style.display = 'none'
         document.body.appendChild(link)
         link.click()
@@ -74,7 +74,7 @@ export default function ResultGallery() {
         // For regular URLs
         const link = document.createElement('a')
         link.href = imageUrl
-        link.download = `nano-banana-${style.toLowerCase().replace(/\s+/g, '-')}.png`
+        link.download = `prompt-d-${style.toLowerCase().replace(/\s+/g, '-')}.png`
         link.target = '_blank'
         link.style.display = 'none'
         document.body.appendChild(link)

@@ -55,8 +55,8 @@ export default function History() {
             try {
               await navigator.share({
                 files: [file],
-                title: 'Nano Banana History',
-                text: `History ${isVideo ? 'Video' : 'Image'} ${id}`
+                title: 'Prompt D - AI Content',
+                text: `${isVideo ? 'วิดีโอ' : 'ภาพ'} จาก Prompt D`
               })
               return
             } catch (shareError) {

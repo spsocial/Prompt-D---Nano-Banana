@@ -227,7 +227,7 @@ export default function PricingModal({ onClose }) {
             <div className="mb-5 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
               <h4 className="font-bold text-blue-800 mb-2">💳 การใช้เครดิต</h4>
               <div className="text-sm text-blue-700 space-y-1">
-                <p>🖼️ <strong>สร้างภาพ (Nano Banana):</strong> 1 เครดิต/ภาพ</p>
+                <p>🖼️ <strong>สร้างภาพ (Prompt D):</strong> 1 เครดิต/ภาพ</p>
                 <p>🎬 <strong>สร้างวิดีโอ (Sora-2):</strong> 10 เครดิต/คลิป (10 วิ)</p>
                 <p>💎 <strong>สร้างวิดีโอ HD (Sora-2 HD):</strong> 15 เครดิต/คลิป (10 วิ)</p>
                 <p>⚡ <strong>สร้างวิดีโอ (Veo3-fast):</strong> 15 เครดิต/คลิป (8 วิ)</p>

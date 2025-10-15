@@ -25,7 +25,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Prompt is required' })
     }
 
-    // Use Gemini API key (same as Nano Banana)
+    // Use Gemini API key
     const geminiApiKey = apiKey || process.env.GEMINI_API_KEY
 
     if (!geminiApiKey) {

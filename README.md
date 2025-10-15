@@ -1,6 +1,6 @@
-# Prompt-D - Nano Banana
+# Prompt D
 
-AI-powered product photography generator with multiple AI models support
+Studio สร้างภาพและวิดีโอด้วย AI - AI-powered image and video generation platform with multiple AI models support
 
 ## Features
 
