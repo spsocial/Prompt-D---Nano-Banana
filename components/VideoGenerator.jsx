@@ -17,8 +17,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
   const [showSettings, setShowSettings] = useState(true)
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const [showMobileDownloadInstructions, setShowMobileDownloadInstructions] = useState(false)
-  const [apiProvider, setApiProvider] = useState('kie') // 'kie' or 'comet'
-  const [removeWatermark, setRemoveWatermark] = useState(false)
+  const [allowWatermark, setAllowWatermark] = useState(false) // false = no watermark (default), true = allow watermark (cheaper)
 
   const { apiKeys, userPlan, setIsGeneratingVideo, userCredits, useCredits } = useStore()
 
@@ -176,8 +175,13 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       return
     }
 
-    // Calculate required credits based on model config
-    const requiredCredits = currentConfig.credits || 10
+    // Calculate required credits based on model config and watermark preference
+    let requiredCredits = currentConfig.credits || 10
+
+    // Apply discount for allowing watermark (only for Sora 2 models)
+    if ((model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && allowWatermark) {
+      requiredCredits = Math.ceil(requiredCredits * 0.7) // 30% discount = 7 credits instead of 10
+    }
 
     // Check if user has enough credits
     if (userCredits < requiredCredits) {
@@ -234,8 +238,8 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             resolution: resolution,
             aspectRatio: aspectRatio,
             model: model,
-            removeWatermark: removeWatermark,
-            useFallback: true // Enable automatic fallback to CometAPI
+            allowWatermark: allowWatermark, // User's watermark preference
+            useFallback: true // Enable automatic fallback
           }),
           signal: controller.signal
         })
@@ -849,6 +853,96 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
               })}
             </div>
           </div>
+
+          {/* Watermark Toggle - Only for Sora 2 models */}
+          {(model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && (
+            <div className="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-xl">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex-1">
+                  <label className="block text-sm font-bold text-gray-800 mb-1">
+                    🎨 คุณภาพวิดีโอ
+                  </label>
+                  <p className="text-xs text-gray-600">
+                    เลือกให้เหมาะกับการใช้งานของคุณ
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* No Watermark Option */}
+                <button
+                  onClick={() => setAllowWatermark(false)}
+                  className={`p-4 rounded-lg border-2 transition-all text-left ${
+                    !allowWatermark
+                      ? 'border-green-500 bg-green-50 shadow-lg'
+                      : 'border-gray-300 bg-white hover:border-green-300'
+                  }`}
+                >
+                  <div className="flex items-start space-x-2 mb-2">
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      !allowWatermark ? 'border-green-500 bg-green-500' : 'border-gray-400'
+                    }`}>
+                      {!allowWatermark && (
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-gray-900">✨ ไม่มีลายน้ำ</div>
+                      <div className="text-xs text-gray-600 mt-1">คุณภาพสูง ใช้งานได้เต็มที่</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-700 pl-7">
+                    <div className="font-bold text-green-700">💳 10 เครดิต</div>
+                    <div className="text-gray-500 mt-1">เหมาะสำหรับงานจริงจัง</div>
+                  </div>
+                </button>
+
+                {/* Allow Watermark Option */}
+                <button
+                  onClick={() => setAllowWatermark(true)}
+                  className={`p-4 rounded-lg border-2 transition-all text-left ${
+                    allowWatermark
+                      ? 'border-blue-500 bg-blue-50 shadow-lg'
+                      : 'border-gray-300 bg-white hover:border-blue-300'
+                  }`}
+                >
+                  <div className="flex items-start space-x-2 mb-2">
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      allowWatermark ? 'border-blue-500 bg-blue-500' : 'border-gray-400'
+                    }`}>
+                      {allowWatermark && (
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-gray-900">💧 ยอมรับลายน้ำ</div>
+                      <div className="text-xs text-gray-600 mt-1">ประหยัดเครดิต ทดลองใช้งาน</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-700 pl-7">
+                    <div className="font-bold text-blue-700">💳 7 เครดิต (-30%)</div>
+                    <div className="text-gray-500 mt-1">เหมาะสำหรับทดสอบ</div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Info Banner */}
+              <div className="mt-3 p-3 bg-white rounded-lg border border-yellow-300">
+                <p className="text-xs text-gray-700">
+                  <strong>💡 คำแนะนำ:</strong>
+                  {' '}
+                  {!allowWatermark
+                    ? 'คุณเลือกไม่มีลายน้ำ - วิดีโอจะมีคุณภาพสูงสุด เหมาะสำหรับนำไปใช้งานจริง'
+                    : 'คุณเลือกยอมรับลายน้ำ - ประหยัดเครดิต 30% เหมาะสำหรับทดสอบ (วิดีโอจะมีลายน้ำเล็กน้อย)'
+                  }
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -876,7 +970,12 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         ) : (
           <span className="flex items-center justify-center">
             <Film className="h-5 w-5 mr-2" />
-            สร้างวิดีโอด้วย AI (ใช้ {model === 'sora-2-hd' ? '15' : model === 'veo3-fast' ? '15' : '10'} เครดิต)
+            สร้างวิดีโอด้วย AI (ใช้ {
+              model === 'sora-2-hd' ? '15' :
+              model === 'veo3-fast' ? '15' :
+              (model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && allowWatermark ? '7' :
+              '10'
+            } เครดิต{(model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && allowWatermark ? ' 💧' : ''})
           </span>
         )}
       </button>
@@ -939,48 +1038,27 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             </div>
           </div>
 
-          {/* Provider Information */}
-          {videoResult.provider && (
-            <div className={`mt-4 p-4 rounded-xl border-2 ${
-              videoResult.wasFallback
-                ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300'
-                : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300'
-            }`}>
+          {/* Fallback Warning - Only show if used backup server */}
+          {videoResult.wasFallback && (
+            <div className="mt-4 p-4 rounded-xl border-2 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300">
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    videoResult.wasFallback ? 'bg-amber-500' : 'bg-blue-500'
-                  }`}>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500">
                     <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      {videoResult.wasFallback ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      )}
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h4 className={`text-sm font-bold mb-1 ${
-                    videoResult.wasFallback ? 'text-amber-900' : 'text-blue-900'
-                  }`}>
-                    {videoResult.wasFallback ? '🔄 สร้างผ่าน Backup Provider' : '✅ สร้างผ่าน Primary Provider'}
+                  <h4 className="text-sm font-bold mb-1 text-amber-900">
+                    🔄 สลับไปใช้เซิร์ฟเวอร์สำรอง
                   </h4>
-                  <p className={`text-sm ${
-                    videoResult.wasFallback ? 'text-amber-800' : 'text-blue-800'
-                  }`}>
-                    <span className="font-bold">Provider:</span> {videoResult.provider}
+                  <p className="text-sm text-amber-800">
+                    เนื่องจากเซิร์ฟเวอร์หลักมีปัญหา ระบบจึงสลับมาใช้เซิร์ฟเวอร์สำรอง
                   </p>
-                  {videoResult.message && (
-                    <p className={`text-sm mt-1 ${
-                      videoResult.wasFallback ? 'text-amber-800' : 'text-blue-800'
-                    }`}>
-                      {videoResult.message}
-                    </p>
-                  )}
                   {videoResult.hasWatermark && (
                     <p className="text-sm mt-2 font-bold text-amber-900">
-                      ⚠️ วิดีโอนี้อาจมีลายน้ำ (Watermark)
+                      ⚠️ วิดีโอนี้อาจมีลายน้ำเล็กน้อย
                     </p>
                   )}
                 </div>
@@ -1011,10 +1089,18 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             <span className="font-bold">💳 ใช้เครดิต:</span>
             {' '}
             <span className="text-lg font-bold text-blue-600">
-              {model === 'sora-2-hd' ? '15' : model === 'veo3-fast' ? '15' : '10'} เครดิต
+              {model === 'sora-2-hd' ? '15' :
+               model === 'veo3-fast' ? '15' :
+               (model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && allowWatermark ? '7' :
+               '10'} เครดิต
             </span>
             {' '}
-            / วิดีโอ (คุณมี {userCredits} เครดิต)
+            / วิดีโอ
+            {(model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && allowWatermark && (
+              <span className="text-green-700 font-bold"> (ลด 30% 🎉)</span>
+            )}
+            {' '}
+            (คุณมี {userCredits} เครดิต)
           </p>
         </div>
       </div>

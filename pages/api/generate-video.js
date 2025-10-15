@@ -22,11 +22,25 @@ export default async function handler(req, res) {
       apiKey,
       duration = 5,
       resolution = '720p',
-      aspectRatio = '16:9'
+      aspectRatio = '16:9',
+      allowWatermark = false, // New parameter: false = no watermark (default), true = allow watermark (cheaper)
+      model = 'sora-2'
     } = req.body
 
     if (!prompt && !image) {
       return res.status(400).json({ error: 'Either prompt or image is required' })
+    }
+
+    // NEW LOGIC: If user allows watermark, use KIE.AI directly (cheaper, has watermark)
+    if (allowWatermark && process.env.KIE_API_KEY) {
+      console.log('💧 User allows watermark → Using KIE.AI directly (cheaper option)')
+      try {
+        return await useKieAIDirect(req, res)
+      } catch (kieError) {
+        console.error('❌ KIE.AI direct failed:', kieError)
+        console.log('🔄 Falling back to CometAPI...')
+        // Continue with CometAPI as fallback
+      }
     }
 
     // Use CometAPI key from environment variable only (no hardcoded key)
@@ -331,8 +345,9 @@ export default async function handler(req, res) {
       aspectRatio: aspectRatio,
       mode: image ? 'image-to-video' : 'text-to-video',
       model: modelName,
-      message: '✨ Video generated successfully with Sora-2!',
-      provider: 'CometAPI (Sora-2)'
+      message: '✨ วิดีโอสร้างเสร็จแล้ว',
+      hasWatermark: false,
+      wasFallback: false
     })
 
   } catch (error) {
@@ -400,9 +415,9 @@ export default async function handler(req, res) {
   }
 }
 
-// Fallback function to use KIE.AI when CometAPI fails
-async function fallbackToKieAI(req, res) {
-  console.log('🔄 Executing KIE.AI fallback...')
+// Direct use of KIE.AI when user allows watermark (cheaper option)
+async function useKieAIDirect(req, res) {
+  console.log('💧 Using KIE.AI directly (user allows watermark)...')
 
   const {
     prompt,
@@ -410,8 +425,134 @@ async function fallbackToKieAI(req, res) {
     duration = 10,
     resolution = '720p',
     aspectRatio = '16:9',
-    model = 'sora-2',
-    removeWatermark = false
+    model = 'sora-2'
+  } = req.body
+
+  const kieApiKey = process.env.KIE_API_KEY
+
+  if (!kieApiKey) {
+    throw new Error('KIE.AI API key not configured')
+  }
+
+  console.log(`🎬 Starting video generation via KIE.AI (with watermark, cheaper)...`)
+
+  // Determine model name
+  let modelName
+  if (image) {
+    modelName = model.includes('pro') ? 'sora-2-pro-image-to-video' : 'sora-2-image-to-video'
+  } else {
+    modelName = model.includes('pro') ? 'sora-2-pro-text-to-video' : 'sora-2-text-to-video'
+  }
+
+  const kieAspectRatio = aspectRatio === '16:9' ? 'landscape' : 'portrait'
+
+  const requestBody = {
+    model: modelName,
+    input: {
+      prompt: prompt || 'Create a cinematic video',
+      aspect_ratio: kieAspectRatio,
+      remove_watermark: false // Allow watermark for cheaper price
+    }
+  }
+
+  // Image not supported as base64 in KIE.AI
+  if (image && image.startsWith('data:')) {
+    throw new Error('KIE.AI requires image URLs, not base64')
+  }
+
+  if (image) {
+    requestBody.input.image_urls = [image]
+  }
+
+  console.log('🚀 Creating task on KIE.AI...')
+
+  const createResponse = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${kieApiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(requestBody)
+  })
+
+  if (!createResponse.ok) {
+    const errorText = await createResponse.text()
+    throw new Error(`KIE.AI createTask failed: ${errorText}`)
+  }
+
+  const createData = await createResponse.json()
+  const taskId = createData.data?.taskId
+
+  if (!taskId) {
+    throw new Error('No taskId from KIE.AI')
+  }
+
+  console.log(`✅ Task created on KIE.AI: ${taskId}`)
+
+  // Poll for results
+  const maxAttempts = 60
+  let attempts = 0
+  let videoUrl = null
+
+  while (attempts < maxAttempts) {
+    attempts++
+    await new Promise(resolve => setTimeout(resolve, 5000))
+
+    const statusResponse = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+      headers: { 'Authorization': `Bearer ${kieApiKey}` }
+    })
+
+    if (!statusResponse.ok) continue
+
+    const statusData = await statusResponse.json()
+    const state = statusData.data?.state
+
+    if (state === 'success') {
+      const resultJson = statusData.data?.resultJson
+
+      if (resultJson) {
+        const parsed = typeof resultJson === 'string' ? JSON.parse(resultJson) : resultJson
+        if (parsed.resultUrls?.[0]) {
+          videoUrl = parsed.resultUrls[0]
+          break
+        }
+      }
+    } else if (state === 'failed' || state === 'error') {
+      throw new Error('KIE.AI task failed')
+    }
+  }
+
+  if (!videoUrl) {
+    throw new Error('KIE.AI timeout')
+  }
+
+  console.log(`🎉 KIE.AI video generation complete (with watermark)!`)
+
+  return res.status(200).json({
+    success: true,
+    videoUrl: videoUrl,
+    duration: duration,
+    resolution: resolution,
+    aspectRatio: aspectRatio,
+    mode: image ? 'image-to-video' : 'text-to-video',
+    model: model,
+    message: '✨ วิดีโอสร้างเสร็จแล้ว',
+    hasWatermark: true,
+    wasFallback: false
+  })
+}
+
+// Fallback function to use KIE.AI when CometAPI fails (no watermark version)
+async function fallbackToKieAI(req, res) {
+  console.log('🔄 Executing KIE.AI fallback (no watermark)...')
+
+  const {
+    prompt,
+    image,
+    duration = 10,
+    resolution = '720p',
+    aspectRatio = '16:9',
+    model = 'sora-2'
   } = req.body
 
   const kieApiKey = process.env.KIE_API_KEY
@@ -437,13 +578,17 @@ async function fallbackToKieAI(req, res) {
     input: {
       prompt: prompt || 'Create a cinematic video',
       aspect_ratio: kieAspectRatio,
-      remove_watermark: removeWatermark
+      remove_watermark: true // No watermark for fallback (user didn't request watermark)
     }
   }
 
   // Image not supported as base64 in KIE.AI - skip fallback for image mode
-  if (image) {
+  if (image && image.startsWith('data:')) {
     throw new Error('KIE.AI requires image URLs, not base64 - cannot fallback for image-to-video')
+  }
+
+  if (image) {
+    requestBody.input.image_urls = [image]
   }
 
   console.log('🚀 Fallback: Creating task on KIE.AI...')
@@ -506,8 +651,7 @@ async function fallbackToKieAI(req, res) {
     throw new Error('KIE.AI fallback timeout')
   }
 
-  console.log(`🎉 Fallback successful via KIE.AI!`)
-  console.log(`⚠️ Note: Video may have watermark (remove_watermark=${removeWatermark})`)
+  console.log(`🎉 Fallback successful (no watermark)!`)
 
   return res.status(200).json({
     success: true,
@@ -517,11 +661,8 @@ async function fallbackToKieAI(req, res) {
     aspectRatio: aspectRatio,
     mode: image ? 'image-to-video' : 'text-to-video',
     model: model,
-    message: removeWatermark
-      ? '✨ Video generated via KIE.AI (Fallback) - No watermark'
-      : '⚠️ Video generated via KIE.AI (Fallback) - May have watermark',
-    provider: 'KIE.AI (Fallback from CometAPI)',
+    message: '✨ วิดีโอสร้างเสร็จแล้ว',
     wasFallback: true,
-    hasWatermark: !removeWatermark
+    hasWatermark: false // No watermark in fallback
   })
 }
