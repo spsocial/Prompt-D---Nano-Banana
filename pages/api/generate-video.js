@@ -37,31 +37,36 @@ async function pollAsyncDataForVideo(taskId, maxAttempts = 60) {
 
       const data = await response.json()
 
-      // Log status
-      const status = data.status || data.state
+      // Log status (AsyncData.net uses 'status', not 'state')
+      const status = data.status
       const progress = data.progress || 0
-      console.log(`📊 Status: ${status}, Progress: ${progress}%`)
+      const isCompleted = data.is_completed
+
+      console.log(`📊 Status: ${status}, Progress: ${progress}%, Completed: ${isCompleted}`)
 
       // Check if completed
-      if (status === 'completed' || status === 'success') {
-        // Try to extract direct video URL
-        const videoUrl = data.videoUrl ||
+      if (status === 'completed' || status === 'success' || isCompleted === true) {
+        // Extract direct video URL (AsyncData.net uses 'url' field)
+        const videoUrl = data.url ||
+                        data.videoUrl ||
                         data.video_url ||
-                        data.url ||
-                        data.result?.videoUrl ||
-                        data.result?.video_url ||
+                        data.result?.url ||
                         data.output?.url
 
-        if (videoUrl && videoUrl.endsWith('.mp4')) {
-          console.log(`✅ Video completed! URL: ${videoUrl}`)
+        if (videoUrl && (videoUrl.includes('.mp4') || videoUrl.includes('filesystem.site'))) {
+          console.log(`✅ Video completed! Direct URL: ${videoUrl}`)
           return videoUrl
         } else {
-          console.log('⚠️ Task completed but no direct video URL found')
-          console.log('📄 Response data:', JSON.stringify(data).substring(0, 500))
+          console.log('⚠️ Task completed but no video URL found')
+          console.log('📄 Full response:', JSON.stringify(data))
         }
       } else if (status === 'failed' || status === 'error') {
-        console.error(`❌ AsyncData.net task failed: ${data.error || 'Unknown error'}`)
+        const errorMsg = data.error || data.error_message || 'Unknown error'
+        console.error(`❌ AsyncData.net task failed: ${errorMsg}`)
         return null
+      } else {
+        // Still processing
+        console.log(`⏳ Still processing... (${progress}% complete)`)
       }
 
       // Continue polling if still processing
