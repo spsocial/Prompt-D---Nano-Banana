@@ -175,13 +175,9 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       return
     }
 
-    // Calculate required credits based on model config and watermark preference
-    let requiredCredits = currentConfig.credits || 10
-
-    // Apply discount for allowing watermark (only for Sora 2 models)
-    if ((model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && allowWatermark) {
-      requiredCredits = Math.ceil(requiredCredits * 0.7) // 30% discount = 7 credits instead of 10
-    }
+    // Calculate required credits based on model config
+    // Note: Credits are same for both watermark options (cost is $0.1 for both)
+    const requiredCredits = currentConfig.credits || 10
 
     // Check if user has enough credits
     if (userCredits < requiredCredits) {
@@ -856,14 +852,14 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
 
           {/* Watermark Toggle - Only for Sora 2 models */}
           {(model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && (
-            <div className="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-xl">
+            <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-300 rounded-xl">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex-1">
                   <label className="block text-sm font-bold text-gray-800 mb-1">
-                    🎨 คุณภาพวิดีโอ
+                    💧 ลายน้ำ (Watermark)
                   </label>
                   <p className="text-xs text-gray-600">
-                    เลือกให้เหมาะกับการใช้งานของคุณ
+                    เลือกตามความต้องการของคุณ (เครดิตเท่ากัน)
                   </p>
                 </div>
               </div>
@@ -890,12 +886,12 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
                     </div>
                     <div className="flex-1">
                       <div className="font-bold text-gray-900">✨ ไม่มีลายน้ำ</div>
-                      <div className="text-xs text-gray-600 mt-1">คุณภาพสูง ใช้งานได้เต็มที่</div>
+                      <div className="text-xs text-gray-600 mt-1">วิดีโอสะอาด ไม่มีโลโก้</div>
                     </div>
                   </div>
                   <div className="text-xs text-gray-700 pl-7">
                     <div className="font-bold text-green-700">💳 10 เครดิต</div>
-                    <div className="text-gray-500 mt-1">เหมาะสำหรับงานจริงจัง</div>
+                    <div className="text-gray-500 mt-1">เหมาะสำหรับใช้งานจริง</div>
                   </div>
                 </button>
 
@@ -919,25 +915,25 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
                       )}
                     </div>
                     <div className="flex-1">
-                      <div className="font-bold text-gray-900">💧 ยอมรับลายน้ำ</div>
-                      <div className="text-xs text-gray-600 mt-1">ประหยัดเครดิต ทดลองใช้งาน</div>
+                      <div className="font-bold text-gray-900">💧 มีลายน้ำ</div>
+                      <div className="text-xs text-gray-600 mt-1">มีโลโก้แสดงที่มา</div>
                     </div>
                   </div>
                   <div className="text-xs text-gray-700 pl-7">
-                    <div className="font-bold text-blue-700">💳 7 เครดิต (-30%)</div>
-                    <div className="text-gray-500 mt-1">เหมาะสำหรับทดสอบ</div>
+                    <div className="font-bold text-blue-700">💳 10 เครดิต</div>
+                    <div className="text-gray-500 mt-1">แสดงว่าเจ็นจากโมเดลไหน</div>
                   </div>
                 </button>
               </div>
 
               {/* Info Banner */}
-              <div className="mt-3 p-3 bg-white rounded-lg border border-yellow-300">
+              <div className="mt-3 p-3 bg-white rounded-lg border border-purple-300">
                 <p className="text-xs text-gray-700">
                   <strong>💡 คำแนะนำ:</strong>
                   {' '}
                   {!allowWatermark
-                    ? 'คุณเลือกไม่มีลายน้ำ - วิดีโอจะมีคุณภาพสูงสุด เหมาะสำหรับนำไปใช้งานจริง'
-                    : 'คุณเลือกยอมรับลายน้ำ - ประหยัดเครดิต 30% เหมาะสำหรับทดสอบ (วิดีโอจะมีลายน้ำเล็กน้อย)'
+                    ? 'วิดีโอจะไม่มีลายน้ำ - เหมาะสำหรับนำไปใช้งานจริง เช่น โซเชียลมีเดีย โฆษณา'
+                    : 'วิดีโอจะมีลายน้ำ - เหมาะสำหรับคนที่อยากแสดงว่าเจ็นจาก AI โมเดลไหน (เครดิตเท่ากัน)'
                   }
                 </p>
               </div>
@@ -973,7 +969,6 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             สร้างวิดีโอด้วย AI (ใช้ {
               model === 'sora-2-hd' ? '15' :
               model === 'veo3-fast' ? '15' :
-              (model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && allowWatermark ? '7' :
               '10'
             } เครดิต{(model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && allowWatermark ? ' 💧' : ''})
           </span>
@@ -1091,16 +1086,10 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             <span className="text-lg font-bold text-blue-600">
               {model === 'sora-2-hd' ? '15' :
                model === 'veo3-fast' ? '15' :
-               (model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && allowWatermark ? '7' :
                '10'} เครดิต
             </span>
             {' '}
-            / วิดีโอ
-            {(model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && allowWatermark && (
-              <span className="text-green-700 font-bold"> (ลด 30% 🎉)</span>
-            )}
-            {' '}
-            (คุณมี {userCredits} เครดิต)
+            / วิดีโอ (คุณมี {userCredits} เครดิต)
           </p>
         </div>
       </div>
