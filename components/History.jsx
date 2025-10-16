@@ -25,9 +25,11 @@ export default function History() {
 
       // Check if it's mobile device
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
 
-      // For video on mobile - show instructions modal
-      if (isVideo && isMobile && !url.startsWith('data:')) {
+      // For video on mobile - ALWAYS show instructions modal (especially for iOS)
+      // iOS Safari doesn't support programmatic download of video files
+      if (isVideo && isMobile) {
         setShowMobileDownloadInstructions(true)
         // Open video in new tab after a short delay
         setTimeout(() => {
