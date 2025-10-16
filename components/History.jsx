@@ -172,6 +172,28 @@ export default function History() {
 
   return (
     <>
+      {/* Local Storage Warning Banner */}
+      <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl shadow-md">
+        <div className="flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-base font-bold text-amber-900 mb-1">📱 ประวัติเก็บแยกตามเครื่อง</h3>
+            <div className="text-sm text-amber-800 space-y-1">
+              <p>• <strong>ประวัติรูป/วิดีโอจะเก็บในเครื่องนี้เท่านั้น</strong> - ไม่ Sync ระหว่างอุปกรณ์</p>
+              <p>• <strong>เปลี่ยนเครื่อง/เบราว์เซอร์</strong> - ประวัติจะไม่ตามมา (แม้ใช้อีเมลเดียวกัน)</p>
+              <p>• <strong>เครดิต</strong> - Sync ทุกอุปกรณ์ ✅ (เก็บใน Database)</p>
+              <p className="pt-1 text-amber-900 font-bold">💡 <strong>แนะนำ:</strong> ดาวน์โหลดเก็บไว้ในเครื่องหากต้องการใช้ต่อ</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Mobile Download Instructions Modal */}
       <AnimatePresence>
         {showMobileDownloadInstructions && (
