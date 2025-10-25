@@ -288,6 +288,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         try {
           useStore.getState().addVideoToHistory({
             videoUrl: data.videoUrl,
+            asyncDataUrl: data.asyncDataUrl, // Add AsyncData.net URL to history
             prompt: prompt,
             mode: data.mode,
             duration: data.duration,
@@ -993,18 +994,32 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             </div>
           </div>
 
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
             <h3 className="font-bold text-gray-900 flex items-center">
               <Play className="h-5 w-5 mr-2 text-red-500" />
               วิดีโอที่สร้างเสร็จแล้ว
             </h3>
-            <button
-              onClick={() => handleVideoDownload(videoResult.videoUrl)}
-              className="px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold flex items-center space-x-2 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 animate-bounce"
-            >
-              <Download className="h-5 w-5" />
-              <span>ดาวน์โหลดทันที!</span>
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => handleVideoDownload(videoResult.videoUrl)}
+                className="px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold flex items-center justify-center space-x-2 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 animate-bounce"
+              >
+                <Download className="h-5 w-5" />
+                <span>ดาวน์โหลดทันที!</span>
+              </button>
+              {videoResult.asyncDataUrl && (
+                <button
+                  onClick={() => window.open(videoResult.asyncDataUrl, '_blank')}
+                  className="px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl font-bold flex items-center justify-center space-x-2 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+                  title="เปิดหน้าเว็บ AsyncData.net เพื่อตรวจสอบคลิปต้นฉบับ"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  <span>ดูที่เว็บต้นทาง</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-center">

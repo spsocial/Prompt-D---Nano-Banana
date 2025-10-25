@@ -332,6 +332,20 @@ export default function History() {
 
                     {/* Mobile Buttons for Video */}
                     <div className="md:hidden absolute top-2 right-2 flex gap-2">
+                      {item.asyncDataUrl && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            window.open(item.asyncDataUrl, '_blank')
+                          }}
+                          className="p-2.5 bg-gradient-to-r from-blue-500 to-purple-600 backdrop-blur-sm rounded-lg text-white shadow-lg"
+                          title="ดูที่เว็บต้นทาง AsyncData.net"
+                        >
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </button>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -424,6 +438,17 @@ export default function History() {
                           title="สร้างวิดีโอ"
                         >
                           <Film className="h-4 w-4 text-white" />
+                        </button>
+                      )}
+                      {item.type === 'video' && item.asyncDataUrl && (
+                        <button
+                          onClick={() => window.open(item.asyncDataUrl, '_blank')}
+                          className="p-1.5 bg-blue-500/80 backdrop-blur-sm rounded hover:bg-blue-600/90 transition-colors"
+                          title="ดูที่เว็บต้นทาง AsyncData.net"
+                        >
+                          <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
                         </button>
                       )}
                       <button
@@ -590,6 +615,20 @@ export default function History() {
                     >
                       <Film className="h-4 w-4" />
                       <span>สร้างวิดีโอจากภาพนี้</span>
+                    </button>
+                  )}
+                  {selectedImage.type === 'video' && selectedImage.asyncDataUrl && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        window.open(selectedImage.asyncDataUrl, '_blank')
+                      }}
+                      className="px-5 py-2.5 rounded-lg flex items-center justify-center space-x-2 transition-all font-bold shadow-lg text-sm bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      <span>ดูที่เว็บต้นทาง</span>
                     </button>
                   )}
                   <button

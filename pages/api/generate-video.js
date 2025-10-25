@@ -11,7 +11,7 @@ export const config = {
 }
 
 // Helper function to poll AsyncData.net for actual video URL
-async function pollAsyncDataForVideo(taskId, maxAttempts = 60) {
+async function pollAsyncDataForVideo(taskId, maxAttempts = 120) {
   console.log(`🔍 Polling AsyncData.net for task: ${taskId}`)
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -412,10 +412,15 @@ export default async function handler(req, res) {
 
     // Use final URL if available, otherwise preview
     let videoUrl = finalUrl || previewUrl
+    let asyncDataUrl = null // Store AsyncData.net URL for user to check directly
 
     // NEW: If we got an AsyncData.net URL, we need to poll for the actual video
     if (videoUrl && videoUrl.includes('asyncdata.net/web/task_')) {
       console.log('🔄 AsyncData.net URL detected, polling for actual video...')
+
+      // Save the AsyncData.net URL so users can check it directly
+      asyncDataUrl = videoUrl
+      console.log(`📋 Saved AsyncData.net URL for user: ${asyncDataUrl}`)
 
       try {
         // Extract task ID from URL
@@ -430,7 +435,7 @@ export default async function handler(req, res) {
             videoUrl = actualVideoUrl
             console.log(`✅ Got actual video URL: ${actualVideoUrl}`)
           } else {
-            console.log('⚠️ Polling timeout, using preview URL')
+            console.log('⚠️ Polling timeout, keeping AsyncData.net URL for user to check')
           }
         }
       } catch (pollError) {
@@ -461,6 +466,9 @@ export default async function handler(req, res) {
 
     console.log(`🎉 Sora-2 video generation complete!`)
     console.log(`📹 Video URL: ${videoUrl}`)
+    if (asyncDataUrl) {
+      console.log(`🔗 AsyncData.net URL: ${asyncDataUrl}`)
+    }
 
     // Return video URL
     res.status(200).json({
@@ -468,6 +476,7 @@ export default async function handler(req, res) {
       videoUrl: videoUrl,
       previewUrl: previewUrl,
       finalUrl: finalUrl,
+      asyncDataUrl: asyncDataUrl, // Add AsyncData.net URL for user to check directly
       taskId: taskId,
       duration: duration,
       resolution: resolution,
