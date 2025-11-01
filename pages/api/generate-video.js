@@ -7,11 +7,11 @@ export const config = {
     },
     responseLimit: false,
   },
-  maxDuration: 1500, // 25 minutes timeout for video generation (to support AsyncData.net polling + watermark removal)
+  maxDuration: 2700, // 45 minutes timeout for video generation (to support 40 min AsyncData.net polling + watermark removal)
 }
 
 // Helper function to poll AsyncData.net for actual video URL
-async function pollAsyncDataForVideo(taskId, maxAttempts = 240) {
+async function pollAsyncDataForVideo(taskId, maxAttempts = 480) {
   console.log(`🔍 Polling AsyncData.net for task: ${taskId} (max ${maxAttempts * 5 / 60} minutes)`)
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

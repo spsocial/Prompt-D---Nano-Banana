@@ -215,9 +215,9 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       console.log('🔗 API Endpoint:', apiEndpoint)
       console.log('🌐 Primary Provider: CometAPI (with KIE.AI fallback if needed)')
 
-      // Create AbortController with 30 minute timeout (longer than API maxDuration to avoid false timeouts)
+      // Create AbortController with 50 minute timeout (longer than API maxDuration to avoid false timeouts)
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30 * 60 * 1000) // 30 minutes (extended for AsyncData.net polling + watermark removal)
+      const timeoutId = setTimeout(() => controller.abort(), 50 * 60 * 1000) // 50 minutes (extended for 40 min AsyncData.net polling + watermark removal)
 
       let response
       try {
@@ -699,6 +699,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
                 <div className="flex-1">
                   <h3 className="text-base font-bold text-purple-900 mb-2">🚫 ข้อจำกัดของ Sora Image-to-Video</h3>
                   <div className="text-sm text-purple-800 space-y-1.5">
+                    <p><strong>⏱️ ใช้เวลานานมาก:</strong> Image to Video อาจใช้เวลา <strong className="text-red-600">20-40 นาที</strong> เนื่องจากต้องลบลายน้ำ - กรุณารอจนกว่าจะเสร็จ อย่ารีเฟรชหน้าเว็บ!</p>
                     <p><strong>⚠️ ไม่สามารถใช้รูปคนได้:</strong> Sora ไม่รองรับภาพที่มีคนหรือใบหน้า (Content Policy)</p>
                     <p><strong>📱 ปัญหาแนวตั้ง (9:16):</strong> ถ้าสร้างแนวตั้งไม่สำเร็จ ให้ลองสลับเป็น<strong className="text-purple-900"> แนวนอน (16:9)</strong> แทน</p>
                     <p><strong>✅ แนะนำ:</strong> ใช้รูปสินค้า วัตถุ ธรรมชาติ หรือฉากที่ไม่มีคน</p>
