@@ -7,7 +7,7 @@ export const config = {
     },
     responseLimit: false,
   },
-  maxDuration: 300, // 5 minutes timeout for video generation
+  maxDuration: 1500, // 25 minutes timeout for video generation (to support AsyncData.net polling + watermark removal)
 }
 
 // Helper function to poll AsyncData.net for actual video URL
