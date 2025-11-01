@@ -11,8 +11,8 @@ export const config = {
 }
 
 // Helper function to poll AsyncData.net for actual video URL
-async function pollAsyncDataForVideo(taskId, maxAttempts = 120) {
-  console.log(`🔍 Polling AsyncData.net for task: ${taskId}`)
+async function pollAsyncDataForVideo(taskId, maxAttempts = 240) {
+  console.log(`🔍 Polling AsyncData.net for task: ${taskId} (max ${maxAttempts * 5 / 60} minutes)`)
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -52,6 +52,7 @@ async function pollAsyncDataForVideo(taskId, maxAttempts = 120) {
       // IMPORTANT: Try to extract video URL even if not marked as completed yet
       // Sometimes the MP4 URL is available before status changes to "completed"
       const videoUrl = data.url ||  // Top level url (filesystem.site MP4)
+                      data.content?.draft_info?.downloadable_url ||  // Draft downloadable URL (Sora2)
                       data.content?.url ||  // Content.url (OpenAI CDN)
                       data.content?.downloadable_url ||  // Downloadable URL
                       data.content?.encodings?.source?.path ||  // Source encoding path
@@ -73,6 +74,7 @@ async function pollAsyncDataForVideo(taskId, maxAttempts = 120) {
       if (status === 'completed' || status === 'success' || isCompleted === true) {
         console.log(`🔍 Task marked as completed, but no video URL found`)
         console.log(`  - data.url: ${data.url?.substring(0, 80)}...`)
+        console.log(`  - data.content?.draft_info?.downloadable_url: ${data.content?.draft_info?.downloadable_url?.substring(0, 80)}...`)
         console.log(`  - data.content?.url: ${data.content?.url?.substring(0, 80)}...`)
         console.log(`  - data.content?.downloadable_url: ${data.content?.downloadable_url?.substring(0, 80)}...`)
         console.log('⚠️ Task completed but no video URL found')
