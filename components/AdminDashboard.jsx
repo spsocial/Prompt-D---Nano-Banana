@@ -13,12 +13,16 @@ export default function AdminDashboard() {
   const [historicalData, setHistoricalData] = useState(null);
   const [historicalRange, setHistoricalRange] = useState('7');
   const [loadingHistorical, setLoadingHistorical] = useState(false);
+  const [monthlyData, setMonthlyData] = useState(null);
+  const [monthlyRange, setMonthlyRange] = useState('12');
+  const [loadingMonthly, setLoadingMonthly] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     users: true,
     revenue: true,
     activity: true,
     videos: true,
     historical: false,
+    monthly: false,
     topUsers: false,
     transactions: false
   });
@@ -30,6 +34,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadStats();
     loadHistoricalData();
+    loadMonthlyData();
     // Auto-refresh every 30 seconds
     const interval = setInterval(loadStats, 30000);
     return () => clearInterval(interval);
@@ -53,6 +58,26 @@ export default function AdminDashboard() {
   const handleRangeChange = (range) => {
     setHistoricalRange(range);
     loadHistoricalData(range);
+  };
+
+  const loadMonthlyData = async (months = monthlyRange) => {
+    try {
+      setLoadingMonthly(true);
+      const response = await fetch(`/api/analytics/monthly?months=${months}`);
+      if (response.ok) {
+        const data = await response.json();
+        setMonthlyData(data);
+      }
+    } catch (error) {
+      console.error('Error loading monthly data:', error);
+    } finally {
+      setLoadingMonthly(false);
+    }
+  };
+
+  const handleMonthlyRangeChange = (months) => {
+    setMonthlyRange(months);
+    loadMonthlyData(months);
   };
 
   const loadStats = async () => {
@@ -604,6 +629,113 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <p className="text-center text-gray-500 py-4">ไม่มีข้อมูลย้อนหลัง</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Monthly Revenue Data */}
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200">
+        <div
+          className="p-6 flex justify-between items-center cursor-pointer"
+          onClick={() => toggleSection('monthly')}
+        >
+          <h3 className="text-lg font-semibold flex items-center">
+            <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
+            💰 รายได้รายเดือนย้อนหลัง
+          </h3>
+          {expandedSections.monthly ? <ChevronUp /> : <ChevronDown />}
+        </div>
+        {expandedSections.monthly && (
+          <div className="px-6 pb-6 border-t">
+            <div className="mt-4">
+              {/* Range Selector */}
+              <div className="flex space-x-2 mb-4">
+                <button
+                  onClick={() => handleMonthlyRangeChange('6')}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    monthlyRange === '6'
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  6 เดือน
+                </button>
+                <button
+                  onClick={() => handleMonthlyRangeChange('12')}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    monthlyRange === '12'
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  12 เดือน
+                </button>
+                <button
+                  onClick={() => handleMonthlyRangeChange('24')}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    monthlyRange === '24'
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  24 เดือน
+                </button>
+              </div>
+
+              {loadingMonthly ? (
+                <div className="flex items-center justify-center p-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-green-500" />
+                </div>
+              ) : monthlyData && monthlyData.months ? (
+                <div>
+                  {/* Monthly Data Table */}
+                  <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="sticky top-0 bg-gray-100">
+                        <tr className="text-left text-xs text-gray-600">
+                          <th className="p-2">เดือน</th>
+                          <th className="p-2">รายได้</th>
+                          <th className="p-2">รายการ</th>
+                          <th className="p-2">ภาพ</th>
+                          <th className="p-2">วิดีโอ</th>
+                          <th className="p-2">Sora 2</th>
+                          <th className="p-2">Sora 2 HD</th>
+                          <th className="p-2">Veo3</th>
+                          <th className="p-2">Error</th>
+                          <th className="p-2">User ใหม่</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {monthlyData.months.slice().reverse().map((month, index) => {
+                          // Format month display (2025-01 -> มกราคม 2568)
+                          const [year, monthNum] = month.month.split('-');
+                          const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+                                             'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+                          const monthDisplay = `${thaiMonths[parseInt(monthNum) - 1]} ${parseInt(year) + 543}`;
+
+                          return (
+                            <tr key={month.month} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                              <td className="p-2 font-mono text-xs">{monthDisplay}</td>
+                              <td className="p-2 font-semibold text-green-600">{formatCurrency(month.revenue)}</td>
+                              <td className="p-2">{month.transactions}</td>
+                              <td className="p-2">{month.images}</td>
+                              <td className="p-2 font-semibold text-red-600">{month.videos}</td>
+                              <td className="p-2">{month.videosSora2}</td>
+                              <td className="p-2">{month.videosSora2HD}</td>
+                              <td className="p-2">{month.videosVeo3}</td>
+                              <td className="p-2 text-orange-600">{month.videoErrors}</td>
+                              <td className="p-2">{month.newUsers}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-center text-gray-500 py-4">ไม่มีข้อมูลรายเดือน</p>
               )}
             </div>
           </div>
