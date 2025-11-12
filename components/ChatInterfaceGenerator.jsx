@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import VideoAdsModal from './VideoAdsModal'
+import FabButton from './FabButton'
 
 // Preset prompt styles for image generation
 const PROMPT_STYLES = {
@@ -828,6 +829,9 @@ export default function ChatInterfaceGenerator() {
         onSubmit={handleAdsSubmit}
         initialImage={adsPreloadedImage}
       />
+
+      {/* FAB Button - Contact Support */}
+      <FabButton />
     </div>
   )
 }
