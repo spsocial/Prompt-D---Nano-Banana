@@ -1,5 +1,47 @@
 import { safeStringify } from '../../lib/logUtils';
 
+// Helper function to upload base64 image to Imgur and get public URL
+async function uploadToImgur(base64Image) {
+  console.log('📤 Uploading base64 image to Imgur...')
+
+  const imgurClientId = process.env.IMGUR_CLIENT_ID
+
+  if (!imgurClientId) {
+    throw new Error('Imgur Client ID not configured')
+  }
+
+  // Remove data URL prefix if exists
+  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '')
+
+  try {
+    const response = await fetch('https://api.imgur.com/3/image', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Client-ID ${imgurClientId}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        image: base64Data,
+        type: 'base64'
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Imgur upload failed: ${errorText}`)
+    }
+
+    const data = await response.json()
+    const imageUrl = data.data.link
+
+    console.log(`✅ Image uploaded to Imgur: ${imageUrl}`)
+    return imageUrl
+  } catch (error) {
+    console.error('❌ Imgur upload error:', error)
+    throw error
+  }
+}
+
 export const config = {
   api: {
     bodyParser: {
@@ -515,26 +557,25 @@ export default async function handler(req, res) {
                         error.message.includes('not enough')
 
     // Try fallback to backup API if enabled and it's a system error or quota issue
-    // BUT skip fallback for image-to-video with base64 (backup API requires URLs only)
-    const hasBase64Image = image && image.startsWith('data:')
+    // Now supports base64 images via Imgur upload
     const shouldTryFallback = (isSystemError || isApiNotAvailable || isQuotaError) &&
-                             process.env.KIE_API_KEY &&
-                             !hasBase64Image // Skip fallback for base64 images
+                             process.env.KIE_API_KEY
 
     if (shouldTryFallback) {
       console.log('🔄 Primary API failed, attempting fallback to backup API...')
 
-      try {
-        return await fallbackToKieAI(req, res)
-      } catch (fallbackError) {
-        console.error('❌ Backup API fallback also failed:', fallbackError)
-        // Continue to normal error handling
+      // Check if Imgur is configured for base64 images
+      const hasBase64Image = image && image.startsWith('data:')
+      if (hasBase64Image && !process.env.IMGUR_CLIENT_ID) {
+        console.log('⚠️ Base64 image detected but Imgur not configured - skipping fallback')
+      } else {
+        try {
+          return await fallbackToKieAI(req, res)
+        } catch (fallbackError) {
+          console.error('❌ Backup API fallback also failed:', fallbackError)
+          // Continue to normal error handling
+        }
       }
-    }
-
-    // Special message for image-to-video failures (cannot fallback due to base64)
-    if (hasBase64Image && isApiNotAvailable) {
-      console.log('⚠️ Image-to-video with base64 cannot fallback (backup API requires URLs)')
     }
 
     // Check for timeout errors
@@ -555,8 +596,6 @@ export default async function handler(req, res) {
         ? '🔧 ระบบกำลังมีปัญหา (network fluctuations หรือ high load) - เครดิตจะถูกคืนอัตโนมัติ กรุณารอสักครู่แล้วลองใหม่อีกครั้ง'
         : isTimeout
         ? '⏱️ การสร้างวิดีโอใช้เวลานาน (1-3 นาที) แต่เกิด timeout - เครดิตจะถูกคืนอัตโนมัติ กรุณาลองใหม่อีกครั้ง'
-        : (isApiNotAvailable && hasBase64Image)
-        ? '⚠️ เซิร์ฟเวอร์ไม่พร้อมให้บริการชั่วคราว (Image-to-Video) - เครดิตจะถูกคืนอัตโนมัติ กรุณารอสักครู่แล้วลองใหม่อีกครั้ง หรือลองสร้าง Text-to-Video แทน'
         : isApiNotAvailable
         ? '⚠️ เซิร์ฟเวอร์ไม่พร้อมให้บริการชั่วคราว - เครดิตจะถูกคืนอัตโนมัติ กรุณาลองใหม่อีกครั้ง'
         : isQuotaError
@@ -608,13 +647,22 @@ async function useKieAIDirect(req, res) {
     }
   }
 
-  // Image not supported as base64 in backup API
-  if (image && image.startsWith('data:')) {
-    throw new Error('Backup API requires image URLs, not base64')
-  }
-
+  // Handle image: if base64, upload to Imgur first to get URL
   if (image) {
-    requestBody.input.image_urls = [image]
+    let imageUrl = image
+
+    if (image.startsWith('data:')) {
+      console.log('🔄 Base64 image detected, uploading to Imgur first...')
+      try {
+        imageUrl = await uploadToImgur(image)
+        console.log(`✅ Converted base64 → Imgur URL: ${imageUrl}`)
+      } catch (uploadError) {
+        console.error('❌ Failed to upload to Imgur:', uploadError)
+        throw new Error('Cannot upload image to Imgur')
+      }
+    }
+
+    requestBody.input.image_urls = [imageUrl]
   }
 
   console.log('🚀 Creating task on backup API...')
@@ -735,13 +783,22 @@ async function fallbackToKieAI(req, res) {
     }
   }
 
-  // Image not supported as base64 in backup API - skip fallback for image mode
-  if (image && image.startsWith('data:')) {
-    throw new Error('Backup API requires image URLs, not base64 - cannot fallback for image-to-video')
-  }
-
+  // Handle image: if base64, upload to Imgur first to get URL
   if (image) {
-    requestBody.input.image_urls = [image]
+    let imageUrl = image
+
+    if (image.startsWith('data:')) {
+      console.log('🔄 Base64 image detected, uploading to Imgur first...')
+      try {
+        imageUrl = await uploadToImgur(image)
+        console.log(`✅ Converted base64 → Imgur URL: ${imageUrl}`)
+      } catch (uploadError) {
+        console.error('❌ Failed to upload to Imgur:', uploadError)
+        throw new Error('Cannot upload image to Imgur for fallback')
+      }
+    }
+
+    requestBody.input.image_urls = [imageUrl]
   }
 
   console.log('🚀 Fallback: Creating task on backup API...')
