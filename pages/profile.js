@@ -17,7 +17,7 @@ export default function Profile() {
   // Redirect if not authenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login')
+      router.push('/')
     }
   }, [status, router])
 
@@ -63,7 +63,7 @@ export default function Profile() {
   }
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/login' })
+    await signOut({ callbackUrl: '/' })
   }
 
   if (status === 'loading') {

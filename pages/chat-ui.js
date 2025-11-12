@@ -11,7 +11,7 @@ export default function ChatUI() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login')
+      router.push('/')
     }
 
     if (session?.user?.email) {

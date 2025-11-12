@@ -24,7 +24,7 @@ export default function TopUp() {
   // Redirect if not authenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login')
+      router.push('/')
     }
   }, [status, router])
 

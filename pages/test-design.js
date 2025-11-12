@@ -13,7 +13,7 @@ export default function TestDesign() {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login')
+      router.push('/')
     }
 
     if (session?.user?.email) {

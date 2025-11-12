@@ -4,6 +4,10 @@ import { useSession, signIn } from 'next-auth/react'
 import ChatInterfaceGenerator from '../components/ChatInterfaceGenerator'
 import useStore from '../lib/store'
 import { Sparkles, LogIn } from 'lucide-react'
+import Lottie from 'lottie-react'
+import freeCreditAnimation from '../public/free_credit.json'
+import aiAnimation from '../public/ai_หลากหลาย.json'
+import historyAnimation from '../public/ประวัติการใช้งาน.json'
 
 export default function Home() {
   const { data: session, status } = useSession()
@@ -25,7 +29,15 @@ export default function Home() {
         <title>PD Studio - สร้างภาพและวิดีโอด้วย AI</title>
         <meta name="description" content="แพลตฟอร์ม AI ครบวงจร สร้างภาพและวิดีโอโฆษณาคุณภาพสูง | PD Studio - All-in-One AI Creative Platform" />
         <meta name="keywords" content="AI, Image Generator, Video Generator, AI Platform, PD Studio, โฆษณา, วิดีโอ AI, All-in-One" />
-        <link rel="icon" href="/favicon.png" />
+        <meta name="theme-color" content="#00F2EA" />
+
+        {/* Favicons for all browsers and devices */}
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </Head>
 
@@ -57,17 +69,32 @@ export default function Home() {
             <div className="mt-8 pt-8 border-t border-gray-800">
               <h3 className="font-bold text-white mb-4">✨ คุณสมบัติพิเศษ</h3>
               <div className="grid grid-cols-1 gap-4 text-sm text-gray-300">
-                <div className="p-4 bg-[#0a0a0a] rounded-xl">
-                  <div className="font-bold text-[#00F2EA] mb-1">🎁 เครดิตฟรี</div>
-                  รับ 10 เครดิตทันทีเมื่อสมัคร
+                <div className="p-4 bg-[#0a0a0a] rounded-xl flex items-center gap-3">
+                  <div className="w-10 h-10 flex-shrink-0">
+                    <Lottie animationData={freeCreditAnimation} loop={true} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-[#00F2EA] mb-1">เครดิตฟรี</div>
+                    <div className="text-xs">รับ 10 เครดิตทันทีเมื่อสมัคร</div>
+                  </div>
                 </div>
-                <div className="p-4 bg-[#0a0a0a] rounded-xl">
-                  <div className="font-bold text-[#00F2EA] mb-1">🎨 AI หลากหลาย</div>
-                  Sora 2, Nano Banana และอื่นๆ
+                <div className="p-4 bg-[#0a0a0a] rounded-xl flex items-center gap-3">
+                  <div className="w-10 h-10 flex-shrink-0">
+                    <Lottie animationData={aiAnimation} loop={true} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-[#00F2EA] mb-1">AI หลากหลาย</div>
+                    <div className="text-xs">Sora 2, Nano Banana และอื่นๆ</div>
+                  </div>
                 </div>
-                <div className="p-4 bg-[#0a0a0a] rounded-xl">
-                  <div className="font-bold text-[#00F2EA] mb-1">📊 ประวัติการใช้งาน</div>
-                  เก็บประวัติไว้ให้อัตโนมัติ
+                <div className="p-4 bg-[#0a0a0a] rounded-xl flex items-center gap-3">
+                  <div className="w-10 h-10 flex-shrink-0">
+                    <Lottie animationData={historyAnimation} loop={true} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-[#00F2EA] mb-1">ประวัติการใช้งาน</div>
+                    <div className="text-xs">เก็บประวัติไว้ให้อัตโนมัติ</div>
+                  </div>
                 </div>
               </div>
             </div>
