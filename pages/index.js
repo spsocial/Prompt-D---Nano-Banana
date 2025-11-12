@@ -22,9 +22,9 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Prompt D Studio - สร้างภาพและวิดีโอด้วย AI</title>
-        <meta name="description" content="แพลตฟอร์ม AI ครบวงจร สร้างภาพและวิดีโอโฆษณาคุณภาพสูง | Prompt D Studio - All-in-One AI Creative Platform" />
-        <meta name="keywords" content="AI, Image Generator, Video Generator, AI Platform, Prompt D, โฆษณา, วิดีโอ AI, All-in-One" />
+        <title>PD Studio - สร้างภาพและวิดีโอด้วย AI</title>
+        <meta name="description" content="แพลตฟอร์ม AI ครบวงจร สร้างภาพและวิดีโอโฆษณาคุณภาพสูง | PD Studio - All-in-One AI Creative Platform" />
+        <meta name="keywords" content="AI, Image Generator, Video Generator, AI Platform, PD Studio, โฆษณา, วิดีโอ AI, All-in-One" />
         <link rel="icon" href="/favicon.ico" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </Head>
@@ -39,7 +39,7 @@ export default function Home() {
               </div>
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-              ยินดีต้อนรับสู่ Prompt D Studio
+              ยินดีต้อนรับสู่ PD Studio
             </h2>
             <p className="text-lg text-gray-300 mb-8 leading-relaxed">
               สร้างภาพและวิดีโอโฆษณาคุณภาพสูงด้วย AI<br />

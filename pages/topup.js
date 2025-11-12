@@ -192,7 +192,7 @@ export default function TopUp() {
   return (
     <>
       <Head>
-        <title>เติมเครดิต - Prompt D Studio</title>
+        <title>เติมเครดิต - PD Studio</title>
       </Head>
 
       <div className="min-h-screen bg-[#000000]">

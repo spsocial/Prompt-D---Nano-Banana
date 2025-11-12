@@ -346,7 +346,7 @@ export default function ChatInterfaceGenerator() {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-6 w-6 text-[#00F2EA]" />
-                <h1 className="text-xl font-bold text-white">AI Generator</h1>
+                <h1 className="text-xl font-bold text-white">PD Studio</h1>
               </div>
             </div>
 

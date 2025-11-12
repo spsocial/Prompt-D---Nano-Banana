@@ -30,13 +30,29 @@ export default function Profile() {
         loadUserCredits(uid)
       }
 
-      // Load stats from localStorage
-      const generated = localStorage.getItem('nano_total_generated') || 0
-      const spent = localStorage.getItem('nano_total_spent') || 0
-      setStats({
-        totalGenerated: parseInt(generated),
-        totalSpent: parseInt(spent)
-      })
+      // Load stats from database via API
+      const fetchStats = async () => {
+        try {
+          const response = await fetch(`/api/credits?userId=${uid}`)
+          const data = await response.json()
+
+          if (data.success) {
+            setStats({
+              totalGenerated: data.totalGenerated || 0,
+              totalSpent: data.totalSpent || 0
+            })
+          }
+        } catch (error) {
+          console.error('Error loading stats:', error)
+          // Fallback to 0 if API fails
+          setStats({
+            totalGenerated: 0,
+            totalSpent: 0
+          })
+        }
+      }
+
+      fetchStats()
     }
   }, [session, loadUserCredits])
 
@@ -68,7 +84,7 @@ export default function Profile() {
   return (
     <>
       <Head>
-        <title>ข้อมูลส่วนตัว - Prompt D Studio</title>
+        <title>ข้อมูลส่วนตัว - PD Studio</title>
       </Head>
 
       <div className="min-h-screen bg-[#000000]">

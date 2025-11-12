@@ -54,7 +54,8 @@ export default async function handler(req, res) {
           success: true,
           userId: user.userId,
           credits: user.credits,
-          totalGenerated: user.totalGenerated
+          totalGenerated: user.totalGenerated,
+          totalSpent: user.creditsUsed || 0
         });
 
       case 'POST':
@@ -166,6 +167,9 @@ export default async function handler(req, res) {
               decrement: useAmount
             },
             totalGenerated: {
+              increment: 1
+            },
+            creditsUsed: {
               increment: useAmount
             },
             lastActive: new Date()

@@ -17,8 +17,8 @@ export default function HistoryPage() {
   return (
     <div className="min-h-screen bg-[#000000]">
       <Head>
-        <title>ประวัติผลงาน - Prompt D Studio</title>
-        <meta name="description" content="ประวัติการสร้างภาพและวิดีโอด้วย AI โดย Prompt D" />
+        <title>ประวัติผลงาน - PD Studio</title>
+        <meta name="description" content="ประวัติการสร้างภาพและวิดีโอด้วย AI โดย PD Studio" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -96,7 +96,7 @@ export default function HistoryPage() {
       <footer className="mt-12 border-t border-gray-800 bg-[#0a0a0a]">
         <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
           <div className="text-center text-sm text-gray-500">
-            <p>Prompt D Studio - สร้างภาพและวิดีโอด้วย AI</p>
+            <p>PD Studio - สร้างภาพและวิดีโอด้วย AI</p>
           </div>
         </div>
       </footer>
