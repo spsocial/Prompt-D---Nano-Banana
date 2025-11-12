@@ -566,7 +566,8 @@ export default async function handler(req, res) {
       console.log('🔄 Primary API failed, attempting fallback to backup API...')
 
       // Check if ImgBB is configured for base64 images
-      const hasBase64Image = image && image.startsWith('data:')
+      const requestImage = req.body.image
+      const hasBase64Image = requestImage && requestImage.startsWith('data:')
       if (hasBase64Image && !process.env.IMGBB_API_KEY) {
         console.log('⚠️ Base64 image detected but ImgBB not configured - skipping fallback')
       } else {
