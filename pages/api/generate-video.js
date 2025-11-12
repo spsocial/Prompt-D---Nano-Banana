@@ -572,25 +572,18 @@ export default async function handler(req, res) {
                         error.message.includes('not enough')
 
     // Try fallback to backup API if enabled and it's a system error or quota issue
-    // Now supports base64 images via Imgur upload
+    // Now supports base64 images via kie.ai File Upload API
     const shouldTryFallback = (isSystemError || isApiNotAvailable || isQuotaError) &&
                              process.env.KIE_API_KEY
 
     if (shouldTryFallback) {
       console.log('🔄 Primary API failed, attempting fallback to backup API...')
 
-      // Check if ImgBB is configured for base64 images
-      const requestImage = req.body.image
-      const hasBase64Image = requestImage && requestImage.startsWith('data:')
-      if (hasBase64Image && !process.env.IMGBB_API_KEY) {
-        console.log('⚠️ Base64 image detected but ImgBB not configured - skipping fallback')
-      } else {
-        try {
-          return await fallbackToKieAI(req, res)
-        } catch (fallbackError) {
-          console.error('❌ Backup API fallback also failed:', fallbackError)
-          // Continue to normal error handling
-        }
+      try {
+        return await fallbackToKieAI(req, res)
+      } catch (fallbackError) {
+        console.error('❌ Backup API fallback also failed:', fallbackError)
+        // Continue to normal error handling
       }
     }
 
