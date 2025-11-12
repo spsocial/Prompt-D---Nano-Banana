@@ -46,7 +46,7 @@ export default function Home() {
         <div className="min-h-screen flex items-center justify-center bg-[#000000]">
           <div className="max-w-md w-full mx-4 text-center p-8 bg-[#1a1a1a] rounded-3xl border border-gray-800 shadow-2xl">
             <div className="mb-6 flex justify-center">
-              <img src="/logo.png" alt="PD Studio" className="h-24 w-24 object-contain" />
+              <img src="/logo.png" alt="PD Studio" className="h-32 w-32 sm:h-24 sm:w-24 object-contain" />
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 whitespace-nowrap">
               ยินดีต้อนรับสู่ PD Studio
