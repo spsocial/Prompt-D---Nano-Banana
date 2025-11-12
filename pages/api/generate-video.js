@@ -1,43 +1,44 @@
 import { safeStringify } from '../../lib/logUtils';
 
-// Helper function to upload base64 image to Imgur and get public URL
-async function uploadToImgur(base64Image) {
-  console.log('📤 Uploading base64 image to Imgur...')
+// Helper function to upload base64 image to ImgBB and get public URL
+async function uploadToImgBB(base64Image) {
+  console.log('📤 Uploading base64 image to ImgBB...')
 
-  const imgurClientId = process.env.IMGUR_CLIENT_ID
+  const imgbbApiKey = process.env.IMGBB_API_KEY
 
-  if (!imgurClientId) {
-    throw new Error('Imgur Client ID not configured')
+  if (!imgbbApiKey) {
+    throw new Error('ImgBB API Key not configured')
   }
 
   // Remove data URL prefix if exists
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '')
 
   try {
-    const response = await fetch('https://api.imgur.com/3/image', {
+    // ImgBB uses form data
+    const formData = new URLSearchParams()
+    formData.append('key', imgbbApiKey)
+    formData.append('image', base64Data)
+
+    const response = await fetch('https://api.imgbb.com/1/upload', {
       method: 'POST',
       headers: {
-        'Authorization': `Client-ID ${imgurClientId}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: JSON.stringify({
-        image: base64Data,
-        type: 'base64'
-      })
+      body: formData
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new Error(`Imgur upload failed: ${errorText}`)
+      throw new Error(`ImgBB upload failed: ${errorText}`)
     }
 
     const data = await response.json()
-    const imageUrl = data.data.link
+    const imageUrl = data.data.url
 
-    console.log(`✅ Image uploaded to Imgur: ${imageUrl}`)
+    console.log(`✅ Image uploaded to ImgBB: ${imageUrl}`)
     return imageUrl
   } catch (error) {
-    console.error('❌ Imgur upload error:', error)
+    console.error('❌ ImgBB upload error:', error)
     throw error
   }
 }
@@ -564,10 +565,10 @@ export default async function handler(req, res) {
     if (shouldTryFallback) {
       console.log('🔄 Primary API failed, attempting fallback to backup API...')
 
-      // Check if Imgur is configured for base64 images
+      // Check if ImgBB is configured for base64 images
       const hasBase64Image = image && image.startsWith('data:')
-      if (hasBase64Image && !process.env.IMGUR_CLIENT_ID) {
-        console.log('⚠️ Base64 image detected but Imgur not configured - skipping fallback')
+      if (hasBase64Image && !process.env.IMGBB_API_KEY) {
+        console.log('⚠️ Base64 image detected but ImgBB not configured - skipping fallback')
       } else {
         try {
           return await fallbackToKieAI(req, res)
@@ -647,18 +648,18 @@ async function useKieAIDirect(req, res) {
     }
   }
 
-  // Handle image: if base64, upload to Imgur first to get URL
+  // Handle image: if base64, upload to ImgBB first to get URL
   if (image) {
     let imageUrl = image
 
     if (image.startsWith('data:')) {
-      console.log('🔄 Base64 image detected, uploading to Imgur first...')
+      console.log('🔄 Base64 image detected, uploading to ImgBB first...')
       try {
-        imageUrl = await uploadToImgur(image)
-        console.log(`✅ Converted base64 → Imgur URL: ${imageUrl}`)
+        imageUrl = await uploadToImgBB(image)
+        console.log(`✅ Converted base64 → ImgBB URL: ${imageUrl}`)
       } catch (uploadError) {
-        console.error('❌ Failed to upload to Imgur:', uploadError)
-        throw new Error('Cannot upload image to Imgur')
+        console.error('❌ Failed to upload to ImgBB:', uploadError)
+        throw new Error('Cannot upload image to ImgBB')
       }
     }
 
@@ -783,18 +784,18 @@ async function fallbackToKieAI(req, res) {
     }
   }
 
-  // Handle image: if base64, upload to Imgur first to get URL
+  // Handle image: if base64, upload to ImgBB first to get URL
   if (image) {
     let imageUrl = image
 
     if (image.startsWith('data:')) {
-      console.log('🔄 Base64 image detected, uploading to Imgur first...')
+      console.log('🔄 Base64 image detected, uploading to ImgBB first...')
       try {
-        imageUrl = await uploadToImgur(image)
-        console.log(`✅ Converted base64 → Imgur URL: ${imageUrl}`)
+        imageUrl = await uploadToImgBB(image)
+        console.log(`✅ Converted base64 → ImgBB URL: ${imageUrl}`)
       } catch (uploadError) {
-        console.error('❌ Failed to upload to Imgur:', uploadError)
-        throw new Error('Cannot upload image to Imgur for fallback')
+        console.error('❌ Failed to upload to ImgBB:', uploadError)
+        throw new Error('Cannot upload image to ImgBB for fallback')
       }
     }
 
