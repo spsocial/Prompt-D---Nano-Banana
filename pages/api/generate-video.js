@@ -33,7 +33,14 @@ async function uploadToImgBB(base64Image) {
     }
 
     const data = await response.json()
-    const imageUrl = data.data.url
+
+    // DEBUG: Log full response to see available URLs
+    console.log('📄 ImgBB Response:', safeStringify(data))
+
+    // Try different URL fields (prioritize direct image URLs)
+    const imageUrl = data.data.display_url ||  // Direct link to image
+                     data.data.image?.url ||    // Image object URL
+                     data.data.url              // Page URL (fallback)
 
     console.log(`✅ Image uploaded to ImgBB: ${imageUrl}`)
     return imageUrl
