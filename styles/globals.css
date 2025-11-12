@@ -356,3 +356,16 @@ textarea:focus-visible {
 .fixed.inset-0.z-50 {
   z-index: 100;
 }
+
+/* Fix for double-tap issue on mobile */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Prevent 300ms delay on mobile */
+* {
+  touch-action: manipulation;
+}

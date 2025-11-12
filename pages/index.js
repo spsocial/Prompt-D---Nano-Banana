@@ -57,7 +57,7 @@ export default function Home() {
             </p>
 
             <button
-              onClick={() => signIn('google')}
+              onClick={() => signIn('google', { callbackUrl: '/' })}
               className="inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] hover:shadow-lg hover:shadow-[#00F2EA]/50 text-white rounded-2xl transition-all duration-300 font-bold text-lg transform hover:scale-105 w-full justify-center"
             >
               <LogIn className="h-6 w-6" />
