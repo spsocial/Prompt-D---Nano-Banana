@@ -515,8 +515,11 @@ export default async function handler(req, res) {
                         error.message.includes('not enough')
 
     // Try fallback to backup API if enabled and it's a system error or quota issue
+    // BUT skip fallback for image-to-video with base64 (backup API requires URLs only)
+    const hasBase64Image = image && image.startsWith('data:')
     const shouldTryFallback = (isSystemError || isApiNotAvailable || isQuotaError) &&
-                             process.env.KIE_API_KEY
+                             process.env.KIE_API_KEY &&
+                             !hasBase64Image // Skip fallback for base64 images
 
     if (shouldTryFallback) {
       console.log('🔄 Primary API failed, attempting fallback to backup API...')
@@ -527,6 +530,11 @@ export default async function handler(req, res) {
         console.error('❌ Backup API fallback also failed:', fallbackError)
         // Continue to normal error handling
       }
+    }
+
+    // Special message for image-to-video failures (cannot fallback due to base64)
+    if (hasBase64Image && isApiNotAvailable) {
+      console.log('⚠️ Image-to-video with base64 cannot fallback (backup API requires URLs)')
     }
 
     // Check for timeout errors
@@ -547,6 +555,8 @@ export default async function handler(req, res) {
         ? '🔧 ระบบกำลังมีปัญหา (network fluctuations หรือ high load) - เครดิตจะถูกคืนอัตโนมัติ กรุณารอสักครู่แล้วลองใหม่อีกครั้ง'
         : isTimeout
         ? '⏱️ การสร้างวิดีโอใช้เวลานาน (1-3 นาที) แต่เกิด timeout - เครดิตจะถูกคืนอัตโนมัติ กรุณาลองใหม่อีกครั้ง'
+        : (isApiNotAvailable && hasBase64Image)
+        ? '⚠️ เซิร์ฟเวอร์ไม่พร้อมให้บริการชั่วคราว (Image-to-Video) - เครดิตจะถูกคืนอัตโนมัติ กรุณารอสักครู่แล้วลองใหม่อีกครั้ง หรือลองสร้าง Text-to-Video แทน'
         : isApiNotAvailable
         ? '⚠️ เซิร์ฟเวอร์ไม่พร้อมให้บริการชั่วคราว - เครดิตจะถูกคืนอัตโนมัติ กรุณาลองใหม่อีกครั้ง'
         : isQuotaError
