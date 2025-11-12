@@ -98,7 +98,7 @@ export default function ChatInterfaceGenerator() {
   const textareaRef = useRef(null)
   const messagesEndRef = useRef(null)
 
-  const { userCredits, useCredits, setIsGeneratingVideo, addToHistory, addVideoToHistory } = useStore()
+  const { userCredits, useCredits, refundCredits, setIsGeneratingVideo, addToHistory, addVideoToHistory } = useStore()
   const { data: session } = useSession()
   const router = useRouter()
 
@@ -199,19 +199,35 @@ export default function ChatInterfaceGenerator() {
       await useCredits(requiredCredits)
 
       if (mode === 'video') {
-        // Video generation
-        const response = await fetch('/api/generate-video-kie-primary', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: currentPrompt || 'Create video',
-            image: currentImage,
-            duration: duration,
-            aspectRatio: aspectRatio,
-            model: 'sora-2',
-            allowWatermark: allowWatermark
+        // Video generation with extended timeout (15 minutes)
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000) // 15 minutes
+
+        let response
+        try {
+          response = await fetch('/api/generate-video-kie-primary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: currentPrompt || 'Create video',
+              image: currentImage,
+              duration: duration,
+              aspectRatio: aspectRatio,
+              model: 'sora-2',
+              allowWatermark: allowWatermark
+            }),
+            signal: controller.signal
           })
-        })
+        } catch (fetchError) {
+          clearTimeout(timeoutId)
+          // Check if it's a timeout/abort error
+          if (fetchError.name === 'AbortError') {
+            throw new Error('⏱️ การสร้างวิดีโอใช้เวลานานเกินไป (>15 นาที) - กรุณาลองใหม่อีกครั้ง')
+          }
+          // Network error
+          throw new Error('❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ - กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต')
+        }
+        clearTimeout(timeoutId)
 
         setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
 
@@ -322,12 +338,15 @@ export default function ChatInterfaceGenerator() {
     } catch (error) {
       console.error('Generation error:', error)
 
+      // Refund credits on error
+      await refundCredits(requiredCredits, error.message || 'Generation failed')
+
       setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
 
       const errorMessage = {
         id: Date.now() + 3,
         type: 'error',
-        message: error.message
+        message: error.message + ' (เครดิตถูกคืนให้อัตโนมัติแล้ว)'
       }
       setMessages(prev => [...prev, errorMessage])
     } finally {
@@ -390,19 +409,33 @@ export default function ChatInterfaceGenerator() {
       // Deduct credits
       await useCredits(requiredCredits)
 
-      // Generate video with KIE.AI
-      const response = await fetch('/api/generate-video-kie-primary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: formData.prompt,
-          image: formData.image,
-          duration: formData.duration,
-          aspectRatio: formData.aspectRatio,
-          model: 'sora-2',
-          allowWatermark: false
+      // Generate video with KIE.AI (with extended timeout)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000) // 15 minutes
+
+      let response
+      try {
+        response = await fetch('/api/generate-video-kie-primary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: formData.prompt,
+            image: formData.image,
+            duration: formData.duration,
+            aspectRatio: formData.aspectRatio,
+            model: 'sora-2',
+            allowWatermark: false
+          }),
+          signal: controller.signal
         })
-      })
+      } catch (fetchError) {
+        clearTimeout(timeoutId)
+        if (fetchError.name === 'AbortError') {
+          throw new Error('⏱️ การสร้างวิดีโอใช้เวลานานเกินไป (>15 นาที) - กรุณาลองใหม่อีกครั้ง')
+        }
+        throw new Error('❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ - กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต')
+      }
+      clearTimeout(timeoutId)
 
       setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
 
@@ -435,12 +468,15 @@ export default function ChatInterfaceGenerator() {
     } catch (error) {
       console.error('Video ads generation error:', error)
 
+      // Refund credits on error
+      await refundCredits(requiredCredits, error.message || 'Video ads generation failed')
+
       setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
 
       const errorMessage = {
         id: Date.now() + 3,
         type: 'error',
-        message: error.message
+        message: error.message + ' (เครดิตถูกคืนให้อัตโนมัติแล้ว)'
       }
       setMessages(prev => [...prev, errorMessage])
     } finally {

@@ -110,7 +110,7 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
 
   const buildFinalPrompt = () => {
     const template = ADS_TEMPLATES[styleTemplate]
-    const finalScript = generatedScript || script || 'สินค้าคุณภาพดี จิ้มที่ตระกร้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ')
+    const finalScript = generatedScript || script || 'สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ')
     const genderText = gender === 'female' ? 'ผู้หญิง' : 'ผู้ชาย'
 
     return template.format
@@ -131,7 +131,7 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
     }
 
     const finalPrompt = buildFinalPrompt()
-    const finalScript = generatedScript || script || 'สินค้าคุณภาพดี จิ้มที่ตระกร้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ')
+    const finalScript = generatedScript || script || 'สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ')
 
     onSubmit({
       image: selectedImage,
@@ -413,7 +413,7 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
                 </span>
               </div>
               <p className="text-sm text-gray-300 leading-relaxed">
-                "{displayScript || `สินค้าคุณภาพดี จิ้มที่ตระกร้าได้เลย${gender === 'female' ? 'ค่ะ' : 'ครับ'}`}"
+                "{displayScript || `สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย${gender === 'female' ? 'ค่ะ' : 'ครับ'}`}"
               </p>
             </div>
           )}

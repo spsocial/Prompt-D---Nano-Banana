@@ -227,53 +227,82 @@ export default function TopUp() {
           {!showPayment ? (
             <>
               {/* Packages Grid */}
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-white mb-2">เลือกแพ็คเกจ</h2>
-                <p className="text-gray-400">เลือกแพ็คเกจที่เหมาะกับคุณ</p>
+              <div className="text-center mb-12">
+                <div className="inline-block mb-4">
+                  <div className="relative">
+                    <h2 className="text-5xl font-black bg-gradient-to-r from-[#00F2EA] via-white to-[#FE2C55] bg-clip-text text-transparent mb-3">
+                      เลือกแพ็คเกจของคุณ
+                    </h2>
+                    <div className="absolute -inset-2 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] blur-2xl opacity-20 -z-10"></div>
+                  </div>
+                </div>
+                <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                  🎨 สร้างภาพและวิดีโอไม่จำกัด ด้วยเครดิตที่คุ้มค่า พร้อมระบบอัตโนมัติ
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {packages.map((pkg) => (
+                {packages.map((pkg, index) => (
                   <div
                     key={pkg.id}
-                    className={`relative bg-[#1a1a1a] rounded-2xl border-2 transition-all hover:scale-105 cursor-pointer ${
+                    style={{ animationDelay: `${index * 100}ms` }}
+                    className={`relative bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] rounded-3xl border-2 transition-all duration-300 hover:scale-105 hover:-translate-y-2 cursor-pointer group animate-fade-in ${
                       pkg.popular
-                        ? 'border-[#00F2EA] shadow-lg shadow-[#00F2EA]/20'
-                        : 'border-gray-800 hover:border-gray-700'
+                        ? 'border-[#00F2EA] shadow-2xl shadow-[#00F2EA]/30'
+                        : 'border-gray-800 hover:border-[#00F2EA]/50'
                     }`}
                     onClick={() => handleSelectPackage(pkg)}
                   >
                     {pkg.popular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <div className="px-4 py-1 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] rounded-full text-white text-xs font-bold">
-                          ⭐ Popular
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                        <div className="px-6 py-2 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] rounded-full text-white text-sm font-bold shadow-lg animate-pulse">
+                          ⭐ แนะนำ
                         </div>
                       </div>
                     )}
 
-                    <div className="p-6">
-                      <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-r ${pkg.color} flex items-center justify-center`}>
-                        <Sparkles className="h-8 w-8 text-white" />
+                    {/* Gradient overlay effect */}
+                    <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${pkg.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
+
+                    <div className="relative p-8">
+                      {/* Icon with glow effect */}
+                      <div className={`relative w-20 h-20 mx-auto mb-6`}>
+                        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${pkg.color} blur-xl opacity-50 group-hover:opacity-75 transition-opacity`}></div>
+                        <div className={`relative w-full h-full rounded-2xl bg-gradient-to-r ${pkg.color} flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300`}>
+                          <Sparkles className="h-10 w-10 text-white" />
+                        </div>
                       </div>
 
-                      <h3 className="text-xl font-bold text-white text-center mb-2">{pkg.name}</h3>
+                      <h3 className="text-2xl font-bold text-white text-center mb-4 group-hover:text-[#00F2EA] transition-colors">{pkg.name}</h3>
 
-                      <div className="text-center mb-4">
-                        <div className="text-4xl font-bold text-white mb-1">
-                          ฿{pkg.price}
+                      <div className="text-center mb-6">
+                        <div className="relative inline-block">
+                          <div className="text-5xl font-black bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
+                            ฿{pkg.price}
+                          </div>
+                          <div className="absolute -inset-1 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] blur-lg opacity-0 group-hover:opacity-20 transition-opacity"></div>
                         </div>
-                        <div className="text-[#00F2EA] font-semibold text-lg">
+                        <div className={`text-2xl font-bold bg-gradient-to-r ${pkg.color} bg-clip-text text-transparent mb-2`}>
                           {pkg.credits} เครดิต
                         </div>
-                        <div className="text-gray-500 text-sm mt-1">
-                          {pkg.perCredit} บาท/เครดิต
+                        <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+                          <div className="w-8 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
+                          <span>{pkg.perCredit} ฿/เครดิต</span>
+                          <div className="w-8 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
                         </div>
                       </div>
 
                       <button
-                        className={`w-full py-3 rounded-xl font-semibold transition-all bg-gradient-to-r ${pkg.color} text-white hover:shadow-lg`}
+                        className={`relative w-full py-4 rounded-2xl font-bold text-lg text-white overflow-hidden group/btn`}
                       >
-                        เลือกแพ็คเกจ
+                        <div className={`absolute inset-0 bg-gradient-to-r ${pkg.color} transition-transform duration-300 group-hover/btn:scale-110`}></div>
+                        <div className="absolute inset-0 bg-white opacity-0 group-hover/btn:opacity-20 transition-opacity"></div>
+                        <span className="relative flex items-center justify-center gap-2">
+                          เลือกแพ็คเกจ
+                          <svg className="w-5 h-5 transform group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </span>
                       </button>
                     </div>
                   </div>
