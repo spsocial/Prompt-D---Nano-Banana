@@ -4,6 +4,7 @@ import useStore from '../lib/store'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/router'
+import VideoAdsModal from './VideoAdsModal'
 
 // Preset prompt styles for image generation
 const PROMPT_STYLES = {
@@ -67,6 +68,9 @@ export default function ChatInterfaceGenerator() {
   const [numberOfImages, setNumberOfImages] = useState(1)
   const [selectedModel, setSelectedModel] = useState('banana')
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+
+  // Video Ads Modal
+  const [showAdsModal, setShowAdsModal] = useState(false)
 
   // Switch aspect ratio when changing mode
   useEffect(() => {
@@ -337,6 +341,105 @@ export default function ChatInterfaceGenerator() {
     }
   }
 
+  const handleAdsSubmit = async (formData) => {
+    // Credits based on duration: 10s = 10 credits, 15s = 15 credits
+    const requiredCredits = formData.duration === 15 ? 15 : 10
+
+    if (userCredits < requiredCredits) {
+      alert(`เครดิตไม่เพียงพอ! ต้องการ ${requiredCredits} เครดิต`)
+      return
+    }
+
+    // Add user message
+    const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      prompt: `สร้างวิดีโอโฆษณา: ${formData.productName}`,
+      image: formData.image,
+      mode: 'video-ads',
+      duration: formData.duration,
+      aspectRatio: formData.aspectRatio,
+      style: formData.style
+    }
+    setMessages(prev => [...prev, userMessage])
+
+    // Close modal
+    setShowAdsModal(false)
+
+    setIsGenerating(true)
+    setIsGeneratingVideo(true)
+
+    // Add loading message
+    const loadingMessage = {
+      id: Date.now() + 1,
+      type: 'loading',
+      mode: 'video'
+    }
+    setMessages(prev => [...prev, loadingMessage])
+
+    try {
+      // Deduct credits
+      await useCredits(requiredCredits)
+
+      // Generate video with KIE.AI
+      const response = await fetch('/api/generate-video-kie-primary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: formData.prompt,
+          image: formData.image,
+          duration: formData.duration,
+          aspectRatio: formData.aspectRatio,
+          model: 'sora-2',
+          allowWatermark: false
+        })
+      })
+
+      setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Video generation failed')
+      }
+
+      const data = await response.json()
+
+      const resultMessage = {
+        id: Date.now() + 2,
+        type: 'result',
+        mode: 'video',
+        url: data.videoUrl,
+        data: data
+      }
+      setMessages(prev => [...prev, resultMessage])
+
+      // Save to history
+      await addVideoToHistory({
+        videoUrl: data.videoUrl,
+        prompt: formData.prompt,
+        duration: formData.duration,
+        aspectRatio: formData.aspectRatio,
+        style: `Video Ads - ${formData.style}`,
+        asyncDataUrl: data.asyncDataUrl
+      })
+
+    } catch (error) {
+      console.error('Video ads generation error:', error)
+
+      setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
+
+      const errorMessage = {
+        id: Date.now() + 3,
+        type: 'error',
+        message: error.message
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsGenerating(false)
+      setIsGeneratingVideo(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-screen bg-[#000000]">
       {/* Header */}
@@ -573,6 +676,16 @@ export default function ChatInterfaceGenerator() {
                       </button>
                     </div>
 
+                    {/* Video Ads Button */}
+                    <button
+                      onClick={() => setShowAdsModal(true)}
+                      disabled={isGenerating}
+                      className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg text-xs font-medium transition-all disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <span>🎙️</span>
+                      <span>ฟอร์มโฆษณา</span>
+                    </button>
+
                     {/* Watermark Toggle */}
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <input
@@ -690,6 +803,13 @@ export default function ChatInterfaceGenerator() {
           </div>
         </div>
       </div>
+
+      {/* Video Ads Modal */}
+      <VideoAdsModal
+        isOpen={showAdsModal}
+        onClose={() => setShowAdsModal(false)}
+        onSubmit={handleAdsSubmit}
+      />
     </div>
   )
 }
