@@ -345,7 +345,7 @@ export default function ChatInterfaceGenerator() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-6 w-6 text-[#00F2EA]" />
+                <img src="/logo.png" alt="PD Studio" className="h-8 w-8 object-contain" />
                 <h1 className="text-xl font-bold text-white">PD Studio</h1>
               </div>
             </div>

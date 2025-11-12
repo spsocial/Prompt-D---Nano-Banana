@@ -25,7 +25,7 @@ export default function Home() {
         <title>PD Studio - สร้างภาพและวิดีโอด้วย AI</title>
         <meta name="description" content="แพลตฟอร์ม AI ครบวงจร สร้างภาพและวิดีโอโฆษณาคุณภาพสูง | PD Studio - All-in-One AI Creative Platform" />
         <meta name="keywords" content="AI, Image Generator, Video Generator, AI Platform, PD Studio, โฆษณา, วิดีโอ AI, All-in-One" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.png" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </Head>
 
@@ -35,7 +35,7 @@ export default function Home() {
           <div className="max-w-md w-full mx-4 text-center p-8 bg-[#1a1a1a] rounded-3xl border border-gray-800 shadow-2xl">
             <div className="mb-6 flex justify-center">
               <div className="p-6 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] rounded-full shadow-2xl">
-                <Sparkles className="h-16 w-16 text-white" />
+                <img src="/logo.png" alt="PD Studio" className="h-16 w-16 object-contain" />
               </div>
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
