@@ -226,7 +226,10 @@ export default async function handler(req, res) {
         console.log('📄 Status Response:', safeStringify(statusData))
       }
 
-      if (state === 'success') {
+      if (state === 'generating') {
+        // Task is actively generating - continue polling
+        console.log('🎨 Video is being generated...')
+      } else if (state === 'success') {
         // Extract video URL from result
         const resultJson = statusData.data?.resultJson
 
