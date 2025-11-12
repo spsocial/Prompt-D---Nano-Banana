@@ -71,6 +71,7 @@ export default function ChatInterfaceGenerator() {
 
   // Video Ads Modal
   const [showAdsModal, setShowAdsModal] = useState(false)
+  const [adsPreloadedImage, setAdsPreloadedImage] = useState(null)
 
   // Switch aspect ratio when changing mode
   useEffect(() => {
@@ -341,6 +342,12 @@ export default function ChatInterfaceGenerator() {
     }
   }
 
+  const handleOpenAdsModalWithImage = (imageUrl) => {
+    setMode('video') // Switch to video mode
+    setAdsPreloadedImage(imageUrl)
+    setShowAdsModal(true)
+  }
+
   const handleAdsSubmit = async (formData) => {
     // Credits based on duration: 10s = 10 credits, 15s = 15 credits
     const requiredCredits = formData.duration === 15 ? 15 : 10
@@ -365,6 +372,7 @@ export default function ChatInterfaceGenerator() {
 
     // Close modal
     setShowAdsModal(false)
+    setAdsPreloadedImage(null) // Clear preloaded image
 
     setIsGenerating(true)
     setIsGeneratingVideo(true)
@@ -584,7 +592,11 @@ export default function ChatInterfaceGenerator() {
           ) : (
             <>
               {messages.map((msg) => (
-                <MessageBubble key={msg.id} message={msg} />
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  onCreateVideoAd={handleOpenAdsModalWithImage}
+                />
               ))}
             </>
           )}
@@ -695,16 +707,6 @@ export default function ChatInterfaceGenerator() {
                         {allowWatermark ? 'Watermark ✓' : 'No Watermark'}
                       </span>
                     </label>
-
-                    {/* Video Ads Button */}
-                    <button
-                      onClick={() => setShowAdsModal(true)}
-                      disabled={isGenerating}
-                      className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg text-xs font-medium transition-all disabled:opacity-50 flex items-center gap-1"
-                    >
-                      <span>🎙️</span>
-                      <span>ฟอร์มโฆษณา</span>
-                    </button>
                   </>
                 )}
 
@@ -780,6 +782,18 @@ export default function ChatInterfaceGenerator() {
                     </>
                   )}
                 </select>
+
+                {/* Video Ads Button - Only in video mode */}
+                {mode === 'video' && (
+                  <button
+                    onClick={() => setShowAdsModal(true)}
+                    disabled={isGenerating}
+                    className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg text-xs font-medium transition-all disabled:opacity-50 flex items-center gap-1"
+                  >
+                    <span>🎙️</span>
+                    <span>ฟอร์มโฆษณา</span>
+                  </button>
+                )}
               </div>
 
               {/* Send Button */}
@@ -807,15 +821,19 @@ export default function ChatInterfaceGenerator() {
       {/* Video Ads Modal */}
       <VideoAdsModal
         isOpen={showAdsModal}
-        onClose={() => setShowAdsModal(false)}
+        onClose={() => {
+          setShowAdsModal(false)
+          setAdsPreloadedImage(null)
+        }}
         onSubmit={handleAdsSubmit}
+        initialImage={adsPreloadedImage}
       />
     </div>
   )
 }
 
 // Message Bubble Component
-function MessageBubble({ message }) {
+function MessageBubble({ message, onCreateVideoAd }) {
   if (message.type === 'user') {
     return (
       <div className="flex justify-end">
@@ -897,7 +915,7 @@ function MessageBubble({ message }) {
               style={{ maxHeight: '500px' }}
             />
           )}
-          <div className="p-3 border-t border-gray-800">
+          <div className="p-3 border-t border-gray-800 flex items-center gap-2 flex-wrap">
             <a
               href={message.url}
               download
@@ -908,6 +926,16 @@ function MessageBubble({ message }) {
               <Download className="h-4 w-4" />
               ดาวน์โหลด
             </a>
+            {/* Show "Create Video Ad" button only for images */}
+            {message.mode === 'image' && onCreateVideoAd && (
+              <button
+                onClick={() => onCreateVideoAd(message.url)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg text-sm font-medium hover:shadow-lg transition-all"
+              >
+                <Film className="h-4 w-4" />
+                สร้าง VDO โฆษณา
+              </button>
+            )}
           </div>
         </div>
       </div>

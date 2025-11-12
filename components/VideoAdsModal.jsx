@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { X, Upload, Image as ImageIcon, Sparkles } from 'lucide-react'
 
 // Prompt templates for video ads
@@ -23,7 +23,7 @@ const ADS_TEMPLATES = {
   }
 }
 
-export default function VideoAdsModal({ isOpen, onClose, onSubmit }) {
+export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage = null }) {
   const [selectedImage, setSelectedImage] = useState(null)
   const [selectedImageFile, setSelectedImageFile] = useState(null)
   const [productName, setProductName] = useState('')
@@ -35,6 +35,13 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit }) {
   const [styleTemplate, setStyleTemplate] = useState('cgi')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const fileInputRef = useRef(null)
+
+  // Set initial image when modal opens with preloaded image
+  useEffect(() => {
+    if (isOpen && initialImage) {
+      setSelectedImage(initialImage)
+    }
+  }, [isOpen, initialImage])
 
   if (!isOpen) return null
 
