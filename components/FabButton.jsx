@@ -9,7 +9,7 @@ export default function FabButton() {
   return (
     <motion.button
       onClick={handleClick}
-      className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-[#00F2EA] to-[#FE2C55] rounded-full shadow-lg flex items-center justify-center text-white z-50 hover:shadow-xl hover:shadow-[#00F2EA]/50 transition-all"
+      className="fixed bottom-6 right-6 w-11 h-11 sm:w-14 sm:h-14 bg-gradient-to-br from-[#00F2EA] to-[#FE2C55] rounded-full shadow-lg flex items-center justify-center text-white z-50 hover:shadow-xl hover:shadow-[#00F2EA]/50 transition-all"
       initial={{ scale: 0, rotate: -180 }}
       animate={{
         scale: 1,

@@ -452,7 +452,7 @@ export default function ChatInterfaceGenerator() {
   return (
     <div className="flex flex-col h-screen bg-[#000000]">
       {/* Header */}
-      <div className="sticky top-0 z-50 backdrop-blur-lg bg-[#121212]/90 border-b border-gray-800">
+      <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-[#121212]/90 border-b border-gray-800">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -580,7 +580,7 @@ export default function ChatInterfaceGenerator() {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-8">
+      <div className="flex-1 overflow-y-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto space-y-6">
           {messages.length === 0 ? (
             <div className="text-center py-20">
