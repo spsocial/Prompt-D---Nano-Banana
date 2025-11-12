@@ -67,29 +67,29 @@ export default function Home() {
             <div className="mt-8 pt-8 border-t border-gray-800">
               <h3 className="font-bold text-white mb-4">✨ คุณสมบัติพิเศษ</h3>
               <div className="grid grid-cols-1 gap-3 text-sm text-gray-300">
-                <div className="p-3 bg-[#0a0a0a] rounded-xl flex items-center gap-2">
-                  <div className="w-8 h-8 flex-shrink-0">
+                <div className="p-3 bg-[#0a0a0a] rounded-xl flex flex-col items-center gap-2 text-center">
+                  <div className="w-12 h-12">
                     <Lottie animationData={freeCreditAnimation} loop={true} />
                   </div>
-                  <div className="flex-1">
+                  <div>
                     <div className="font-bold text-[#00F2EA] text-sm">เครดิตฟรี</div>
                     <div className="text-xs text-gray-400">รับ 10 เครดิตทันทีเมื่อสมัคร</div>
                   </div>
                 </div>
-                <div className="p-3 bg-[#0a0a0a] rounded-xl flex items-center gap-2">
-                  <div className="w-8 h-8 flex-shrink-0">
+                <div className="p-3 bg-[#0a0a0a] rounded-xl flex flex-col items-center gap-2 text-center">
+                  <div className="w-12 h-12">
                     <Lottie animationData={aiAnimation} loop={true} />
                   </div>
-                  <div className="flex-1">
+                  <div>
                     <div className="font-bold text-[#00F2EA] text-sm">AI หลากหลาย</div>
                     <div className="text-xs text-gray-400">Sora 2, Nano Banana และอื่นๆ</div>
                   </div>
                 </div>
-                <div className="p-3 bg-[#0a0a0a] rounded-xl flex items-center gap-2">
-                  <div className="w-8 h-8 flex-shrink-0">
+                <div className="p-3 bg-[#0a0a0a] rounded-xl flex flex-col items-center gap-2 text-center">
+                  <div className="w-12 h-12">
                     <Lottie animationData={historyAnimation} loop={true} />
                   </div>
-                  <div className="flex-1">
+                  <div>
                     <div className="font-bold text-[#00F2EA] text-sm">ประวัติการใช้งาน</div>
                     <div className="text-xs text-gray-400">เก็บประวัติไว้ให้อัตโนมัติ</div>
                   </div>
