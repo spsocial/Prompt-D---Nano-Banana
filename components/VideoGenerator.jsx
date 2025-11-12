@@ -36,13 +36,16 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     },
     'sora-2': {
       name: 'Sora 2 (Standard 720p)',
-      durations: [10], // Fixed 10 seconds only
+      durations: [10, 15], // 10 or 15 seconds (KIE.AI supports both)
       resolutions: {
         '16:9': ['720p'], // Fixed 720p
         '9:16': ['720p']  // Fixed 720p
       },
       aspectRatios: ['16:9', '9:16'], // Only horizontal and vertical
-      credits: 10 // KIE: $0.15/10s = 10 credits
+      credits: {
+        10: 10, // 10s = 10 credits
+        15: 15  // 15s = 15 credits (proportional)
+      }
     },
     'sora-2-pro': {
       name: 'Sora 2 Pro (720p)',
@@ -175,9 +178,11 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       return
     }
 
-    // Calculate required credits based on model config
-    // Note: Credits are same for both watermark options (cost is $0.1 for both)
-    const requiredCredits = currentConfig.credits || 10
+    // Calculate required credits based on model config and duration
+    // Support both object (duration-based) and number (fixed) credits
+    const requiredCredits = typeof currentConfig.credits === 'object'
+      ? (currentConfig.credits[duration] || 10)
+      : (currentConfig.credits || 10)
 
     // Check if user has enough credits
     if (userCredits < requiredCredits) {
@@ -203,17 +208,17 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       console.log(`💳 Deducted ${requiredCredits} credits (Remaining: ${userCredits - requiredCredits})`)
 
       // Select API endpoint based on model
-      // Use CometAPI as primary for all Sora 2 models (has KIE.AI fallback)
+      // Use KIE.AI as primary for Sora 2 models (more stable)
       let apiEndpoint
       if (model === 'veo3-fast') {
         apiEndpoint = '/api/generate-video-veo3'
       } else {
-        // Use CometAPI for all Sora 2 models (includes automatic KIE.AI fallback)
-        apiEndpoint = '/api/generate-video'
+        // Use KIE.AI as primary for all Sora 2 models
+        apiEndpoint = '/api/generate-video-kie-primary'
       }
 
       console.log('🔗 API Endpoint:', apiEndpoint)
-      console.log('🌐 Primary Provider: CometAPI (with KIE.AI fallback if needed)')
+      console.log('🌐 Primary Provider: KIE.AI (supports 10s and 15s)')
 
       // Create AbortController with 50 minute timeout (longer than API maxDuration to avoid false timeouts)
       const controller = new AbortController()
@@ -973,9 +978,10 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
           <span className="flex items-center justify-center">
             <Film className="h-5 w-5 mr-2" />
             สร้างวิดีโอด้วย AI (ใช้ {
-              model === 'sora-2-hd' ? '15' :
-              model === 'veo3-fast' ? '15' :
-              '10'
+              // Calculate credits based on model config and duration
+              typeof currentConfig.credits === 'object'
+                ? (currentConfig.credits[duration] || 10)
+                : (currentConfig.credits || 10)
             } เครดิต{(model === 'sora-2' || model === 'sora-2-pro' || model === 'sora-2-pro-1080p') && allowWatermark ? ' 💧' : ''})
           </span>
         )}
@@ -1092,11 +1098,18 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             : ' ใช้คำอธิบายที่ชัดเจนและละเอียด รวมถึงการเคลื่อนไหว แสงสว่าง และอารมณ์ที่ต้องการ'
           }
         </p>
-        {(model === 'sora-2' || model === 'sora-2-hd') && (
+        {model === 'sora-2' && (
           <p className="text-sm text-blue-800 mt-2">
             <span className="font-bold">📌 หมายเหตุ:</span>
             {' '}
-            {model === 'sora-2' ? 'Sora 2 สร้างวิดีโอ 720p' : 'Sora 2 HD สร้างวิดีโอ 1080p'} ความยาว 10 วินาที (ค่าตายตัว)
+            Sora 2 สร้างวิดีโอ 720p ความยาว 10 หรือ 15 วินาที (เลือกได้)
+          </p>
+        )}
+        {model === 'sora-2-hd' && (
+          <p className="text-sm text-blue-800 mt-2">
+            <span className="font-bold">📌 หมายเหตุ:</span>
+            {' '}
+            Sora 2 HD สร้างวิดีโอ 1080p ความยาว 10 วินาที (ค่าตายตัว)
           </p>
         )}
         <div className="mt-3 pt-3 border-t border-blue-200">
@@ -1104,9 +1117,12 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             <span className="font-bold">💳 ใช้เครดิต:</span>
             {' '}
             <span className="text-lg font-bold text-blue-600">
-              {model === 'sora-2-hd' ? '15' :
-               model === 'veo3-fast' ? '15' :
-               '10'} เครดิต
+              {
+                // Calculate credits based on model config and duration
+                typeof currentConfig.credits === 'object'
+                  ? (currentConfig.credits[duration] || 10)
+                  : (currentConfig.credits || 10)
+              } เครดิต
             </span>
             {' '}
             / วิดีโอ (คุณมี {userCredits} เครดิต)
