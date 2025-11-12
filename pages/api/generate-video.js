@@ -120,34 +120,34 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Either prompt or image is required' })
     }
 
-    // NEW LOGIC: If user allows watermark, use KIE.AI directly (cheaper, has watermark)
+    // NEW LOGIC: If user allows watermark, use backup API directly (cheaper, has watermark)
     if (allowWatermark && process.env.KIE_API_KEY) {
-      console.log('💧 User allows watermark → Using KIE.AI directly (cheaper option)')
+      console.log('💧 User allows watermark → Using backup API directly (cheaper option)')
       try {
         return await useKieAIDirect(req, res)
       } catch (kieError) {
-        console.error('❌ KIE.AI direct failed:', kieError)
-        console.log('🔄 Falling back to CometAPI...')
-        // Continue with CometAPI as fallback
+        console.error('❌ Backup API direct failed:', kieError)
+        console.log('🔄 Falling back to primary API...')
+        // Continue with primary API as fallback
       }
     }
 
-    // Use CometAPI key from environment variable only (no hardcoded key)
+    // Use primary API key from environment variable only (no hardcoded key)
     const cometApiKey = apiKey || process.env.COMET_API_KEY
 
     if (!cometApiKey) {
       return res.status(400).json({
-        error: 'CometAPI key is required',
-        message: 'กรุณาตั้งค่า COMET_API_KEY ใน Railway environment variables',
-        suggestion: '🔑 ไม่พบ API Key - กรุณาติดต่อผู้ดูแลระบบเพื่อเติมเครดิต CometAPI'
+        error: 'API key is required',
+        message: 'กรุณาตั้งค่า API key ใน Railway environment variables',
+        suggestion: '🔑 ไม่พบ API Key - กรุณาติดต่อผู้ดูแลระบบ'
       })
     }
 
-    console.log(`🎬 Starting Sora-2 video generation via CometAPI...`)
+    console.log(`🎬 Starting Sora-2 video generation...`)
     console.log(`📝 Mode: ${image ? 'Image to Video' : 'Text to Video'}`)
     console.log(`⏱️ Duration: ${duration}s, Resolution: ${resolution}, Aspect: ${aspectRatio}`)
 
-    // Use model name from CometAPI: sora-2 or sora-2-hd
+    // Use model name: sora-2 or sora-2-hd
     const modelName = resolution === '1080p' ? 'sora-2-hd' : 'sora-2'
 
     // Map aspect ratio + resolution to OpenAI size format (WIDTHxHEIGHT)
@@ -184,7 +184,7 @@ export default async function handler(req, res) {
     let messageContent
 
     if (image) {
-      // Image-to-Video: Officially supported by CometAPI with multimodal format + max_tokens
+      // Image-to-Video: Officially supported with multimodal format + max_tokens
       console.log('📸 Image-to-Video mode: Using multimodal content format')
       messageContent = [
         {
@@ -207,7 +207,7 @@ export default async function handler(req, res) {
     const requestPayload = {
       model: modelName,
       stream: true, // IMPORTANT: Use streaming to avoid timeout!
-      max_tokens: 3000, // Required by CometAPI for Sora 2 (especially for image-to-video)
+      max_tokens: 3000, // Required for Sora 2 (especially for image-to-video)
       size: size, // IMPORTANT: Specify video dimensions (WIDTHxHEIGHT format)
       seconds: String(duration), // Duration in seconds (must be string: '4', '8', '12')
       messages: [
@@ -218,10 +218,10 @@ export default async function handler(req, res) {
       ]
     }
 
-    console.log('🚀 Sending request to CometAPI with streaming...')
+    console.log('🚀 Sending request with streaming...')
     console.log('📦 Request payload:', safeStringify(requestPayload))
 
-    // Call CometAPI using OpenAI-compatible endpoint
+    // Call API using OpenAI-compatible endpoint
     const createResponse = await fetch('https://api.cometapi.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -235,10 +235,10 @@ export default async function handler(req, res) {
 
     if (!createResponse.ok) {
       const errorText = await createResponse.text()
-      console.error('❌ CometAPI Error Response:', errorText)
+      console.error('❌ API Error Response:', errorText)
       console.error('❌ Status Code:', createResponse.status)
 
-      let errorMessage = 'Failed to generate video via CometAPI'
+      let errorMessage = 'Failed to generate video'
       try {
         const errorData = JSON.parse(errorText)
         errorMessage = errorData.error?.message || errorData.message || errorMessage
@@ -268,7 +268,7 @@ export default async function handler(req, res) {
       // Match various URL formats in markdown or plain text
       // IMPORTANT: Include query parameters (everything after .mp4 until space/bracket/etc)
       const urlPatterns = [
-        // NEW: AsyncData.net URLs (CometAPI's new format) - match first!
+        // NEW: AsyncData.net URLs (API's new format) - match first!
         /https?:\/\/asyncdata\.net\/(?:web|source)\/task_[a-zA-Z0-9]+/,  // https://asyncdata.net/web/task_XXXXX
         /!\[([^\]]*)\]\((https?:\/\/asyncdata\.net\/(?:web|source)\/task_[a-zA-Z0-9]+)\)/,  // ![text](asyncdata url)
         /\[([^\]]*)\]\((https?:\/\/asyncdata\.net\/(?:web|source)\/task_[a-zA-Z0-9]+)\)/,  // [text](asyncdata url)
@@ -491,7 +491,7 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    console.error('❌ CometAPI Video generation error:', error)
+    console.error('❌ Video generation error:', error)
 
     // Check if it's an API system error
     const isSystemError = error.message.includes('API_SYSTEM_ERROR') ||
@@ -504,24 +504,27 @@ export default async function handler(req, res) {
     // Check if it's an API availability issue
     const isApiNotAvailable = error.message.includes('Sora API is not available') ||
                                error.message.includes('not valid JSON') ||
-                               error.message.includes('Unexpected token')
+                               error.message.includes('Unexpected token') ||
+                               error.message.includes('No available capacity') ||
+                               error.message.includes('no available channel') ||
+                               error.message.includes('model_not_found')
 
     // Check for quota/credit errors
     const isQuotaError = error.message.includes('quota') ||
                         error.message.includes('insufficient') ||
                         error.message.includes('not enough')
 
-    // Try fallback to KIE.AI if enabled and it's a system error or quota issue
+    // Try fallback to backup API if enabled and it's a system error or quota issue
     const shouldTryFallback = (isSystemError || isApiNotAvailable || isQuotaError) &&
                              process.env.KIE_API_KEY
 
     if (shouldTryFallback) {
-      console.log('🔄 CometAPI failed, attempting fallback to KIE.AI...')
+      console.log('🔄 Primary API failed, attempting fallback to backup API...')
 
       try {
         return await fallbackToKieAI(req, res)
       } catch (fallbackError) {
-        console.error('❌ KIE.AI fallback also failed:', fallbackError)
+        console.error('❌ Backup API fallback also failed:', fallbackError)
         // Continue to normal error handling
       }
     }
@@ -541,13 +544,13 @@ export default async function handler(req, res) {
       error: cleanErrorMessage || 'Failed to generate video',
       details: error.toString(),
       suggestion: isSystemError
-        ? '🔧 ระบบ API กำลังมีปัญหา (network fluctuations หรือ high load) - เครดิตจะถูกคืนอัตโนมัติ กรุณารอสักครู่แล้วลองใหม่อีกครั้ง'
+        ? '🔧 ระบบกำลังมีปัญหา (network fluctuations หรือ high load) - เครดิตจะถูกคืนอัตโนมัติ กรุณารอสักครู่แล้วลองใหม่อีกครั้ง'
         : isTimeout
-        ? '⏱️ การสร้างวิดีโอใช้เวลานาน (1-3 นาที) แต่ API timeout ก่อน - เครดิตจะถูกคืนอัตโนมัติ ลองใหม่อีกครั้งหรือติดต่อ CometAPI Support'
+        ? '⏱️ การสร้างวิดีโอใช้เวลานาน (1-3 นาที) แต่เกิด timeout - เครดิตจะถูกคืนอัตโนมัติ กรุณาลองใหม่อีกครั้ง'
         : isApiNotAvailable
-        ? '⚠️ Sora API ยังไม่เปิดให้ใช้งานทั่วไป - เครดิตจะถูกคืนอัตโนมัติ กรุณารอ OpenAI เปิดให้ใช้งาน'
+        ? '⚠️ เซิร์ฟเวอร์ไม่พร้อมให้บริการชั่วคราว - เครดิตจะถูกคืนอัตโนมัติ กรุณาลองใหม่อีกครั้ง'
         : isQuotaError
-        ? '💳 CometAPI เครดิตไม่เพียงพอ - กรุณาเติมเครดิต CometAPI หรือรอระบบลอง KIE.AI'
+        ? '💳 เครดิต API ไม่เพียงพอ - กรุณาลองใหม่อีกครั้งในภายหลัง'
         : 'เกิดข้อผิดพลาด - เครดิตจะถูกคืนอัตโนมัติ',
       apiStatus: isSystemError ? 'system_error' : isTimeout ? 'timeout' : isApiNotAvailable ? 'not_available' : isQuotaError ? 'quota_error' : 'unknown_error',
       shouldRefund: true // Always refund on error
@@ -555,9 +558,9 @@ export default async function handler(req, res) {
   }
 }
 
-// Direct use of KIE.AI when user allows watermark (cheaper option)
+// Direct use of backup API when user allows watermark (cheaper option)
 async function useKieAIDirect(req, res) {
-  console.log('💧 Using KIE.AI directly (user allows watermark)...')
+  console.log('💧 Using backup API directly (user allows watermark)...')
 
   const {
     prompt,
@@ -571,10 +574,10 @@ async function useKieAIDirect(req, res) {
   const kieApiKey = process.env.KIE_API_KEY
 
   if (!kieApiKey) {
-    throw new Error('KIE.AI API key not configured')
+    throw new Error('Backup API key not configured')
   }
 
-  console.log(`🎬 Starting video generation via KIE.AI (with watermark, cheaper)...`)
+  console.log(`🎬 Starting video generation via backup API (with watermark, cheaper)...`)
 
   // Determine model name
   let modelName
@@ -595,16 +598,16 @@ async function useKieAIDirect(req, res) {
     }
   }
 
-  // Image not supported as base64 in KIE.AI
+  // Image not supported as base64 in backup API
   if (image && image.startsWith('data:')) {
-    throw new Error('KIE.AI requires image URLs, not base64')
+    throw new Error('Backup API requires image URLs, not base64')
   }
 
   if (image) {
     requestBody.input.image_urls = [image]
   }
 
-  console.log('🚀 Creating task on KIE.AI...')
+  console.log('🚀 Creating task on backup API...')
 
   const createResponse = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
@@ -617,17 +620,17 @@ async function useKieAIDirect(req, res) {
 
   if (!createResponse.ok) {
     const errorText = await createResponse.text()
-    throw new Error(`KIE.AI createTask failed: ${errorText}`)
+    throw new Error(`Backup API createTask failed: ${errorText}`)
   }
 
   const createData = await createResponse.json()
   const taskId = createData.data?.taskId
 
   if (!taskId) {
-    throw new Error('No taskId from KIE.AI')
+    throw new Error('No taskId from backup API')
   }
 
-  console.log(`✅ Task created on KIE.AI: ${taskId}`)
+  console.log(`✅ Task created on backup API: ${taskId}`)
 
   // Poll for results
   const maxAttempts = 60
@@ -658,15 +661,15 @@ async function useKieAIDirect(req, res) {
         }
       }
     } else if (state === 'failed' || state === 'error') {
-      throw new Error('KIE.AI task failed')
+      throw new Error('Backup API task failed')
     }
   }
 
   if (!videoUrl) {
-    throw new Error('KIE.AI timeout')
+    throw new Error('Backup API timeout')
   }
 
-  console.log(`🎉 KIE.AI video generation complete (with watermark)!`)
+  console.log(`🎉 Backup API video generation complete (with watermark)!`)
 
   return res.status(200).json({
     success: true,
@@ -682,9 +685,9 @@ async function useKieAIDirect(req, res) {
   })
 }
 
-// Fallback function to use KIE.AI when CometAPI fails (no watermark version)
+// Fallback function to use backup API when primary API fails (no watermark version)
 async function fallbackToKieAI(req, res) {
-  console.log('🔄 Executing KIE.AI fallback (no watermark)...')
+  console.log('🔄 Executing backup API fallback (no watermark)...')
 
   const {
     prompt,
@@ -698,10 +701,10 @@ async function fallbackToKieAI(req, res) {
   const kieApiKey = process.env.KIE_API_KEY
 
   if (!kieApiKey) {
-    throw new Error('KIE.AI API key not configured for fallback')
+    throw new Error('Backup API key not configured for fallback')
   }
 
-  console.log(`🎬 Fallback: Starting video generation via KIE.AI...`)
+  console.log(`🎬 Fallback: Starting video generation via backup API...`)
 
   // Determine model name
   let modelName
@@ -722,16 +725,16 @@ async function fallbackToKieAI(req, res) {
     }
   }
 
-  // Image not supported as base64 in KIE.AI - skip fallback for image mode
+  // Image not supported as base64 in backup API - skip fallback for image mode
   if (image && image.startsWith('data:')) {
-    throw new Error('KIE.AI requires image URLs, not base64 - cannot fallback for image-to-video')
+    throw new Error('Backup API requires image URLs, not base64 - cannot fallback for image-to-video')
   }
 
   if (image) {
     requestBody.input.image_urls = [image]
   }
 
-  console.log('🚀 Fallback: Creating task on KIE.AI...')
+  console.log('🚀 Fallback: Creating task on backup API...')
 
   const createResponse = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
@@ -744,17 +747,17 @@ async function fallbackToKieAI(req, res) {
 
   if (!createResponse.ok) {
     const errorText = await createResponse.text()
-    throw new Error(`KIE.AI createTask failed: ${errorText}`)
+    throw new Error(`Backup API createTask failed: ${errorText}`)
   }
 
   const createData = await createResponse.json()
   const taskId = createData.data?.taskId
 
   if (!taskId) {
-    throw new Error('No taskId from KIE.AI')
+    throw new Error('No taskId from backup API')
   }
 
-  console.log(`✅ Fallback: Task created on KIE.AI: ${taskId}`)
+  console.log(`✅ Fallback: Task created on backup API: ${taskId}`)
 
   // Poll for results
   const maxAttempts = 60
@@ -788,7 +791,7 @@ async function fallbackToKieAI(req, res) {
   }
 
   if (!videoUrl) {
-    throw new Error('KIE.AI fallback timeout')
+    throw new Error('Backup API fallback timeout')
   }
 
   console.log(`🎉 Fallback successful (no watermark)!`)
