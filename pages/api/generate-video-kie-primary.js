@@ -15,6 +15,11 @@ async function uploadToCloudinary(base64Image, retries = 3) {
     try {
       console.log(`📤 Upload attempt ${attempt}/${retries}...`)
 
+      // Generate safe public_id without slashes
+      const timestamp = Date.now()
+      const randomId = Math.random().toString(36).substring(2, 15)
+      const safePublicId = `nano_img_${timestamp}_${randomId}`
+
       const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`, {
         method: 'POST',
         headers: {
@@ -22,7 +27,8 @@ async function uploadToCloudinary(base64Image, retries = 3) {
         },
         body: JSON.stringify({
           file: base64Image,
-          upload_preset: cloudinaryUploadPreset
+          upload_preset: cloudinaryUploadPreset,
+          public_id: safePublicId
         })
       })
 

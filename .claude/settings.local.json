@@ -41,7 +41,8 @@
       "WebFetch(domain:kie.ai)",
       "WebFetch(domain:docs.kie.ai)",
       "WebFetch(domain:www.technology.org)",
-      "WebFetch(domain:asyncdata.net)"
+      "WebFetch(domain:asyncdata.net)",
+      "WebFetch(domain:fastvid.io)"
     ],
     "deny": [],
     "ask": []

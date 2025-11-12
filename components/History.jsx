@@ -159,13 +159,13 @@ export default function History() {
   if (history.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <Film className="h-8 w-8 text-gray-400" />
+        <div className="mx-auto w-16 h-16 bg-[#0a0a0a] rounded-full flex items-center justify-center mb-4">
+          <Film className="h-8 w-8 text-gray-500" />
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-1">ยังไม่มีประวัติ</h3>
-        <p className="text-gray-500">คอนเทนต์ที่คุณสร้างจะแสดงที่นี่ (รูปภาพ + วิดีโอ)</p>
-        <p className="text-sm text-gray-400 mt-2">ระบบจะเก็บประวัติอัตโนมัติล่าสุด 30 รายการ</p>
-        <p className="text-xs text-gray-400 mt-1">ใช้ IndexedDB เก็บไฟล์คุณภาพเต็ม</p>
+        <h3 className="text-lg font-medium text-white mb-1">ยังไม่มีประวัติ</h3>
+        <p className="text-gray-400">คอนเทนต์ที่คุณสร้างจะแสดงที่นี่ (รูปภาพ + วิดีโอ)</p>
+        <p className="text-sm text-gray-500 mt-2">ระบบจะเก็บประวัติอัตโนมัติล่าสุด 30 รายการ</p>
+        <p className="text-xs text-gray-500 mt-1">ใช้ IndexedDB เก็บไฟล์คุณภาพเต็ม</p>
       </div>
     )
   }
@@ -173,22 +173,22 @@ export default function History() {
   return (
     <>
       {/* Local Storage Warning Banner */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl shadow-md">
+      <div className="mb-6 p-4 bg-[#00F2EA]/10 border border-[#00F2EA]/30 rounded-xl shadow-md">
         <div className="flex items-start space-x-3">
           <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-10 h-10 bg-[#00F2EA] rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
           <div className="flex-1">
-            <h3 className="text-base font-bold text-amber-900 mb-1">📱 ประวัติเก็บแยกตามเครื่อง</h3>
-            <div className="text-sm text-amber-800 space-y-1">
+            <h3 className="text-base font-bold text-[#00F2EA] mb-1">📱 ประวัติเก็บแยกตามเครื่อง</h3>
+            <div className="text-sm text-gray-300 space-y-1">
               <p>• <strong>ประวัติรูป/วิดีโอจะเก็บในเครื่องนี้เท่านั้น</strong> - ไม่ Sync ระหว่างอุปกรณ์</p>
               <p>• <strong>เปลี่ยนเครื่อง/เบราว์เซอร์</strong> - ประวัติจะไม่ตามมา (แม้ใช้อีเมลเดียวกัน)</p>
               <p>• <strong>เครดิต</strong> - Sync ทุกอุปกรณ์ ✅ (เก็บใน Database)</p>
-              <p className="pt-1 text-amber-900 font-bold">💡 <strong>แนะนำ:</strong> ดาวน์โหลดเก็บไว้ในเครื่องหากต้องการใช้ต่อ</p>
+              <p className="pt-1 text-white font-bold">💡 <strong>แนะนำ:</strong> ดาวน์โหลดเก็บไว้ในเครื่องหากต้องการใช้ต่อ</p>
             </div>
           </div>
         </div>
@@ -208,26 +208,26 @@ export default function History() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full"
+              className="bg-[#1a1a1a] rounded-2xl shadow-2xl p-6 max-w-md w-full border border-gray-800"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="text-center">
                 {/* Icon */}
-                <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-4">
+                <div className="mx-auto w-16 h-16 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] rounded-full flex items-center justify-center mb-4">
                   <Download className="w-8 h-8 text-white" />
                 </div>
 
                 {/* Title */}
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                <h3 className="text-2xl font-bold text-white mb-2">
                   📱 วิธีดาวน์โหลดวิดีโอบนมือถือ
                 </h3>
 
                 {/* Instructions */}
-                <div className="text-left bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-xl p-4 mb-4">
-                  <p className="text-sm font-bold text-blue-900 mb-3">
+                <div className="text-left bg-[#00F2EA]/10 border border-[#00F2EA]/30 rounded-xl p-4 mb-4">
+                  <p className="text-sm font-bold text-[#00F2EA] mb-3">
                     ✨ ทำตามขั้นตอนเหล่านี้:
                   </p>
-                  <div className="space-y-2 text-sm text-blue-800">
+                  <div className="space-y-2 text-sm text-gray-300">
                     <div className="flex items-start space-x-2">
                       <span className="font-bold text-lg flex-shrink-0">1️⃣</span>
                       <p>วิดีโอจะเปิดในแท็บใหม่</p>
@@ -255,8 +255,8 @@ export default function History() {
                 </div>
 
                 {/* Warning */}
-                <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-3 mb-4">
-                  <p className="text-sm text-amber-900">
+                <div className="bg-[#FE2C55]/10 border border-[#FE2C55]/30 rounded-xl p-3 mb-4">
+                  <p className="text-sm text-[#FE2C55]">
                     <strong>⚠️ สำคัญ:</strong> วิดีโอนี้หมดอายุใน 24 ชั่วโมง!<br />
                     ดาวน์โหลดเก็บไว้ทันที
                   </p>
@@ -265,7 +265,7 @@ export default function History() {
                 {/* Close Button */}
                 <button
                   onClick={() => setShowMobileDownloadInstructions(false)}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-xl font-bold transition-all shadow-lg"
+                  className="w-full px-6 py-3 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] hover:shadow-lg hover:shadow-[#00F2EA]/50 text-white rounded-xl font-bold transition-all shadow-lg"
                 >
                   เข้าใจแล้ว!
                 </button>
@@ -283,10 +283,10 @@ export default function History() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="group relative bg-gradient-to-br from-white/40 to-white/20 backdrop-blur-xl rounded-2xl border border-white/30 shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
+              className="group relative bg-[#0a0a0a] rounded-2xl border border-gray-800 shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:border-[#00F2EA]/50"
             >
               {/* Image/Video Container */}
-              <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-gray-100/50 to-white/50 rounded-xl">
+              <div className="aspect-square relative overflow-hidden bg-[#121212] rounded-xl">
                 {/* Handle missing data */}
                 {(item.type === 'video' && !item.videoUrl) || (item.type !== 'video' && (item.imageUrl === 'base64_image_stripped' || !item.imageUrl)) ? (
                   <div className="w-full h-full flex items-center justify-center bg-gray-200/50">
@@ -471,18 +471,18 @@ export default function History() {
               </div>
 
               {/* Info Bar */}
-              <div className="p-3 bg-white/20 backdrop-blur-sm border-t border-white/20">
+              <div className="p-3 bg-[#121212] border-t border-gray-800">
                 <div className="mb-2">
-                  <span className="text-sm font-semibold text-gray-800 line-clamp-1">
+                  <span className="text-sm font-semibold text-white line-clamp-1">
                     {item.style || 'ไม่มีชื่อ'}
                   </span>
                 </div>
-                
-                <div className="flex items-center text-xs text-gray-500">
+
+                <div className="flex items-center text-xs text-gray-400">
                   <Calendar className="h-3 w-3 mr-1" />
                   <span>{formatDate(item.timestamp)}</span>
                 </div>
-                
+
                 <button
                   onClick={() => removeFromHistory(item.id)}
                   className="absolute top-2 right-2 p-1 rounded-full bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
