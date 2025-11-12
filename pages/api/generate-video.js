@@ -1,51 +1,58 @@
 import { safeStringify } from '../../lib/logUtils';
 
-// Helper function to upload base64 image to ImgBB and get public URL
-async function uploadToImgBB(base64Image) {
-  console.log('📤 Uploading base64 image to ImgBB...')
+// Helper function to upload base64 image to kie.ai File Upload API
+async function uploadToKieAI(base64Image) {
+  console.log('📤 Uploading base64 image to kie.ai File Upload API...')
 
-  const imgbbApiKey = process.env.IMGBB_API_KEY
+  const kieApiKey = process.env.KIE_API_KEY
 
-  if (!imgbbApiKey) {
-    throw new Error('ImgBB API Key not configured')
+  if (!kieApiKey) {
+    throw new Error('kie.ai API Key not configured')
   }
 
   // Remove data URL prefix if exists
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '')
 
   try {
-    // ImgBB uses form data
-    const formData = new URLSearchParams()
-    formData.append('key', imgbbApiKey)
-    formData.append('image', base64Data)
+    // Convert base64 to binary for multipart upload
+    const binaryString = atob(base64Data)
+    const bytes = new Uint8Array(binaryString.length)
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i)
+    }
+    const blob = new Blob([bytes], { type: 'image/png' })
 
-    const response = await fetch('https://api.imgbb.com/1/upload', {
+    // Use FormData for file upload
+    const formData = new FormData()
+    formData.append('file', blob, 'image.png')
+
+    const response = await fetch('https://api.kie.ai/api/v1/files/upload', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Authorization': `Bearer ${kieApiKey}`
       },
       body: formData
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new Error(`ImgBB upload failed: ${errorText}`)
+      throw new Error(`kie.ai file upload failed: ${errorText}`)
     }
 
     const data = await response.json()
+    console.log('📄 kie.ai Upload Response:', safeStringify(data))
 
-    // DEBUG: Log full response to see available URLs
-    console.log('📄 ImgBB Response:', safeStringify(data))
+    // Extract file URL from response
+    const fileUrl = data.data?.url || data.url || data.data?.file_url
 
-    // Try different URL fields (prioritize direct image URLs)
-    const imageUrl = data.data.display_url ||  // Direct link to image
-                     data.data.image?.url ||    // Image object URL
-                     data.data.url              // Page URL (fallback)
+    if (!fileUrl) {
+      throw new Error('No file URL in kie.ai response')
+    }
 
-    console.log(`✅ Image uploaded to ImgBB: ${imageUrl}`)
-    return imageUrl
+    console.log(`✅ Image uploaded to kie.ai: ${fileUrl}`)
+    return fileUrl
   } catch (error) {
-    console.error('❌ ImgBB upload error:', error)
+    console.error('❌ kie.ai file upload error:', error)
     throw error
   }
 }
@@ -661,13 +668,13 @@ async function useKieAIDirect(req, res) {
     let imageUrl = image
 
     if (image.startsWith('data:')) {
-      console.log('🔄 Base64 image detected, uploading to ImgBB first...')
+      console.log('🔄 Base64 image detected, uploading to kie.ai first...')
       try {
-        imageUrl = await uploadToImgBB(image)
-        console.log(`✅ Converted base64 → ImgBB URL: ${imageUrl}`)
+        imageUrl = await uploadToKieAI(image)
+        console.log(`✅ Converted base64 → kie.ai URL: ${imageUrl}`)
       } catch (uploadError) {
-        console.error('❌ Failed to upload to ImgBB:', uploadError)
-        throw new Error('Cannot upload image to ImgBB')
+        console.error('❌ Failed to upload to kie.ai:', uploadError)
+        throw new Error('Cannot upload image to kie.ai')
       }
     }
 
@@ -797,13 +804,13 @@ async function fallbackToKieAI(req, res) {
     let imageUrl = image
 
     if (image.startsWith('data:')) {
-      console.log('🔄 Base64 image detected, uploading to ImgBB first...')
+      console.log('🔄 Base64 image detected, uploading to kie.ai first...')
       try {
-        imageUrl = await uploadToImgBB(image)
-        console.log(`✅ Converted base64 → ImgBB URL: ${imageUrl}`)
+        imageUrl = await uploadToKieAI(image)
+        console.log(`✅ Converted base64 → kie.ai URL: ${imageUrl}`)
       } catch (uploadError) {
-        console.error('❌ Failed to upload to ImgBB:', uploadError)
-        throw new Error('Cannot upload image to ImgBB for fallback')
+        console.error('❌ Failed to upload to kie.ai:', uploadError)
+        throw new Error('Cannot upload image to kie.ai for fallback')
       }
     }
 
