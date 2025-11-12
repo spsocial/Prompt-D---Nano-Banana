@@ -1,59 +1,50 @@
 import { safeStringify } from '../../lib/logUtils';
 
-// Helper function to upload base64 image to kie.ai File Upload API (with retry)
-async function uploadToKieAI(base64Image, retries = 3) {
-  console.log('📤 Uploading base64 image to kie.ai File Upload API...')
+// Helper function to upload base64 image to Cloudinary (with retry)
+async function uploadToCloudinary(base64Image, retries = 3) {
+  console.log('📤 Uploading base64 image to Cloudinary...')
 
-  const kieApiKey = process.env.KIE_API_KEY
+  const cloudinaryUrl = process.env.CLOUDINARY_URL
+  const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME
+  const cloudinaryUploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET
 
-  if (!kieApiKey) {
-    throw new Error('kie.ai API Key not configured')
+  if (!cloudinaryCloudName || !cloudinaryUploadPreset) {
+    throw new Error('Cloudinary not configured (need CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET)')
   }
-
-  // Remove data URL prefix if exists
-  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '')
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`📤 Upload attempt ${attempt}/${retries}...`)
 
-      // Convert base64 to binary for multipart upload
-      const binaryString = atob(base64Data)
-      const bytes = new Uint8Array(binaryString.length)
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i)
-      }
-      const blob = new Blob([bytes], { type: 'image/png' })
-
-      // Use FormData for file upload
-      const formData = new FormData()
-      formData.append('file', blob, 'image.png')
-
-      const response = await fetch('https://api.kie.ai/api/v1/files/upload', {
+      // Cloudinary accepts base64 directly!
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${kieApiKey}`
+          'Content-Type': 'application/json'
         },
-        body: formData
+        body: JSON.stringify({
+          file: base64Image,
+          upload_preset: cloudinaryUploadPreset
+        })
       })
 
       if (!response.ok) {
         const errorText = await response.text()
-        throw new Error(`kie.ai file upload failed (${response.status}): ${errorText}`)
+        throw new Error(`Cloudinary upload failed (${response.status}): ${errorText}`)
       }
 
       const data = await response.json()
-      console.log('📄 kie.ai Upload Response:', safeStringify(data))
+      console.log('📄 Cloudinary Upload Response:', safeStringify(data))
 
-      // Extract file URL from response
-      const fileUrl = data.data?.url || data.url || data.data?.file_url
+      // Extract secure URL from response
+      const imageUrl = data.secure_url || data.url
 
-      if (!fileUrl) {
-        throw new Error('No file URL in kie.ai response')
+      if (!imageUrl) {
+        throw new Error('No URL in Cloudinary response')
       }
 
-      console.log(`✅ Image uploaded to kie.ai: ${fileUrl}`)
-      return fileUrl
+      console.log(`✅ Image uploaded to Cloudinary: ${imageUrl}`)
+      return imageUrl
     } catch (error) {
       console.error(`❌ Upload attempt ${attempt} failed:`, error.message)
 
@@ -681,18 +672,18 @@ async function useKieAIDirect(req, res) {
     }
   }
 
-  // Handle image: if base64, upload to ImgBB first to get URL
+  // Handle image: if base64, upload to Cloudinary first to get URL
   if (image) {
     let imageUrl = image
 
     if (image.startsWith('data:')) {
-      console.log('🔄 Base64 image detected, uploading to kie.ai first...')
+      console.log('🔄 Base64 image detected, uploading to Cloudinary first...')
       try {
-        imageUrl = await uploadToKieAI(image)
-        console.log(`✅ Converted base64 → kie.ai URL: ${imageUrl}`)
+        imageUrl = await uploadToCloudinary(image)
+        console.log(`✅ Converted base64 → Cloudinary URL: ${imageUrl}`)
       } catch (uploadError) {
-        console.error('❌ Failed to upload to kie.ai:', uploadError)
-        throw new Error('Cannot upload image to kie.ai')
+        console.error('❌ Failed to upload to Cloudinary:', uploadError)
+        throw new Error('Cannot upload image to Cloudinary')
       }
     }
 
@@ -817,18 +808,18 @@ async function fallbackToKieAI(req, res) {
     }
   }
 
-  // Handle image: if base64, upload to ImgBB first to get URL
+  // Handle image: if base64, upload to Cloudinary first to get URL
   if (image) {
     let imageUrl = image
 
     if (image.startsWith('data:')) {
-      console.log('🔄 Base64 image detected, uploading to kie.ai first...')
+      console.log('🔄 Base64 image detected, uploading to Cloudinary first...')
       try {
-        imageUrl = await uploadToKieAI(image)
-        console.log(`✅ Converted base64 → kie.ai URL: ${imageUrl}`)
+        imageUrl = await uploadToCloudinary(image)
+        console.log(`✅ Converted base64 → Cloudinary URL: ${imageUrl}`)
       } catch (uploadError) {
-        console.error('❌ Failed to upload to kie.ai:', uploadError)
-        throw new Error('Cannot upload image to kie.ai for fallback')
+        console.error('❌ Failed to upload to Cloudinary:', uploadError)
+        throw new Error('Cannot upload image to Cloudinary for fallback')
       }
     }
 
