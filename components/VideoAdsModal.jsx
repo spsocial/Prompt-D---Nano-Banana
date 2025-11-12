@@ -408,14 +408,6 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit }) {
               <p className="text-sm text-gray-300 leading-relaxed">
                 "{displayScript || `สินค้าคุณภาพดี จิ้มที่ตระกร้าได้เลย${gender === 'female' ? 'ค่ะ' : 'ครับ'}`}"
               </p>
-              {productName && (
-                <div className="mt-3 pt-3 border-t border-gray-800">
-                  <p className="text-xs text-gray-500">Prompt สำหรับ KIE.AI:</p>
-                  <p className="text-xs text-gray-400 mt-1 font-mono break-words">
-                    {buildFinalPrompt()}
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </div>
