@@ -1,7 +1,7 @@
 import { safeStringify } from '../../lib/logUtils';
 
-// Helper function to upload base64 image to kie.ai File Upload API
-async function uploadToKieAI(base64Image) {
+// Helper function to upload base64 image to kie.ai File Upload API (with retry)
+async function uploadToKieAI(base64Image, retries = 3) {
   console.log('📤 Uploading base64 image to kie.ai File Upload API...')
 
   const kieApiKey = process.env.KIE_API_KEY
@@ -13,47 +13,60 @@ async function uploadToKieAI(base64Image) {
   // Remove data URL prefix if exists
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '')
 
-  try {
-    // Convert base64 to binary for multipart upload
-    const binaryString = atob(base64Data)
-    const bytes = new Uint8Array(binaryString.length)
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i)
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`📤 Upload attempt ${attempt}/${retries}...`)
+
+      // Convert base64 to binary for multipart upload
+      const binaryString = atob(base64Data)
+      const bytes = new Uint8Array(binaryString.length)
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i)
+      }
+      const blob = new Blob([bytes], { type: 'image/png' })
+
+      // Use FormData for file upload
+      const formData = new FormData()
+      formData.append('file', blob, 'image.png')
+
+      const response = await fetch('https://api.kie.ai/api/v1/files/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${kieApiKey}`
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`kie.ai file upload failed (${response.status}): ${errorText}`)
+      }
+
+      const data = await response.json()
+      console.log('📄 kie.ai Upload Response:', safeStringify(data))
+
+      // Extract file URL from response
+      const fileUrl = data.data?.url || data.url || data.data?.file_url
+
+      if (!fileUrl) {
+        throw new Error('No file URL in kie.ai response')
+      }
+
+      console.log(`✅ Image uploaded to kie.ai: ${fileUrl}`)
+      return fileUrl
+    } catch (error) {
+      console.error(`❌ Upload attempt ${attempt} failed:`, error.message)
+
+      if (attempt === retries) {
+        console.error('❌ All upload attempts failed')
+        throw error
+      }
+
+      // Wait before retry (exponential backoff)
+      const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
+      console.log(`⏳ Retrying in ${waitTime}ms...`)
+      await new Promise(resolve => setTimeout(resolve, waitTime))
     }
-    const blob = new Blob([bytes], { type: 'image/png' })
-
-    // Use FormData for file upload
-    const formData = new FormData()
-    formData.append('file', blob, 'image.png')
-
-    const response = await fetch('https://api.kie.ai/api/v1/files/upload', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${kieApiKey}`
-      },
-      body: formData
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`kie.ai file upload failed: ${errorText}`)
-    }
-
-    const data = await response.json()
-    console.log('📄 kie.ai Upload Response:', safeStringify(data))
-
-    // Extract file URL from response
-    const fileUrl = data.data?.url || data.url || data.data?.file_url
-
-    if (!fileUrl) {
-      throw new Error('No file URL in kie.ai response')
-    }
-
-    console.log(`✅ Image uploaded to kie.ai: ${fileUrl}`)
-    return fileUrl
-  } catch (error) {
-    console.error('❌ kie.ai file upload error:', error)
-    throw error
   }
 }
 
@@ -564,12 +577,19 @@ export default async function handler(req, res) {
                                error.message.includes('Unexpected token') ||
                                error.message.includes('No available capacity') ||
                                error.message.includes('no available channel') ||
-                               error.message.includes('model_not_found')
+                               error.message.includes('model_not_found') ||
+                               error.message.includes('No video URL found') ||  // AsyncData.net polling failed
+                               error.message.includes('Connection refused') ||
+                               error.message.includes('Connection reset') ||
+                               error.message.includes('ECONNREFUSED') ||
+                               error.message.includes('ECONNRESET')
 
     // Check for quota/credit errors
     const isQuotaError = error.message.includes('quota') ||
                         error.message.includes('insufficient') ||
-                        error.message.includes('not enough')
+                        error.message.includes('not enough') ||
+                        error.message.includes('rate limit') ||
+                        error.message.includes('too many requests')
 
     // Try fallback to backup API if enabled and it's a system error or quota issue
     // Now supports base64 images via kie.ai File Upload API
@@ -578,11 +598,16 @@ export default async function handler(req, res) {
 
     if (shouldTryFallback) {
       console.log('🔄 Primary API failed, attempting fallback to backup API...')
+      console.log(`   Reason: ${error.message.substring(0, 100)}`)
+      console.log(`   Mode: ${req.body.image ? 'Image-to-Video' : 'Text-to-Video'}`)
 
       try {
-        return await fallbackToKieAI(req, res)
+        const result = await fallbackToKieAI(req, res)
+        console.log('✅ Fallback successful! Video generated via backup API')
+        return result
       } catch (fallbackError) {
-        console.error('❌ Backup API fallback also failed:', fallbackError)
+        console.error('❌ Backup API fallback also failed:', fallbackError.message)
+        console.error('   Both APIs failed - refunding credits and returning error')
         // Continue to normal error handling
       }
     }
