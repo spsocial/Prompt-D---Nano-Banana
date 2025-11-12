@@ -676,16 +676,6 @@ export default function ChatInterfaceGenerator() {
                       </button>
                     </div>
 
-                    {/* Video Ads Button */}
-                    <button
-                      onClick={() => setShowAdsModal(true)}
-                      disabled={isGenerating}
-                      className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg text-xs font-medium transition-all disabled:opacity-50 flex items-center gap-1"
-                    >
-                      <span>🎙️</span>
-                      <span>ฟอร์มโฆษณา</span>
-                    </button>
-
                     {/* Watermark Toggle */}
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <input
@@ -705,6 +695,16 @@ export default function ChatInterfaceGenerator() {
                         {allowWatermark ? 'Watermark ✓' : 'No Watermark'}
                       </span>
                     </label>
+
+                    {/* Video Ads Button */}
+                    <button
+                      onClick={() => setShowAdsModal(true)}
+                      disabled={isGenerating}
+                      className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg text-xs font-medium transition-all disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <span>🎙️</span>
+                      <span>ฟอร์มโฆษณา</span>
+                    </button>
                   </>
                 )}
 
