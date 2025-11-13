@@ -112,17 +112,19 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
   const buildFinalPrompt = () => {
     const template = ADS_TEMPLATES[styleTemplate]
     const finalScript = generatedScript || script || 'สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ')
-    const genderText = gender === 'female' ? 'ผู้หญิง' : 'ผู้ชาย'
+    const styleName = styleTemplate === 'cgi' ? 'CGI' : styleTemplate === 'cinematic' ? 'Cinematic' : 'Minimalist'
 
-    let prompt = template.format
-      .replace('{productName}', productName)
-      .replace('{gender}', genderText)
-      .replace('{script}', finalScript)
+    let prompt
 
-    // Add cameo if provided (format: @username)
+    // Check if cameo is provided
     if (cameo.trim()) {
+      // Format with cameo: "โฆษณา[สินค้า] โดย @[cameo] พูดถึง [บทพูด]"
       const cleanCameo = cameo.trim().startsWith('@') ? cameo.trim() : `@${cameo.trim()}`
-      prompt = `${prompt} Starring: ${cleanCameo}`
+      prompt = `โฆษณา${productName} แนว ${styleName} โดย ${cleanCameo} พูดถึง"${finalScript}" ห้ามใส่ text ภาษาไทยที่คิดขึ้นมาเองเด็ดขาด`
+    } else {
+      // Format without cameo: "โฆษณา[สินค้า] [เพศ]พูด [บทพูด]"
+      const genderText = gender === 'female' ? 'ผู้หญิง' : 'ผู้ชาย'
+      prompt = `โฆษณา${productName} แนว ${styleName} ${genderText}พูด"${finalScript}" ห้ามใส่ text ภาษาไทยที่คิดขึ้นมาเองเด็ดขาด`
     }
 
     return prompt
