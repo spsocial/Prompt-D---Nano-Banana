@@ -169,6 +169,12 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     }
   }
 
+  // Detect if user is on mobile
+  const isMobile = () => {
+    if (typeof window === 'undefined') return false;
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  }
+
   const handleGenerate = async () => {
     if (!prompt && mode === 'text') {
       setError('กรุณาใส่ prompt สำหรับสร้างวิดีโอ')
@@ -205,22 +211,28 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
     setVideoResult(null)
 
     try {
+      const isMobileDevice = isMobile();
       console.log('🎬 Starting video generation...')
+      console.log('📱 Mobile device:', isMobileDevice)
       console.log('📝 Model:', model)
       console.log(`💳 Deducted ${requiredCredits} credits (Remaining: ${userCredits - requiredCredits})`)
 
-      // Select API endpoint based on model
-      // Use KIE.AI as primary for Sora 2 models (more stable)
+      // Select API endpoint based on device and model
       let apiEndpoint
-      if (model === 'veo3-fast') {
+
+      // Mobile devices: Use non-polling endpoint (immediate return with taskId)
+      if (isMobileDevice && model !== 'veo3-fast') {
+        apiEndpoint = '/api/video-tasks/start'
+        console.log('📱 Using mobile-friendly endpoint (no polling)')
+      } else if (model === 'veo3-fast') {
         apiEndpoint = '/api/generate-video-veo3'
       } else {
-        // Use KIE.AI as primary for all Sora 2 models
+        // Desktop: Use normal polling endpoint
         apiEndpoint = '/api/generate-video-kie-primary'
+        console.log('💻 Using desktop endpoint (with polling)')
       }
 
       console.log('🔗 API Endpoint:', apiEndpoint)
-      console.log('🌐 Primary Provider: KIE.AI (supports 10s and 15s)')
 
       // Create AbortController with 50 minute timeout (longer than API maxDuration to avoid false timeouts)
       const controller = new AbortController()
@@ -242,7 +254,8 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
             aspectRatio: aspectRatio,
             model: model,
             allowWatermark: allowWatermark, // User's watermark preference
-            useFallback: true // Enable automatic fallback
+            useFallback: true, // Enable automatic fallback
+            userId: typeof window !== 'undefined' ? localStorage.getItem('nano_user_id') : 'anonymous' // Add userId for task tracking
           }),
           signal: controller.signal
         })
