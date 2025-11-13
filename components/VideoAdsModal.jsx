@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Upload, Image as ImageIcon, Sparkles } from 'lucide-react'
+import { X, Upload, Image as ImageIcon, Sparkles, Film } from 'lucide-react'
 
 // Prompt templates for video ads
 const ADS_TEMPLATES = {
@@ -35,6 +35,7 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
   const [styleTemplate, setStyleTemplate] = useState('cgi')
   const [cameo, setCameo] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false)
   const fileInputRef = useRef(null)
 
   // Set initial image when modal opens with preloaded image
@@ -460,7 +461,7 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
             ยกเลิก
           </button>
           <button
-            onClick={handleSubmit}
+            onClick={() => setShowConfirmPopup(true)}
             disabled={!selectedImage || !productName}
             className="px-6 py-2 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] hover:shadow-lg hover:shadow-[#00F2EA]/50 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -468,6 +469,117 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
           </button>
         </div>
       </div>
+
+      {/* Confirmation Popup */}
+      {showConfirmPopup && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setShowConfirmPopup(false)}
+        >
+          <div
+            className="bg-[#1a1a1a] rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-gray-800 animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] p-6 text-white">
+              <div className="flex items-center space-x-3">
+                <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <Film className="h-8 w-8" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">ยืนยันการสร้างโฆษณา</h3>
+                  <p className="text-sm text-white/90">กรุณาตรวจสอบข้อมูลก่อนเริ่มสร้าง</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              {/* Warning Box */}
+              <div className="bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-2 border-amber-600 rounded-xl p-4">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-amber-400 mb-2">⚠️ ข้อควรระวัง</h4>
+                    <div className="text-xs text-gray-300 space-y-1">
+                      <p>• <strong>ไม่สามารถหยุดหรือยกเลิกได้</strong> เมื่อเริ่มสร้างแล้ว</p>
+                      <p>• ใช้เวลาประมาณ <strong>1-3 นาที</strong></p>
+                      <p>• ใช้เครดิต <strong>{duration} เครดิต</strong></p>
+                      <p>• หากล้มเหลว เครดิตจะถูก<strong>คืนอัตโนมัติ</strong></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="bg-[#0a0a0a] border border-gray-800 rounded-xl p-4 space-y-3">
+                <h4 className="text-sm font-semibold text-white mb-3">📋 รายละเอียดโฆษณา</h4>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">สินค้า:</span>
+                    <span className="font-semibold text-white">{productName}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">สไตล์:</span>
+                    <span className="font-semibold text-[#00F2EA]">{ADS_TEMPLATES[styleTemplate].name}</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">ความยาว:</span>
+                    <span className="font-semibold text-white">{duration} วินาที</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">สัดส่วน:</span>
+                    <span className="font-semibold text-white">{aspectRatio}</span>
+                  </div>
+
+                  {cameo && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Cameo:</span>
+                      <span className="font-semibold text-purple-400">{cameo}</span>
+                    </div>
+                  )}
+
+                  {script && (
+                    <div className="mt-3 pt-3 border-t border-gray-800">
+                      <p className="text-gray-400 text-xs mb-1">บทพูด:</p>
+                      <p className="text-sm text-gray-300 line-clamp-3">"{script}"</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="p-6 pt-0 flex gap-3">
+              <button
+                onClick={() => setShowConfirmPopup(false)}
+                className="flex-1 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-xl transition-colors"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={() => {
+                  setShowConfirmPopup(false)
+                  handleSubmit()
+                }}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] hover:shadow-lg hover:shadow-[#00F2EA]/50 text-white font-bold rounded-xl transition-all"
+              >
+                ✨ เริ่มสร้างเลย!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
