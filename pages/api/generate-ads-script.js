@@ -109,6 +109,9 @@ ${userInput ? `คีย์เวิร์ดที่ต้องใช้: ${u
     // Clean up the script (remove quotes if present, trim whitespace)
     script = script.trim().replace(/^["']|["']$/g, '')
 
+    // IMPORTANT: Replace old wrong spelling "ตระกร้า" (with ร) to correct "ตระก้า" (without ร)
+    script = script.replace(/ตระกร้า/g, 'ตระก้า')
+
     // Ensure it ends with the required suffix (check if it already ends with it to prevent doubling)
     const endsWithPhrase = script.endsWith('จิ้มที่ตระก้าได้เลยค่ะ') ||
                           script.endsWith('จิ้มที่ตระก้าได้เลยครับ') ||
