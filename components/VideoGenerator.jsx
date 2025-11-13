@@ -18,6 +18,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const [showMobileDownloadInstructions, setShowMobileDownloadInstructions] = useState(false)
   const [allowWatermark, setAllowWatermark] = useState(false) // false = no watermark (default), true = allow watermark (cheaper)
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false) // Confirmation popup before generating
 
   const { apiKeys, userPlan, setIsGeneratingVideo, userCredits, useCredits } = useStore()
 
@@ -622,6 +623,123 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         )}
       </AnimatePresence>
 
+      {/* Confirmation Popup */}
+      <AnimatePresence>
+        {showConfirmPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowConfirmPopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-red-500 to-pink-500 p-6 text-white">
+                <div className="flex items-center space-x-3">
+                  <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <Film className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">ยืนยันการสร้างวิดีโอ</h3>
+                    <p className="text-sm text-white/90">กรุณาตรวจสอบข้อมูลก่อนเริ่มสร้าง</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-4">
+                {/* Info Box */}
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold text-amber-900 mb-2">⚠️ ข้อควรระวัง</h4>
+                      <div className="text-xs text-amber-800 space-y-1">
+                        <p>• <strong>ไม่สามารถหยุดหรือยกเลิกได้</strong> เมื่อเริ่มสร้างแล้ว</p>
+                        <p>• ใช้เวลาประมาณ <strong>1-3 นาที</strong></p>
+                        <p>• ใช้เครดิต <strong>{
+                          typeof modelConfig[model]?.credits === 'object'
+                            ? modelConfig[model]?.credits[duration]
+                            : modelConfig[model]?.credits
+                        } เครดิต</strong></p>
+                        <p>• หากล้มเหลว เครดิตจะถูก<strong>คืนอัตโนมัติ</strong></p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">📋 รายละเอียดวิดีโอ</h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-gray-500">โมเดล</p>
+                      <p className="font-semibold text-gray-900">{modelConfig[model]?.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">ความยาว</p>
+                      <p className="font-semibold text-gray-900">{duration} วินาที</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">สัดส่วน</p>
+                      <p className="font-semibold text-gray-900">{aspectRatio}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">ความละเอียด</p>
+                      <p className="font-semibold text-gray-900">{resolution}</p>
+                    </div>
+                  </div>
+                  {mode === 'text' && prompt && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-gray-500 text-xs mb-1">Prompt:</p>
+                      <p className="text-sm text-gray-900 line-clamp-3">{prompt}</p>
+                    </div>
+                  )}
+                  {mode === 'image' && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-gray-500 text-xs mb-1">โหมด:</p>
+                      <p className="text-sm text-gray-900">Image to Video</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="p-6 pt-0 flex gap-3">
+                <button
+                  onClick={() => setShowConfirmPopup(false)}
+                  className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-xl transition-colors"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={() => {
+                    setShowConfirmPopup(false)
+                    handleGenerate()
+                  }}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-bold rounded-xl transition-all shadow-lg"
+                >
+                  ✨ เริ่มสร้างเลย!
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -965,7 +1083,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
 
       {/* Generate Button */}
       <button
-        onClick={handleGenerate}
+        onClick={() => setShowConfirmPopup(true)}
         disabled={isGenerating || (!prompt && mode === 'text')}
         className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-bold py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
       >
