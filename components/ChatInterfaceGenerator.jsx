@@ -205,8 +205,8 @@ export default function ChatInterfaceGenerator() {
 
         // Add "no text" instruction to prevent Thai text overlays
         const videoPrompt = currentPrompt
-          ? `${currentPrompt} ห้ามใส่ text ภาษาไทยหรือตัวอักษรใดๆในวิดีโอเด็ดขาด`
-          : 'Create cinematic video ห้ามใส่ text'
+          ? `${currentPrompt} อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง`
+          : 'Create cinematic video อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง'
 
         let response
         try {

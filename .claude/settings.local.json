@@ -42,7 +42,10 @@
       "WebFetch(domain:docs.kie.ai)",
       "WebFetch(domain:www.technology.org)",
       "WebFetch(domain:asyncdata.net)",
-      "WebFetch(domain:fastvid.io)"
+      "WebFetch(domain:fastvid.io)",
+      "WebFetch(domain:help.openai.com)",
+      "WebFetch(domain:community.openai.com)",
+      "WebFetch(domain:superprompt.com)"
     ],
     "deny": [],
     "ask": []
