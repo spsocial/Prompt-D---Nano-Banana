@@ -270,8 +270,39 @@ export default async function handler(req, res) {
     }
 
     if (!videoUrl) {
-      console.error('❌ Timeout: Video not ready after 10 minutes')
-      throw new Error('Timeout: Video generation took too long (>10 minutes)')
+      console.log('⏰ Timeout: Video not ready after 10 minutes - creating pending task')
+
+      // Create pending video task for user to check later
+      try {
+        await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/video-tasks/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            taskId,
+            model: modelName,
+            mode: image ? 'image-to-video' : 'text-to-video',
+            prompt: prompt || 'Image to video',
+            sourceImage: image || null,
+            duration: duration,
+            aspectRatio: aspectRatio,
+            creditsUsed: duration
+          })
+        });
+        console.log('✅ Created pending task record');
+      } catch (err) {
+        console.error('⚠️ Failed to create pending task:', err);
+      }
+
+      // Return pending status with taskId (NOT an error!)
+      return res.status(202).json({
+        success: true,
+        isPending: true,
+        taskId: taskId,
+        message: 'วิดีโอกำลังสร้างอยู่ กรุณารอสักครู่แล้วเช็คสถานะอีกครั้ง',
+        checkStatusUrl: `/api/video-tasks/check`,
+        suggestion: 'คุณสามารถปิดหน้านี้ได้ และกลับมาเช็คสถานะทีหลัง'
+      });
     }
 
     console.log(`🎉 KIE.AI video generation complete!`)

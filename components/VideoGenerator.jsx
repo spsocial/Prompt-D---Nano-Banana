@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Film, Loader2, Play, Download, X, Image as ImageIcon, Type } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import useStore from '../lib/store'
+import PendingVideos from './PendingVideos'
 
 export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', model = 'sora-2' }) {
   // Sora models now support image-to-video with max_tokens parameter
@@ -258,8 +259,30 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
         }
 
         const data = await response.json()
-        console.log('✅ Video generated:', data)
+        console.log('✅ Video API response:', data)
 
+        // Check if video is pending (timeout case)
+        if (data.isPending) {
+          console.log('⏰ Video is pending, task saved for later checking')
+
+          // Set special pending result
+          setVideoResult({
+            ...data,
+            isPending: true,
+            message: data.message || 'วิดีโอกำลังสร้างอยู่'
+          })
+
+          // Don't show success popup, show pending message instead
+          setError({
+            message: data.message || 'วิดีโอกำลังสร้างอยู่ กรุณาเช็คสถานะในภายหลัง',
+            isPending: true,
+            taskId: data.taskId
+          })
+
+          return // Exit early, don't track or save to history yet
+        }
+
+        // Normal success case
         setVideoResult(data)
         setShowSuccessPopup(true) // Show success popup
 
@@ -1247,6 +1270,9 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
           </p>
         </div>
       </div>
+
+      {/* Pending Videos Section */}
+      <PendingVideos userId={typeof window !== 'undefined' ? localStorage.getItem('nano_user_id') : null} />
     </div>
   )
 }

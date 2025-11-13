@@ -163,6 +163,32 @@ model VideoError {
   @@index([createdAt])
 }
 
+// Pending video tasks (for handling timeouts and background processing)
+model PendingVideo {
+  id            String   @id @default(cuid())
+  userId        String
+  taskId        String   @unique  // KIE.AI task ID
+  model         String   // sora-2, sora-2-pro, etc.
+  mode          String   // text-to-video, image-to-video
+  prompt        String?  @db.Text
+  sourceImage   String?  @db.Text // Base64 image for image-to-video
+  duration      Int      // 10 or 15 seconds
+  aspectRatio   String   // 16:9, 9:16, 1:1
+  creditsUsed   Int      // Credits deducted
+  status        String   @default("pending") // pending, processing, completed, failed, cancelled
+  videoUrl      String?  @db.Text // URL when completed
+  error         String?  @db.Text // Error message if failed
+  lastChecked   DateTime @default(now()) // Last status check time
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([taskId])
+  @@index([status])
+  @@index([createdAt])
+}
+
 // Daily statistics (aggregated data)
 model DailyStats {
   id            String   @id @default(cuid())
