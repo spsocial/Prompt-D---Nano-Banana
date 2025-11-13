@@ -100,7 +100,9 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
       }
 
       const data = await response.json()
-      setGeneratedScript(data.script)
+      // ใส่บทพูดที่ AI สร้างลงใน textarea ให้ผู้ใช้แก้ไขได้
+      setScript(data.script)
+      setGeneratedScript('')
     } catch (error) {
       console.error('Error analyzing:', error)
       alert('เกิดข้อผิดพลาดในการวิเคราะห์: ' + error.message)
@@ -111,7 +113,7 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
 
   const buildFinalPrompt = () => {
     const template = ADS_TEMPLATES[styleTemplate]
-    const finalScript = generatedScript || script || 'สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ')
+    const finalScript = script || 'สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ')
     const styleName = styleTemplate === 'cgi' ? 'CGI' : styleTemplate === 'cinematic' ? 'Cinematic' : 'Minimalist'
 
     // Duration constraint: 10s -> max 9s speech, 15s -> max 14s speech
@@ -145,7 +147,7 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
     }
 
     const finalPrompt = buildFinalPrompt()
-    const finalScript = generatedScript || script || 'สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ')
+    const finalScript = script || 'สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ')
 
     onSubmit({
       image: selectedImage,
@@ -177,8 +179,7 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
     return Math.ceil(thaiChars / 3) + englishWords
   }
 
-  const displayScript = generatedScript || script
-  const wordCount = displayScript ? getWordCount(displayScript) : 0
+  const wordCount = script ? getWordCount(script) : 0
   const recommendedWords = duration === 10 ? '25-30 คำ' : '40-45 คำ'
 
   return (
@@ -435,16 +436,16 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
           </div>
 
           {/* Script Preview */}
-          {(generatedScript || script || productName) && (
-            <div className="bg-[#0a0a0a] border border-gray-700 rounded-xl p-4">
+          {script && (
+            <div className="bg-[#0a0a0a] border border-green-900/30 rounded-xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-white">📜 ตัวอย่างบทพูดที่จะใช้:</h3>
+                <h3 className="text-sm font-semibold text-green-400">✅ บทพูดที่จะใช้:</h3>
                 <span className="text-xs text-gray-400">
                   {wordCount} คำ (แนะนำ: {recommendedWords})
                 </span>
               </div>
               <p className="text-sm text-gray-300 leading-relaxed">
-                "{displayScript || `สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย${gender === 'female' ? 'ค่ะ' : 'ครับ'}`}"
+                "{script}"
               </p>
             </div>
           )}
