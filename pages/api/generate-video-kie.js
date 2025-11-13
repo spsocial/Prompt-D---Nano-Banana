@@ -7,7 +7,7 @@ export const config = {
     },
     responseLimit: false,
   },
-  maxDuration: 300, // 5 minutes timeout for video generation
+  maxDuration: 600, // 10 minutes timeout for video generation
 }
 
 export default async function handler(req, res) {
@@ -152,7 +152,7 @@ export default async function handler(req, res) {
     console.log(`✅ Task created: ${taskId}`)
 
     // Step 2: Poll for results
-    const maxAttempts = 60 // Max 5 minutes (60 * 5 seconds)
+    const maxAttempts = 120 // Max 10 minutes (120 * 5 seconds)
     let attempts = 0
     let videoUrl = null
 
@@ -270,8 +270,8 @@ export default async function handler(req, res) {
     }
 
     if (!videoUrl) {
-      console.error('❌ Timeout: Video not ready after 5 minutes')
-      throw new Error('Timeout: Video generation took too long (>5 minutes)')
+      console.error('❌ Timeout: Video not ready after 10 minutes')
+      throw new Error('Timeout: Video generation took too long (>10 minutes)')
     }
 
     console.log(`🎉 KIE.AI video generation complete!`)
