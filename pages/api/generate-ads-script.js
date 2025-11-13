@@ -109,8 +109,17 @@ ${userInput ? `คีย์เวิร์ดที่ต้องใช้: ${u
     // Clean up the script (remove quotes if present, trim whitespace)
     script = script.trim().replace(/^["']|["']$/g, '')
 
-    // IMPORTANT: Replace old wrong spelling "ตระกร้า" (with ร) to correct "ตระก้า" (without ร)
-    script = script.replace(/ตระกร้า/g, 'ตระก้า')
+    // IMPORTANT: Fix ALL wrong spellings to correct "ตระก้า"
+    // Gemini generates multiple wrong versions:
+    // - "ตะกร้า" (missing ร at ต)
+    // - "ตระกร้า" (wrong ร in middle)
+    script = script.replace(/ตะกร้า/g, 'ตระก้า')     // Fix: ตะกร้า → ตระก้า
+    script = script.replace(/ตระกร้า/g, 'ตระก้า')    // Fix: ตระกร้า → ตระก้า
+
+    // Remove duplicate ending phrases (Gemini sometimes generates the ending twice)
+    // Match patterns like: "จิ้มที่ตระก้าได้เลย[ค่ะ/ครับ][!]? จิ้มที่ตระก้าได้เลย[ค่ะ/ครับ][!]?"
+    const duplicatePattern = /(จิ้มที่ตระก้าได้เลย(?:ค่ะ|ครับ)!?)\s+\1/g
+    script = script.replace(duplicatePattern, '$1')
 
     // Ensure it ends with the required suffix (check if it already ends with it to prevent doubling)
     const endsWithPhrase = script.endsWith('จิ้มที่ตระก้าได้เลยค่ะ') ||
