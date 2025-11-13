@@ -574,18 +574,10 @@ export default function AdminDashboard() {
                   {/* Video Models Breakdown */}
                   <div className="mb-6">
                     <p className="text-sm font-medium text-gray-700 mb-2">วิดีโอแยกตามโมเดล:</p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 gap-2">
                       <div className="bg-gray-50 p-3 rounded-lg">
-                        <p className="text-xs text-gray-600">Sora 2</p>
+                        <p className="text-xs text-gray-600">Sora 2 (All)</p>
                         <p className="text-lg font-semibold text-gray-800">{historicalData.totals.videosSora2}</p>
-                      </div>
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <p className="text-xs text-gray-600">Sora 2 HD</p>
-                        <p className="text-lg font-semibold text-gray-800">{historicalData.totals.videosSora2HD}</p>
-                      </div>
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <p className="text-xs text-gray-600">Veo3</p>
-                        <p className="text-lg font-semibold text-gray-800">{historicalData.totals.videosVeo3}</p>
                       </div>
                     </div>
                   </div>
@@ -601,8 +593,6 @@ export default function AdminDashboard() {
                             <th className="p-2">ภาพ</th>
                             <th className="p-2">วิดีโอ</th>
                             <th className="p-2">Sora 2</th>
-                            <th className="p-2">Sora 2 HD</th>
-                            <th className="p-2">Veo3</th>
                             <th className="p-2">Error</th>
                             <th className="p-2">User ใหม่</th>
                             <th className="p-2">รายได้</th>
@@ -615,8 +605,6 @@ export default function AdminDashboard() {
                               <td className="p-2">{day.images}</td>
                               <td className="p-2 font-semibold text-red-600">{day.videos}</td>
                               <td className="p-2">{day.videosSora2}</td>
-                              <td className="p-2">{day.videosSora2HD}</td>
-                              <td className="p-2">{day.videosVeo3}</td>
                               <td className="p-2 text-orange-600">{day.videoErrors}</td>
                               <td className="p-2">{day.newUsers}</td>
                               <td className="p-2 text-green-600">{formatCurrency(day.revenue)}</td>
@@ -701,8 +689,6 @@ export default function AdminDashboard() {
                           <th className="p-2">ภาพ</th>
                           <th className="p-2">วิดีโอ</th>
                           <th className="p-2">Sora 2</th>
-                          <th className="p-2">Sora 2 HD</th>
-                          <th className="p-2">Veo3</th>
                           <th className="p-2">Error</th>
                           <th className="p-2">User ใหม่</th>
                         </tr>
@@ -723,8 +709,6 @@ export default function AdminDashboard() {
                               <td className="p-2">{month.images}</td>
                               <td className="p-2 font-semibold text-red-600">{month.videos}</td>
                               <td className="p-2">{month.videosSora2}</td>
-                              <td className="p-2">{month.videosSora2HD}</td>
-                              <td className="p-2">{month.videosVeo3}</td>
                               <td className="p-2 text-orange-600">{month.videoErrors}</td>
                               <td className="p-2">{month.newUsers}</td>
                             </tr>

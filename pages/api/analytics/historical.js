@@ -42,13 +42,11 @@ export default async function handler(req, res) {
       }
     });
 
-    // Aggregate totals for the period
+    // Aggregate totals for the period (only Sora 2 now)
     const totals = {
       images: 0,
       videos: 0,
       videosSora2: 0,
-      videosSora2HD: 0,
-      videosVeo3: 0,
       videoErrors: 0,
       revenue: 0,
       transactions: 0,
@@ -59,22 +57,18 @@ export default async function handler(req, res) {
       totals.images += stat.totalImages || 0;
       totals.videos += stat.totalVideos || 0;
       totals.videosSora2 += stat.videosSora2 || 0;
-      totals.videosSora2HD += stat.videosSora2HD || 0;
-      totals.videosVeo3 += stat.videosVeo3 || 0;
       totals.videoErrors += stat.videoErrors || 0;
       totals.revenue += stat.totalRevenue || 0;
       totals.transactions += stat.totalTransactions || 0;
       totals.newUsers += stat.newUsers || 0;
     });
 
-    // Format data for charts
+    // Format data for charts (only Sora 2 now)
     const chartData = dailyStats.map(stat => ({
       date: stat.date.toISOString().split('T')[0],
       images: stat.totalImages || 0,
       videos: stat.totalVideos || 0,
       videosSora2: stat.videosSora2 || 0,
-      videosSora2HD: stat.videosSora2HD || 0,
-      videosVeo3: stat.videosVeo3 || 0,
       videoErrors: stat.videoErrors || 0,
       revenue: stat.totalRevenue || 0,
       transactions: stat.totalTransactions || 0,

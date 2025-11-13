@@ -58,13 +58,11 @@ export default async function handler(req, res) {
         }
       });
 
-      // Aggregate stats from daily data
+      // Aggregate stats from daily data (only Sora 2 now)
       const totals = {
         images: 0,
         videos: 0,
         videosSora2: 0,
-        videosSora2HD: 0,
-        videosVeo3: 0,
         videoErrors: 0,
         newUsers: 0
       };
@@ -73,8 +71,6 @@ export default async function handler(req, res) {
         totals.images += day.totalImages || 0;
         totals.videos += day.totalVideos || 0;
         totals.videosSora2 += day.videosSora2 || 0;
-        totals.videosSora2HD += day.videosSora2HD || 0;
-        totals.videosVeo3 += day.videosVeo3 || 0;
         totals.videoErrors += day.videoErrors || 0;
         totals.newUsers += day.newUsers || 0;
       });
