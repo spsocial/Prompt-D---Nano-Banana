@@ -109,8 +109,16 @@ ${userInput ? `คีย์เวิร์ดที่ต้องใช้: ${u
     // Clean up the script (remove quotes if present, trim whitespace)
     script = script.trim().replace(/^["']|["']$/g, '')
 
-    // Ensure it ends with the required suffix
-    if (!script.includes('จิ้มที่ตระก้า')) {
+    // Ensure it ends with the required suffix (check if it already ends with it to prevent doubling)
+    const endsWithPhrase = script.endsWith('จิ้มที่ตระก้าได้เลยค่ะ') ||
+                          script.endsWith('จิ้มที่ตระก้าได้เลยครับ') ||
+                          script.endsWith('จิ้มที่ตระก้าได้เลยค่ะ!') ||
+                          script.endsWith('จิ้มที่ตระก้าได้เลยครับ!') ||
+                          script.endsWith('จิ้มที่ตระก้าได้เลย') ||
+                          script.endsWith('จิ้มที่ตระก้าได้เลย!')
+
+    if (!endsWithPhrase) {
+      // Only append if not already at the end
       script += ` จิ้มที่ตระก้าได้เลย${genderSuffix}!`
     }
 

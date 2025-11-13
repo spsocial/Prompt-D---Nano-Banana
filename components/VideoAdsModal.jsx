@@ -33,6 +33,7 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
   const [script, setScript] = useState('')
   const [generatedScript, setGeneratedScript] = useState('')
   const [styleTemplate, setStyleTemplate] = useState('cgi')
+  const [cameo, setCameo] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const fileInputRef = useRef(null)
 
@@ -113,10 +114,18 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
     const finalScript = generatedScript || script || 'สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ')
     const genderText = gender === 'female' ? 'ผู้หญิง' : 'ผู้ชาย'
 
-    return template.format
+    let prompt = template.format
       .replace('{productName}', productName)
       .replace('{gender}', genderText)
       .replace('{script}', finalScript)
+
+    // Add cameo if provided (format: @username)
+    if (cameo.trim()) {
+      const cleanCameo = cameo.trim().startsWith('@') ? cameo.trim() : `@${cameo.trim()}`
+      prompt = `${prompt} Starring: ${cleanCameo}`
+    }
+
+    return prompt
   }
 
   const handleSubmit = () => {
@@ -153,6 +162,7 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
     setScript('')
     setGeneratedScript('')
     setStyleTemplate('cgi')
+    setCameo('')
   }
 
   const getWordCount = (text) => {
@@ -235,6 +245,7 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
                     <span>อัพโหลดรูปภาพ</span>
                   </button>
                   <p className="text-xs text-gray-500 mt-2">รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 10MB</p>
+                  <p className="text-xs text-[#FE2C55] mt-1 font-medium">⚠️ อย่าใช้ภาพที่มีหน้าคนหรือเด็ก</p>
                 </div>
               )}
             </div>
@@ -270,6 +281,21 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
               placeholder="เช่น: ขนมโอโจ้, น้ำผลไม้ดอกไม้ทิพ"
               className="w-full px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F2EA]"
             />
+          </div>
+
+          {/* Cameo (Optional) */}
+          <div>
+            <label className="block text-sm font-semibold text-white mb-2">
+              👤 Cameo (นายแบบ/นางแบบ Sora 2)
+            </label>
+            <input
+              type="text"
+              value={cameo}
+              onChange={(e) => setCameo(e.target.value)}
+              placeholder="เช่น: @filmsp127 (ไม่ใส่ก็ได้)"
+              className="w-full px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F2EA]"
+            />
+            <p className="text-xs text-gray-400 mt-1">ใส่ Cameo ID ของคุณจาก Sora 2 App เพื่อใช้ตัวละครที่สร้างไว้</p>
           </div>
 
           {/* Gender and Duration */}

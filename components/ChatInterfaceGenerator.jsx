@@ -203,13 +203,18 @@ export default function ChatInterfaceGenerator() {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000) // 15 minutes
 
+        // Add "no text" instruction to prevent Thai text overlays
+        const videoPrompt = currentPrompt
+          ? `${currentPrompt} ห้ามใส่ text ภาษาไทยหรือตัวอักษรใดๆในวิดีโอเด็ดขาด`
+          : 'Create cinematic video ห้ามใส่ text'
+
         let response
         try {
           response = await fetch('/api/generate-video-kie-primary', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              prompt: currentPrompt || 'Create video',
+              prompt: videoPrompt,
               image: currentImage,
               duration: duration,
               aspectRatio: aspectRatio,
@@ -339,14 +344,16 @@ export default function ChatInterfaceGenerator() {
       console.error('Generation error:', error)
 
       // Refund credits on error
-      await refundCredits(requiredCredits, error.message || 'Generation failed')
+      const refundSuccess = await refundCredits(requiredCredits, error.message || 'Generation failed')
 
       setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
 
       const errorMessage = {
         id: Date.now() + 3,
         type: 'error',
-        message: error.message + ' (เครดิตถูกคืนให้อัตโนมัติแล้ว)'
+        message: error.message + (refundSuccess
+          ? ' (เครดิตถูกคืนให้อัตโนมัติแล้ว)'
+          : ' ⚠️ กรุณาติดต่อแอดมินเพื่อคืนเครดิต')
       }
       setMessages(prev => [...prev, errorMessage])
     } finally {
@@ -469,14 +476,16 @@ export default function ChatInterfaceGenerator() {
       console.error('Video ads generation error:', error)
 
       // Refund credits on error
-      await refundCredits(requiredCredits, error.message || 'Video ads generation failed')
+      const refundSuccess = await refundCredits(requiredCredits, error.message || 'Video ads generation failed')
 
       setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
 
       const errorMessage = {
         id: Date.now() + 3,
         type: 'error',
-        message: error.message + ' (เครดิตถูกคืนให้อัตโนมัติแล้ว)'
+        message: error.message + (refundSuccess
+          ? ' (เครดิตถูกคืนให้อัตโนมัติแล้ว)'
+          : ' ⚠️ กรุณาติดต่อแอดมินเพื่อคืนเครดิต')
       }
       setMessages(prev => [...prev, errorMessage])
     } finally {
