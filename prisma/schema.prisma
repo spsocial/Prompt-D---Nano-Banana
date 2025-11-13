@@ -178,6 +178,10 @@ model DailyStats {
   totalRevenue  Float    @default(0)
   totalTransactions Int  @default(0)
 
+  // API Costs tracking
+  apiCostImages Float    @default(0)  // Total API cost for images (in baht)
+  apiCostVideos Float    @default(0)  // Total API cost for videos (in baht)
+
   createdAt     DateTime @default(now())
 
   @@index([date])
@@ -197,6 +201,10 @@ model MonthlyStats {
   videoErrors   Int      @default(0)
   totalRevenue  Float    @default(0)
   totalTransactions Int  @default(0)
+
+  // API Costs tracking
+  apiCostImages Float    @default(0)  // Total API cost for images (in baht)
+  apiCostVideos Float    @default(0)  // Total API cost for videos (in baht)
 
   createdAt     DateTime @default(now())
 

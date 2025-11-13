@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       aspectRatio = '16:9',
       model = 'sora-2',
       removeWatermark = false,
-      useFallback = true // Enable fallback to CometAPI by default
+      userId = 'anonymous' // Add userId for tracking
     } = req.body
 
     if (!prompt && !image) {
@@ -35,10 +35,6 @@ export default async function handler(req, res) {
 
     if (!kieApiKey) {
       console.log('⚠️ KIE.AI API Key not found')
-      if (useFallback) {
-        console.log('🔄 Falling back to CometAPI...')
-        return fallbackToCometAPI(req, res)
-      }
       return res.status(400).json({
         error: 'KIE.AI API key is required',
         message: 'กรุณาตั้งค่า KIE_API_KEY ใน Railway environment variables'
@@ -83,10 +79,6 @@ export default async function handler(req, res) {
         // For now, we'll need to upload to a temporary storage
         // This is a limitation - KIE.AI requires URLs, not base64
         console.log('⚠️ KIE.AI requires image URL, not base64')
-        if (useFallback) {
-          console.log('🔄 Falling back to CometAPI for base64 images...')
-          return fallbackToCometAPI(req, res)
-        }
         return res.status(400).json({
           error: 'KIE.AI requires image URLs, not base64',
           suggestion: 'กรุณาใช้ CometAPI สำหรับการอัพโหลดภาพจากเครื่อง'
@@ -126,12 +118,6 @@ export default async function handler(req, res) {
         errorMessage = errorData.error || errorData.message || errorMessage
       } catch (e) {
         errorMessage = errorText.substring(0, 200)
-      }
-
-      // Fallback to CometAPI on error
-      if (useFallback) {
-        console.log('🔄 KIE.AI failed, falling back to CometAPI...')
-        return fallbackToCometAPI(req, res)
       }
 
       throw new Error(errorMessage)
@@ -285,15 +271,36 @@ export default async function handler(req, res) {
 
     if (!videoUrl) {
       console.error('❌ Timeout: Video not ready after 5 minutes')
-      if (useFallback) {
-        console.log('🔄 Timeout, falling back to CometAPI...')
-        return fallbackToCometAPI(req, res)
-      }
       throw new Error('Timeout: Video generation took too long (>5 minutes)')
     }
 
     console.log(`🎉 KIE.AI video generation complete!`)
     console.log(`📹 Video URL: ${videoUrl}`)
+
+    // Track video generation with cost (KIE Sora 2 cost: 5.1 baht per video)
+    try {
+      const trackResponse = await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/track-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'success',
+          data: {
+            userId,
+            model: modelName,
+            mode: image ? 'image-to-video' : 'text-to-video',
+            prompt: prompt || 'Image to video',
+            duration: duration,
+            aspectRatio: aspectRatio,
+            creditsUsed: duration, // duration = credits used
+            apiCost: 5.1 // KIE Sora 2 cost in baht
+          }
+        })
+      })
+      console.log('📊 Video generation tracked successfully')
+    } catch (trackError) {
+      console.error('⚠️ Failed to track video generation:', trackError)
+      // Don't fail the request if tracking fails
+    }
 
     // Return success response
     res.status(200).json({
@@ -320,148 +327,4 @@ export default async function handler(req, res) {
       shouldRefund: true
     })
   }
-}
-
-// Fallback function to use CometAPI
-async function fallbackToCometAPI(req, res) {
-  console.log('🔄 Executing fallback to CometAPI...')
-
-  const {
-    prompt,
-    image,
-    duration = 10,
-    resolution = '720p',
-    aspectRatio = '16:9',
-    model
-  } = req.body
-
-  // Use CometAPI key
-  const cometApiKey = process.env.COMET_API_KEY
-
-  if (!cometApiKey) {
-    return res.status(400).json({
-      error: 'No API keys available',
-      message: 'Both KIE.AI and CometAPI keys are missing'
-    })
-  }
-
-  console.log(`🎬 Fallback: Starting Sora-2 via CometAPI...`)
-
-  // Determine CometAPI model
-  const cometModel = resolution === '1080p' ? 'sora-2-hd' : 'sora-2'
-
-  // Map aspect ratio to size
-  let size
-  if (aspectRatio === '16:9') {
-    size = resolution === '1080p' ? '1792x1024' : '1280x720'
-  } else if (aspectRatio === '9:16') {
-    size = resolution === '1080p' ? '1024x1792' : '720x1280'
-  } else {
-    size = '1280x720'
-  }
-
-  const cleanPrompt = (prompt || 'Create a cinematic video')
-
-  let messageContent
-  if (image) {
-    messageContent = [
-      { type: 'text', text: cleanPrompt },
-      { type: 'image_url', image_url: { url: image } }
-    ]
-  } else {
-    messageContent = cleanPrompt
-  }
-
-  const requestPayload = {
-    model: cometModel,
-    stream: true,
-    max_tokens: 3000,
-    size: size,
-    seconds: String(duration),
-    messages: [{ role: 'user', content: messageContent }]
-  }
-
-  console.log('🚀 Fallback: Sending request to CometAPI...')
-
-  const createResponse = await fetch('https://api.cometapi.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${cometApiKey}`,
-      'Content-Type': 'application/json',
-      'Accept': '*/*',
-      'Connection': 'keep-alive'
-    },
-    body: JSON.stringify(requestPayload)
-  })
-
-  if (!createResponse.ok) {
-    const errorText = await createResponse.text()
-    throw new Error(`CometAPI fallback failed: ${errorText.substring(0, 200)}`)
-  }
-
-  // Read streaming response (simplified version)
-  const reader = createResponse.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-  let finalUrl = null
-  let accumulatedContent = ''
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() || ''
-
-    for (const line of lines) {
-      if (!line.trim() || line.startsWith('data: [DONE]')) continue
-
-      if (line.startsWith('data: ')) {
-        try {
-          const jsonStr = line.substring(6)
-          const data = JSON.parse(jsonStr)
-          if (data.choices?.[0]?.delta?.content) {
-            accumulatedContent += data.choices[0].delta.content
-          }
-        } catch (e) {}
-      }
-
-      // Extract URL
-      const urlMatch = line.match(/https?:\/\/[^\s\)\]]+\.mp4[^\s\)\]]*/)
-      if (urlMatch) {
-        finalUrl = urlMatch[0]
-        console.log(`✅ Fallback URL found: ${finalUrl}`)
-        break
-      }
-    }
-
-    if (finalUrl) break
-  }
-
-  if (!finalUrl && accumulatedContent) {
-    const urlMatch = accumulatedContent.match(/https?:\/\/[^\s\)\]]+\.mp4[^\s\)\]]*/)
-    if (urlMatch) {
-      finalUrl = urlMatch[0]
-    }
-  }
-
-  if (!finalUrl) {
-    throw new Error('Fallback: No video URL found from CometAPI')
-  }
-
-  console.log(`🎉 Fallback successful via CometAPI!`)
-
-  return res.status(200).json({
-    success: true,
-    videoUrl: finalUrl,
-    duration: duration,
-    resolution: resolution,
-    aspectRatio: aspectRatio,
-    mode: image ? 'image-to-video' : 'text-to-video',
-    model: cometModel,
-    message: '✨ Video generated via CometAPI (Fallback)',
-    provider: 'CometAPI (Fallback)',
-    wasFallback: true
-  })
 }

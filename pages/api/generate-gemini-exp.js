@@ -1,4 +1,5 @@
 import { safeLog, truncateDataUri } from '../../lib/logUtils';
+import { trackImageGeneration } from '../../lib/analytics-db';
 
 export const config = {
   api: {
@@ -18,7 +19,8 @@ export default async function handler(req, res) {
       prompt,
       image, // optional - for image-to-image
       aspectRatio = '1:1',
-      apiKey
+      apiKey,
+      userId = 'anonymous' // Add userId for tracking
     } = req.body
 
     if (!prompt) {
@@ -162,6 +164,20 @@ export default async function handler(req, res) {
         details: 'Gemini 2.0 Exp might not have generated an image',
         suggestion: 'Try different prompt or check API permissions'
       })
+    }
+
+    // Track image generation with cost (NanoBanana cost: ~1.2 baht per image)
+    try {
+      await trackImageGeneration(
+        userId,
+        'NanoBanana AI', // style
+        prompt,
+        1.2 // API cost in baht
+      )
+      console.log('📊 Image generation tracked successfully')
+    } catch (trackError) {
+      console.error('⚠️ Failed to track image generation:', trackError)
+      // Don't fail the request if tracking fails
     }
 
     // Success!

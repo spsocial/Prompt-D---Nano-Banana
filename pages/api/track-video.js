@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
     if (action === 'success') {
       // Track successful video generation
-      const { userId, model, mode, prompt, duration, aspectRatio, creditsUsed } = data;
+      const { userId, model, mode, prompt, duration, aspectRatio, creditsUsed, apiCost = 0 } = data;
 
       const result = await trackVideoGeneration(
         userId,
@@ -20,7 +20,8 @@ export default async function handler(req, res) {
         prompt || '',
         duration || 10,
         aspectRatio || '16:9',
-        creditsUsed || 10
+        creditsUsed || 10,
+        apiCost  // Add API cost parameter
       );
 
       return res.status(200).json({ success: result });

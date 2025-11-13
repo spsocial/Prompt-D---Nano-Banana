@@ -3,7 +3,7 @@ import {
   Users, TrendingUp, DollarSign, Image,
   Calendar, Activity, Award, RefreshCw,
   Download, ChevronDown, ChevronUp, Film, AlertTriangle,
-  BarChart3, Clock
+  BarChart3, Clock, TrendingDown, Wallet
 } from 'lucide-react';
 import { getAnalyticsSummary, getDetailedStats, exportAnalyticsData } from '../lib/analytics-client';
 
@@ -209,7 +209,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         {/* Total Users Card */}
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl text-white shadow-lg">
           <div className="flex justify-between items-start">
@@ -263,6 +263,26 @@ export default function AdminDashboard() {
               </p>
             </div>
             <TrendingUp className="h-8 w-8 text-purple-200" />
+          </div>
+        </div>
+
+        {/* Profit Card */}
+        <div className={`bg-gradient-to-br p-6 rounded-2xl text-white shadow-lg ${
+          stats.profit?.today >= 0
+            ? 'from-emerald-500 to-emerald-600'
+            : 'from-red-500 to-red-600'
+        }`}>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className={`text-sm ${stats.profit?.today >= 0 ? 'text-emerald-100' : 'text-red-100'}`}>
+                กำไรวันนี้
+              </p>
+              <p className="text-3xl font-bold mt-1">{formatCurrency(stats.profit?.today || 0)}</p>
+              <p className={`text-xs mt-2 ${stats.profit?.today >= 0 ? 'text-emerald-100' : 'text-red-100'}`}>
+                margin: {stats.profit?.marginToday || 0}%
+              </p>
+            </div>
+            <Wallet className={`h-8 w-8 ${stats.profit?.today >= 0 ? 'text-emerald-200' : 'text-red-200'}`} />
           </div>
         </div>
 
@@ -355,6 +375,60 @@ export default function AdminDashboard() {
                 <p className="text-2xl font-bold text-purple-600">{formatCurrency(stats.revenue.total)}</p>
               </div>
             </div>
+
+            {/* Costs and Profit Section */}
+            {stats.costs && stats.profit && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h4 className="text-md font-semibold text-gray-700 mb-4">📊 ต้นทุนและกำไร (วันนี้)</h4>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* Cost Cards */}
+                  <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                    <p className="text-sm text-gray-600">ต้นทุนภาพ</p>
+                    <p className="text-xl font-bold text-orange-600">{formatCurrency(stats.costs.imagesToday || 0)}</p>
+                    <p className="text-xs text-gray-500">API: NanoBanana (1.2฿/ภาพ)</p>
+                  </div>
+                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                    <p className="text-sm text-gray-600">ต้นทุนวิดีโอ</p>
+                    <p className="text-xl font-bold text-red-600">{formatCurrency(stats.costs.videosToday || 0)}</p>
+                    <p className="text-xs text-gray-500">API: Sora 2 (5.1฿/คลิป)</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-300">
+                    <p className="text-sm text-gray-600">ต้นทุนรวมวันนี้</p>
+                    <p className="text-xl font-bold text-gray-700">{formatCurrency(stats.costs.totalToday || 0)}</p>
+                  </div>
+                  <div className={`p-4 rounded-lg border-2 ${
+                    (stats.profit.today || 0) >= 0
+                      ? 'bg-emerald-50 border-emerald-300'
+                      : 'bg-red-50 border-red-300'
+                  }`}>
+                    <p className="text-sm text-gray-600">กำไรสุทธิวันนี้</p>
+                    <p className={`text-xl font-bold ${
+                      (stats.profit.today || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'
+                    }`}>
+                      {formatCurrency(stats.profit.today || 0)}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Margin: {stats.profit.marginToday || 0}%
+                    </p>
+                  </div>
+                </div>
+
+                {/* Summary Formula */}
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-semibold">สูตร:</span> กำไร = รายได้ ({formatCurrency(stats.revenue.today)})
+                    - ต้นทุนภาพ ({formatCurrency(stats.costs.imagesToday || 0)})
+                    - ต้นทุนวิดีโอ ({formatCurrency(stats.costs.videosToday || 0)})
+                    = <span className={`font-bold ${
+                      (stats.profit.today || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'
+                    }`}>
+                      {formatCurrency(stats.profit.today || 0)}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -420,7 +494,7 @@ export default function AdminDashboard() {
                   <p className="text-sm text-gray-600">วิดีโอ Error วันนี้</p>
                   <p className="text-3xl font-bold text-orange-600">{stats.videos.errors}</p>
                   <p className="text-xs text-orange-500 mt-1">
-                    สำหรับ claim credits จาก CometAPI
+                    เครดิตจะถูกคืนอัตโนมัติ
                   </p>
                 </div>
               </div>
@@ -563,7 +637,7 @@ export default function AdminDashboard() {
                     <div className="bg-orange-50 p-4 rounded-lg">
                       <p className="text-sm text-gray-600">วิดีโอ Error</p>
                       <p className="text-2xl font-bold text-orange-600">{historicalData.totals.videoErrors}</p>
-                      <p className="text-xs text-orange-500 mt-1">สำหรับ claim CometAPI</p>
+                      <p className="text-xs text-orange-500 mt-1">เครดิตคืนอัตโนมัติ</p>
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg">
                       <p className="text-sm text-gray-600">รายได้</p>
