@@ -1,4 +1,5 @@
 import { safeStringify } from '../../lib/logUtils';
+import { PrismaClient } from '@prisma/client';
 
 // Helper function to upload base64 image to Cloudinary (with retry)
 async function uploadToCloudinary(base64Image, retries = 3) {
@@ -84,7 +85,8 @@ export default async function handler(req, res) {
       resolution = '720p',
       aspectRatio = '16:9',
       allowWatermark = false,
-      model = 'sora-2'
+      model = 'sora-2',
+      userId = 'anonymous'
     } = req.body
 
     if (!prompt && !image) {
@@ -190,6 +192,29 @@ export default async function handler(req, res) {
 
     console.log(`✅ Task created: ${taskId}`)
 
+    // Save pending task to database immediately (before polling)
+    try {
+      await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/video-tasks/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          taskId,
+          model: 'sora-2',
+          mode: image ? 'image-to-video' : 'text-to-video',
+          prompt: prompt || 'Image to video',
+          sourceImage: image || null,
+          duration: duration,
+          aspectRatio: aspectRatio,
+          creditsUsed: duration
+        })
+      });
+      console.log('✅ Saved pending task to database');
+    } catch (err) {
+      console.error('⚠️ Failed to save pending task:', err);
+      // Don't fail request if database save fails
+    }
+
     // Step 2: Poll for results
     const maxAttempts = 120 // Max 10 minutes (120 * 5 seconds)
     let attempts = 0
@@ -255,6 +280,19 @@ export default async function handler(req, res) {
           if (parsed && parsed.resultUrls && Array.isArray(parsed.resultUrls) && parsed.resultUrls.length > 0) {
             videoUrl = parsed.resultUrls[0]
             console.log(`✅ Video ready: ${videoUrl}`)
+
+            // Update database with completed status
+            try {
+              await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/video-tasks/check`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ taskId })
+              });
+              console.log('✅ Updated database with completed video');
+            } catch (err) {
+              console.error('⚠️ Failed to update database:', err);
+            }
+
             break
           }
         }
@@ -268,6 +306,24 @@ export default async function handler(req, res) {
         const failMsg = statusData.data?.failMsg || 'Task failed'
         const failCode = statusData.data?.failCode || 'unknown'
         console.error(`❌ Task failed: ${failMsg} (code: ${failCode})`)
+
+        // Update database with failed status
+        try {
+          const prisma = new PrismaClient();
+          await prisma.pendingVideo.updateMany({
+            where: { taskId },
+            data: {
+              status: 'failed',
+              error: failMsg,
+              updatedAt: new Date()
+            }
+          });
+          await prisma.$disconnect();
+          console.log('✅ Updated database with failed status');
+        } catch (err) {
+          console.error('⚠️ Failed to update database:', err);
+        }
+
         throw new Error(`Task failed: ${failMsg}`)
       } else if (state === 'waiting') {
         console.log('⏳ Task still waiting/processing...')
