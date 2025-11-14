@@ -480,8 +480,7 @@ export default function ChatInterfaceGenerator() {
     setMessages(prev => [...prev, userMessage])
 
     // Close modal
-    setShowAdsModal(false)
-    setAdsPreloadedImage(null) // Clear preloaded image
+    closeVideoAdsModal()
 
     setIsGenerating(true)
     setIsGeneratingVideo(true)
