@@ -4,7 +4,7 @@ import { X, Download, Calendar, Image as ImageIcon, Maximize2, Film } from 'luci
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function History() {
-  const { history, removeFromHistory, loadHistory, setUploadedImage } = useStore()
+  const { history, removeFromHistory, loadHistory, openVideoAdsModal } = useStore()
   const [selectedImage, setSelectedImage] = useState(null)
   const [showMobileDownloadInstructions, setShowMobileDownloadInstructions] = useState(false)
 
@@ -127,22 +127,14 @@ export default function History() {
       return
     }
 
-    // Save image to store for video generation
-    setUploadedImage(item.imageUrl)
+    // Open VideoAdsModal with preloaded image
+    openVideoAdsModal(item.imageUrl)
 
-    // Scroll to top where UnifiedGenerator is
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-
-    // Store mode preference in localStorage for UnifiedGenerator to read
-    localStorage.setItem('nano_pending_video_gen', 'true')
-
-    // Close modal if open
+    // Close fullscreen modal if open
     setSelectedImage(null)
 
-    // Navigate to home page if not already there
-    if (window.location.pathname !== '/') {
-      window.location.href = '/'
-    }
+    // Scroll to top to see the modal better
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const formatDate = (dateString) => {

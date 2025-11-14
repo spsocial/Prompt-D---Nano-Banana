@@ -74,10 +74,6 @@ export default function ChatInterfaceGenerator() {
   const [showConfirmPopup, setShowConfirmPopup] = useState(false)
   const [pendingGeneration, setPendingGeneration] = useState(null)
 
-  // Video Ads Modal
-  const [showAdsModal, setShowAdsModal] = useState(false)
-  const [adsPreloadedImage, setAdsPreloadedImage] = useState(null)
-
   // Switch aspect ratio when changing mode
   useEffect(() => {
     setAspectRatio(prev => {
@@ -102,7 +98,7 @@ export default function ChatInterfaceGenerator() {
   const textareaRef = useRef(null)
   const messagesEndRef = useRef(null)
 
-  const { userId, userCredits, useCredits, refundCredits, setIsGeneratingVideo, addToHistory, addVideoToHistory } = useStore()
+  const { userId, userCredits, useCredits, refundCredits, setIsGeneratingVideo, addToHistory, addVideoToHistory, showVideoAdsModal, videoAdsPreloadedImage, openVideoAdsModal, closeVideoAdsModal } = useStore()
   const { data: session } = useSession()
   const router = useRouter()
 
@@ -441,8 +437,7 @@ export default function ChatInterfaceGenerator() {
 
   const handleOpenAdsModalWithImage = (imageUrl) => {
     setMode('video') // Switch to video mode
-    setAdsPreloadedImage(imageUrl)
-    setShowAdsModal(true)
+    openVideoAdsModal(imageUrl)
   }
 
   // Detect mobile device
@@ -924,7 +919,7 @@ export default function ChatInterfaceGenerator() {
                 {/* Video Ads Button - Only in video mode */}
                 {mode === 'video' && (
                   <button
-                    onClick={() => setShowAdsModal(true)}
+                    onClick={() => openVideoAdsModal()}
                     disabled={isGenerating}
                     className="px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg text-xs font-medium transition-all disabled:opacity-50 flex items-center gap-1"
                   >
@@ -958,13 +953,10 @@ export default function ChatInterfaceGenerator() {
 
       {/* Video Ads Modal */}
       <VideoAdsModal
-        isOpen={showAdsModal}
-        onClose={() => {
-          setShowAdsModal(false)
-          setAdsPreloadedImage(null)
-        }}
+        isOpen={showVideoAdsModal}
+        onClose={closeVideoAdsModal}
         onSubmit={handleAdsSubmit}
-        initialImage={adsPreloadedImage}
+        initialImage={videoAdsPreloadedImage}
       />
 
       {/* Confirmation Popup */}
