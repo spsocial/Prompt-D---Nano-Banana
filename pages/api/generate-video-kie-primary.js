@@ -77,17 +77,19 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  // Extract variables at top level so catch block can access them
+  const {
+    prompt,
+    image,
+    duration = 10,
+    resolution = '720p',
+    aspectRatio = '16:9',
+    allowWatermark = false,
+    model = 'sora-2',
+    userId = 'anonymous'
+  } = req.body
+
   try {
-    const {
-      prompt,
-      image,
-      duration = 10,
-      resolution = '720p',
-      aspectRatio = '16:9',
-      allowWatermark = false,
-      model = 'sora-2',
-      userId = 'anonymous'
-    } = req.body
 
     if (!prompt && !image) {
       return res.status(400).json({ error: 'Either prompt or image is required' })
