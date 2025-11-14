@@ -45,6 +45,12 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
     }
   }, [isOpen, initialImage])
 
+  // Detect mobile device
+  const isMobile = () => {
+    if (typeof window === 'undefined') return false;
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  }
+
   if (!isOpen) return null
 
   const handleImageUpload = (e) => {
@@ -512,6 +518,9 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
                       <p>• ใช้เวลาประมาณ <strong>1-3 นาที</strong></p>
                       <p>• ใช้เครดิต <strong>{duration} เครดิต</strong></p>
                       <p>• หากล้มเหลว เครดิตจะถูก<strong>คืนอัตโนมัติ</strong></p>
+                      {isMobile() && (
+                        <p className="text-red-400 font-bold">• 📱 <strong>มือถือ: อย่าพับจอขณะสร้างคลิป!</strong></p>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -151,6 +151,29 @@ export default async function handler(req, res) {
 
     console.log(`✅ Task created: ${taskId}`)
 
+    // Save pending task to database immediately (before polling)
+    try {
+      await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/video-tasks/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          taskId,
+          model: modelName,
+          mode: image ? 'image-to-video' : 'text-to-video',
+          prompt: prompt || 'Image to video',
+          sourceImage: image || null,
+          duration: duration,
+          aspectRatio: aspectRatio,
+          creditsUsed: duration
+        })
+      });
+      console.log('✅ Saved pending task to database');
+    } catch (err) {
+      console.error('⚠️ Failed to save pending task:', err);
+      // Don't fail request if database save fails
+    }
+
     // Step 2: Poll for results
     const maxAttempts = 120 // Max 10 minutes (120 * 5 seconds)
     let attempts = 0
@@ -245,6 +268,19 @@ export default async function handler(req, res) {
 
         if (videoUrl) {
           console.log(`✅ Video ready: ${videoUrl}`)
+
+          // Update database with completed status
+          try {
+            await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/video-tasks/check`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ taskId })
+            });
+            console.log('✅ Updated database with completed video');
+          } catch (err) {
+            console.error('⚠️ Failed to update database:', err);
+          }
+
           break
         } else {
           console.error('❌ Task completed but no video URL found')
@@ -254,6 +290,22 @@ export default async function handler(req, res) {
       } else if (state === 'failed' || state === 'error' || state === 'FAILED' || state === 'ERROR') {
         const errorMsg = statusData.error || statusData.errorMessage || 'Task failed'
         console.error(`❌ Task failed: ${errorMsg}`)
+
+        // Update database with failed status
+        try {
+          const prisma = (await import('../../lib/prisma')).default;
+          await prisma.pendingVideo.updateMany({
+            where: { taskId },
+            data: {
+              status: 'failed',
+              error: errorMsg,
+              updatedAt: new Date()
+            }
+          });
+          console.log('✅ Updated database with failed status');
+        } catch (err) {
+          console.error('⚠️ Failed to update database:', err);
+        }
 
         if (useFallback) {
           console.log('🔄 Task failed, falling back to CometAPI...')

@@ -229,8 +229,10 @@ export default function ChatInterfaceGenerator() {
           if (fetchError.name === 'AbortError') {
             throw new Error('⏱️ การสร้างวิดีโอใช้เวลานานเกินไป (>15 นาที) - กรุณาลองใหม่อีกครั้ง')
           }
-          // Network error
-          throw new Error('❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ - กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต')
+          // Network error (พับจอ)
+          const networkError = new Error('❌ การสร้างคลิปล้มเหลวเนื่องจากพับหน้าจอ\n\n📹 วิดีโอกำลังสร้างอยู่ในระบบ กรุณารอ 5-10 นาที แล้วติดต่อแอดมินรับลิงค์คลิป\n\n💡 เครดิตไม่ถูกคืนเพราะวิดีโอกำลังสร้างอยู่')
+          networkError.isVideoNetworkError = true // Flag to prevent refund
+          throw networkError
         }
         clearTimeout(timeoutId)
 
@@ -343,17 +345,24 @@ export default function ChatInterfaceGenerator() {
     } catch (error) {
       console.error('Generation error:', error)
 
-      // Refund credits on error
-      const refundSuccess = await refundCredits(requiredCredits, error.message || 'Generation failed')
+      // Refund credits on error (but NOT for video network errors)
+      let refundSuccess = false
+      if (!error.isVideoNetworkError) {
+        refundSuccess = await refundCredits(requiredCredits, error.message || 'Generation failed')
+      } else {
+        console.log('⚠️ Video network error - NOT refunding credits (video is still processing)')
+      }
 
       setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
 
       const errorMessage = {
         id: Date.now() + 3,
         type: 'error',
-        message: error.message + (refundSuccess
-          ? ' (เครดิตถูกคืนให้อัตโนมัติแล้ว)'
-          : ' ⚠️ กรุณาติดต่อแอดมินเพื่อคืนเครดิต')
+        message: error.message + (error.isVideoNetworkError
+          ? '' // Don't add refund message for video network errors (already in error message)
+          : refundSuccess
+            ? ' (เครดิตถูกคืนให้อัตโนมัติแล้ว)'
+            : ' ⚠️ กรุณาติดต่อแอดมินเพื่อคืนเครดิต')
       }
       setMessages(prev => [...prev, errorMessage])
     } finally {
