@@ -6,7 +6,6 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import VideoAdsModal from './VideoAdsModal'
 import FabButton from './FabButton'
-import PendingVideos from './PendingVideos'
 
 // Preset prompt styles for image generation
 const PROMPT_STYLES = {
@@ -1076,11 +1075,6 @@ export default function ChatInterfaceGenerator() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Pending Videos Section */}
-      <div className="mt-8">
-        <PendingVideos userId={userId} />
-      </div>
 
       {/* FAB Button - Contact Support */}
       <FabButton />
