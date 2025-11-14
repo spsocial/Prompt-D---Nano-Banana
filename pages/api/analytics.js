@@ -71,8 +71,8 @@ export default async function handler(req, res) {
       case 'GET':
         const { type, startDate, endDate, adminKey } = req.query;
 
-        // Simple admin authentication
-        const ADMIN_KEY = process.env.ADMIN_KEY || 'nano-admin-2024';
+        // Simple admin authentication (use correct key)
+        const ADMIN_KEY = 'nano@admin2024'; // Correct admin key
         if (adminKey !== ADMIN_KEY) {
           return res.status(401).json({
             success: false,

@@ -340,6 +340,31 @@ export default async function handler(req, res) {
     console.log(`🎉 KIE.AI video generation complete!`)
     console.log(`📹 Video URL: ${videoUrl}`)
 
+    // Track successful video generation
+    try {
+      await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/track-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'success',
+          data: {
+            userId,
+            model: 'sora-2',
+            mode: image ? 'image-to-video' : 'text-to-video',
+            prompt: prompt || 'Image to video',
+            duration: duration,
+            aspectRatio: aspectRatio,
+            creditsUsed: duration,
+            apiCost: 5.1 // KIE Sora 2 cost in baht
+          }
+        })
+      }).catch(err => console.log('Analytics tracking failed:', err));
+      console.log('📊 Video generation tracked successfully');
+    } catch (trackingError) {
+      console.log('Video tracking error:', trackingError);
+      // Don't fail the request if tracking fails
+    }
+
     // Return success response
     res.status(200).json({
       success: true,
@@ -358,6 +383,33 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('❌ KIE.AI video generation error:', error)
+
+    // Track video generation error
+    try {
+      const errorType = error.message.includes('Timeout') ? 'timeout'
+                      : error.message.includes('No task ID') ? 'no_task_id'
+                      : error.message.includes('failed') ? 'task_failed'
+                      : 'api_error';
+
+      await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/track-video`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'error',
+          data: {
+            userId,
+            model: 'sora-2',
+            mode: image ? 'image-to-video' : 'text-to-video',
+            errorType: errorType,
+            errorMessage: error.message,
+            creditsRefunded: duration // Will be refunded
+          }
+        })
+      }).catch(err => console.log('Error tracking failed:', err));
+      console.log('📊 Video error tracked successfully');
+    } catch (trackingError) {
+      console.log('Error tracking error:', trackingError);
+    }
 
     res.status(500).json({
       error: error.message || 'Failed to generate video',
