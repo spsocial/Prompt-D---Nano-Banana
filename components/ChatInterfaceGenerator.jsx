@@ -290,6 +290,22 @@ export default function ChatInterfaceGenerator() {
 
         const data = await response.json()
 
+        // Mobile returns isPending, desktop returns videoUrl
+        if (data.isPending) {
+          // Mobile: Task created, show simple message
+          const infoMessage = {
+            id: Date.now() + 2,
+            type: 'info',
+            message: '🎬 วิดีโอกำลังสร้างอยู่\n\nกรุณารอ 5-10 นาที แล้วติดต่อแอดมินเพื่อรับลิงค์คลิป'
+          }
+          setMessages(prev => [...prev, infoMessage])
+
+          setIsGenerating(false)
+          setIsGeneratingVideo(false)
+          return
+        }
+
+        // Desktop: Normal success case
         const resultMessage = {
           id: Date.now() + 2,
           type: 'result',
