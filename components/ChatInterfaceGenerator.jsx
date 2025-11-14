@@ -479,15 +479,8 @@ export default function ChatInterfaceGenerator() {
       // Deduct credits
       await useCredits(requiredCredits)
 
-      const isMobileDevice = isMobile();
-      console.log('📱 Mobile device (Ads Form):', isMobileDevice);
-
-      // Select API endpoint based on device
-      const apiEndpoint = isMobileDevice
-        ? '/api/video-tasks/start'  // Mobile: no polling, immediate return
-        : '/api/generate-video-kie-primary'; // Desktop: normal polling
-
-      console.log('🔗 Using endpoint:', apiEndpoint);
+      // Always use primary endpoint for consistent behavior
+      const apiEndpoint = '/api/generate-video-kie-primary';
 
       // Generate video with KIE.AI
       const controller = new AbortController()
