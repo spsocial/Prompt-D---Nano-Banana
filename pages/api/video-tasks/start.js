@@ -204,7 +204,11 @@ export default async function handler(req, res) {
 
     // Create pending video task in database
     try {
-      await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/video-tasks/create`, {
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+
+      await fetch(`${baseUrl}/api/video-tasks/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

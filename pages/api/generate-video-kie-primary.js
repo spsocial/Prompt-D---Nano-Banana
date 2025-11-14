@@ -194,7 +194,11 @@ export default async function handler(req, res) {
 
     // Save pending task to database immediately (before polling)
     try {
-      await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/video-tasks/create`, {
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+
+      await fetch(`${baseUrl}/api/video-tasks/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -283,7 +287,11 @@ export default async function handler(req, res) {
 
             // Update database with completed status
             try {
-              await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/video-tasks/check`, {
+              const protocol = req.headers['x-forwarded-proto'] || 'http';
+              const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+              const baseUrl = `${protocol}://${host}`;
+
+              await fetch(`${baseUrl}/api/video-tasks/check`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ taskId })
@@ -342,7 +350,11 @@ export default async function handler(req, res) {
 
     // Track successful video generation
     try {
-      await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/track-video`, {
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+
+      await fetch(`${baseUrl}/api/track-video`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -391,7 +403,11 @@ export default async function handler(req, res) {
                       : error.message.includes('failed') ? 'task_failed'
                       : 'api_error';
 
-      await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/track-video`, {
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+
+      await fetch(`${baseUrl}/api/track-video`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

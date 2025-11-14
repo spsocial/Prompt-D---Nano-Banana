@@ -6,6 +6,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import VideoAdsModal from './VideoAdsModal'
 import FabButton from './FabButton'
+import PendingVideos from './PendingVideos'
 
 // Preset prompt styles for image generation
 const PROMPT_STYLES = {
@@ -102,7 +103,7 @@ export default function ChatInterfaceGenerator() {
   const textareaRef = useRef(null)
   const messagesEndRef = useRef(null)
 
-  const { userCredits, useCredits, refundCredits, setIsGeneratingVideo, addToHistory, addVideoToHistory } = useStore()
+  const { userId, userCredits, useCredits, refundCredits, setIsGeneratingVideo, addToHistory, addVideoToHistory } = useStore()
   const { data: session } = useSession()
   const router = useRouter()
 
@@ -256,7 +257,7 @@ export default function ChatInterfaceGenerator() {
               aspectRatio: aspectRatio,
               model: 'sora-2',
               allowWatermark: allowWatermark,
-              userId: typeof window !== 'undefined' ? localStorage.getItem('nano_user_id') : 'anonymous'
+              userId: userId || 'anonymous'
             }),
             signal: controller.signal
           })
@@ -1075,6 +1076,11 @@ export default function ChatInterfaceGenerator() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Pending Videos Section */}
+      <div className="mt-8">
+        <PendingVideos userId={userId} />
+      </div>
 
       {/* FAB Button - Contact Support */}
       <FabButton />
