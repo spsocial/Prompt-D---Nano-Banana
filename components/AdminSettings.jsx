@@ -85,8 +85,8 @@ export default function AdminSettings() {
     }
 
     const credits = parseInt(creditAmount)
-    if (isNaN(credits) || credits <= 0) {
-      setCreditMessage('จำนวนเครดิตต้องเป็นตัวเลขมากกว่า 0')
+    if (isNaN(credits) || credits === 0) {
+      setCreditMessage('จำนวนเครดิตต้องเป็นตัวเลข และไม่เท่ากับ 0 (ใช้เลขติดลบเพื่อลดเครดิต)')
       setCreditMessageType('error')
       setTimeout(() => setCreditMessage(''), 3000)
       return
@@ -111,7 +111,9 @@ export default function AdminSettings() {
 
       if (data.success) {
         const creditTypeText = creditType === 'free' ? '(ฟรีทดลอง)' : '(ชำระเงินแล้ว)'
-        setCreditMessage(`✅ เพิ่ม ${credits} เครดิต ${creditTypeText} ให้ User ID: ${targetUserId} สำเร็จ (รวม: ${data.credits} เครดิต)`)
+        const actionText = credits > 0 ? 'เพิ่ม' : 'ลด'
+        const absCredits = Math.abs(credits)
+        setCreditMessage(`✅ ${actionText} ${absCredits} เครดิต ${creditTypeText} ให้ User ID: ${targetUserId} สำเร็จ (เหลือ: ${data.credits} เครดิต)`)
         setCreditMessageType('success')
         setTargetUserId('')
         setCreditAmount('')
@@ -340,18 +342,17 @@ export default function AdminSettings() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                จำนวนเครดิตที่ต้องการเพิ่ม
+                จำนวนเครดิต (บวก = เพิ่ม, ลบ = ดึงคืน)
               </label>
               <input
                 type="number"
                 value={creditAmount}
                 onChange={(e) => setCreditAmount(e.target.value)}
-                placeholder="เช่น 10, 20, 50"
-                min="1"
+                placeholder="เช่น 50 (เพิ่ม) หรือ -20 (ลดเครดิต)"
                 className="w-full px-4 py-3 bg-white/50 backdrop-blur-sm border border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-300"
               />
               <p className="text-xs text-gray-500 mt-1">
-                เครดิต 1 หน่วย = สร้างภาพ 1 รูป
+                ✅ เลขบวก: เพิ่มเครดิต | ❌ เลขลบ: ดึงเครดิตคืน (เช่น -10)
               </p>
             </div>
 
@@ -371,7 +372,7 @@ export default function AdminSettings() {
               disabled={!targetUserId || !creditAmount}
             >
               <UserPlus className="h-5 w-5 mr-2" />
-              เพิ่มเครดิตให้ผู้ใช้
+              {creditAmount && parseInt(creditAmount) < 0 ? 'ลดเครดิตผู้ใช้' : 'เพิ่มเครดิตให้ผู้ใช้'}
             </button>
 
             <div className="mt-4 p-3 bg-gradient-to-r from-yellow-100/50 to-amber-100/50 rounded-lg border border-yellow-200">
