@@ -235,18 +235,28 @@ export default function ChatInterfaceGenerator() {
       await useCredits(requiredCredits)
 
       if (mode === 'video') {
-        // Video generation with extended timeout (15 minutes)
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 15 * 60 * 1000) // 15 minutes
-
         // Add "no text" instruction to prevent Thai text overlays
         const videoPrompt = currentPrompt
           ? `${currentPrompt} อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง`
           : 'Create cinematic video อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง'
 
+        // Detect mobile for proper endpoint selection
+        const isMobileDevice = isMobile()
+
+        // Mobile: Use start endpoint (creates task, returns immediately)
+        // Desktop: Use primary endpoint (creates task + polls for result)
+        const apiEndpoint = isMobileDevice
+          ? '/api/video-tasks/start'
+          : '/api/generate-video-kie-primary'
+
+        const controller = new AbortController()
+        const timeoutId = isMobileDevice
+          ? setTimeout(() => controller.abort(), 30 * 1000) // 30s for mobile (just creating task)
+          : setTimeout(() => controller.abort(), 15 * 60 * 1000) // 15 min for desktop (full generation)
+
         let response
         try {
-          response = await fetch('/api/generate-video-kie-primary', {
+          response = await fetch(apiEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -264,12 +274,10 @@ export default function ChatInterfaceGenerator() {
           clearTimeout(timeoutId)
           // Check if it's a timeout/abort error
           if (fetchError.name === 'AbortError') {
-            throw new Error('⏱️ การสร้างวิดีโอใช้เวลานานเกินไป (>15 นาที) - กรุณาลองใหม่อีกครั้ง')
+            throw new Error('⏱️ การสร้างวิดีโอใช้เวลานานเกินไป - กรุณาลองใหม่อีกครั้ง')
           }
-          // Network error (พับจอ)
-          const networkError = new Error('❌ การสร้างคลิปล้มเหลวเนื่องจากพับหน้าจอ\n\n📹 วิดีโอกำลังสร้างอยู่ในระบบ กรุณารอ 5-10 นาที แล้วติดต่อแอดมินรับลิงค์คลิป\n\n💡 เครดิตไม่ถูกคืนเพราะวิดีโอกำลังสร้างอยู่')
-          networkError.isVideoNetworkError = true // Flag to prevent refund
-          throw networkError
+          // Network error
+          throw new Error('❌ ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ - กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต')
         }
         clearTimeout(timeoutId)
 
