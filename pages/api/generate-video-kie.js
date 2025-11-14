@@ -1,4 +1,5 @@
 import { safeStringify } from '../../lib/logUtils';
+import { PrismaClient } from '@prisma/client';
 
 export const config = {
   api: {
@@ -293,7 +294,7 @@ export default async function handler(req, res) {
 
         // Update database with failed status
         try {
-          const prisma = (await import('../../lib/prisma')).default;
+          const prisma = new PrismaClient();
           await prisma.pendingVideo.updateMany({
             where: { taskId },
             data: {
@@ -302,6 +303,7 @@ export default async function handler(req, res) {
               updatedAt: new Date()
             }
           });
+          await prisma.$disconnect();
           console.log('✅ Updated database with failed status');
         } catch (err) {
           console.error('⚠️ Failed to update database:', err);
