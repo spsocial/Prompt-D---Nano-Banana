@@ -70,6 +70,10 @@ export default function ChatInterfaceGenerator() {
   const [selectedModel, setSelectedModel] = useState('banana')
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
+  // Confirmation popup
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false)
+  const [pendingGeneration, setPendingGeneration] = useState(null)
+
   // Video Ads Modal
   const [showAdsModal, setShowAdsModal] = useState(false)
   const [adsPreloadedImage, setAdsPreloadedImage] = useState(null)
@@ -164,7 +168,38 @@ export default function ChatInterfaceGenerator() {
       return
     }
 
+    // Show confirmation popup before generating
+    setPendingGeneration({
+      prompt,
+      uploadedImage,
+      mode,
+      duration,
+      aspectRatio,
+      numberOfImages,
+      selectedStyle,
+      requiredCredits
+    })
+    setShowConfirmPopup(true)
+  }
+
+  // Actual generation function (called after confirmation)
+  const actualGenerate = async () => {
+    setShowConfirmPopup(false)
+
+    if (!pendingGeneration) return
+
+    const { prompt, uploadedImage, mode, duration, aspectRatio, numberOfImages, selectedStyle, requiredCredits } = pendingGeneration
+
     // Add user message
+    const currentTime = new Date().toLocaleString('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+
     const userMessage = {
       id: Date.now(),
       type: 'user',
@@ -174,7 +209,8 @@ export default function ChatInterfaceGenerator() {
       duration: duration,
       aspectRatio: aspectRatio,
       numberOfImages: numberOfImages,
-      style: selectedStyle
+      style: selectedStyle,
+      timestamp: currentTime
     }
     setMessages(prev => [...prev, userMessage])
 
@@ -219,7 +255,8 @@ export default function ChatInterfaceGenerator() {
               duration: duration,
               aspectRatio: aspectRatio,
               model: 'sora-2',
-              allowWatermark: allowWatermark
+              allowWatermark: allowWatermark,
+              userId: typeof window !== 'undefined' ? localStorage.getItem('nano_user_id') : 'anonymous'
             }),
             signal: controller.signal
           })
@@ -921,6 +958,113 @@ export default function ChatInterfaceGenerator() {
         initialImage={adsPreloadedImage}
       />
 
+      {/* Confirmation Popup */}
+      <AnimatePresence>
+        {showConfirmPopup && pendingGeneration && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowConfirmPopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-[#00F2EA]" />
+                ยืนยันการสร้าง
+              </h3>
+
+              <div className="space-y-3 mb-6">
+                {/* Mode */}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-400">โหมด:</span>
+                  <span className="text-white font-medium">
+                    {pendingGeneration.mode === 'video' ? '🎬 วิดีโอ' : '🖼️ รูปภาพ'}
+                  </span>
+                </div>
+
+                {/* Credits */}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-400">เครดิตที่ใช้:</span>
+                  <span className="text-[#00F2EA] font-bold text-lg">
+                    {pendingGeneration.requiredCredits} เครดิต
+                  </span>
+                </div>
+
+                {/* Video specific info */}
+                {pendingGeneration.mode === 'video' && (
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">ความยาว:</span>
+                      <span className="text-white">{pendingGeneration.duration} วินาที</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">อัตราส่วน:</span>
+                      <span className="text-white">{pendingGeneration.aspectRatio}</span>
+                    </div>
+                  </>
+                )}
+
+                {/* Image specific info */}
+                {pendingGeneration.mode === 'image' && (
+                  <>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">จำนวนรูป:</span>
+                      <span className="text-white">{pendingGeneration.numberOfImages} รูป</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">สไตล์:</span>
+                      <span className="text-white">
+                        {PROMPT_STYLES[pendingGeneration.selectedStyle]?.name || 'กำหนดเอง'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-400">อัตราส่วน:</span>
+                      <span className="text-white">{pendingGeneration.aspectRatio}</span>
+                    </div>
+                  </>
+                )}
+
+                {/* Mobile warning */}
+                {isMobile() && pendingGeneration.mode === 'video' && (
+                  <div className="mt-4 p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
+                    <p className="text-red-400 text-sm font-medium flex items-center gap-2">
+                      <span className="text-lg">📱</span>
+                      <span><strong>มือถือ: อย่าพับจอขณะสร้างคลิป!</strong></span>
+                    </p>
+                    <p className="text-red-300 text-xs mt-1">
+                      หากพับจอ คลิปจะสร้างต่อในระบบ แต่คุณต้องติดต่อแอดมินเพื่อรับลิงค์
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmPopup(false)}
+                  className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium transition-all"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  onClick={actualGenerate}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] hover:shadow-lg hover:shadow-[#00F2EA]/50 text-white rounded-xl font-medium transition-all"
+                >
+                  ยืนยันสร้าง
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* FAB Button - Contact Support */}
       <FabButton />
     </div>
@@ -959,6 +1103,12 @@ function MessageBubble({ message, onCreateVideoAd }) {
               )}
               <span>•</span>
               <span>{message.aspectRatio}</span>
+              {message.timestamp && (
+                <>
+                  <span>•</span>
+                  <span className="opacity-60">🕐 {message.timestamp}</span>
+                </>
+              )}
             </div>
           </div>
         </div>

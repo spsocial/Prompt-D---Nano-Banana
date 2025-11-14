@@ -1,6 +1,67 @@
 // API endpoint for starting video generation (mobile-friendly, no polling)
 import { safeStringify } from '../../../lib/logUtils';
 
+// Helper function to upload base64 image to Cloudinary (with retry)
+async function uploadToCloudinary(base64Image, retries = 3) {
+  console.log('📤 Uploading base64 image to Cloudinary...')
+
+  const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME
+  const cloudinaryUploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET
+
+  if (!cloudinaryCloudName || !cloudinaryUploadPreset) {
+    throw new Error('Cloudinary not configured (need CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET)')
+  }
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`📤 Upload attempt ${attempt}/${retries}...`)
+
+      // Generate safe public_id without slashes
+      const timestamp = Date.now()
+      const randomId = Math.random().toString(36).substring(2, 15)
+      const safePublicId = `nano_img_${timestamp}_${randomId}`
+
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          file: base64Image,
+          upload_preset: cloudinaryUploadPreset,
+          public_id: safePublicId
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Cloudinary upload failed (${response.status}): ${errorText}`)
+      }
+
+      const data = await response.json()
+      const imageUrl = data.secure_url || data.url
+
+      if (!imageUrl) {
+        throw new Error('No URL in Cloudinary response')
+      }
+
+      console.log(`✅ Image uploaded to Cloudinary: ${imageUrl}`)
+      return imageUrl
+    } catch (error) {
+      console.error(`❌ Upload attempt ${attempt} failed:`, error.message)
+
+      if (attempt === retries) {
+        console.error('❌ All upload attempts failed')
+        throw error
+      }
+
+      const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
+      console.log(`⏳ Retrying in ${waitTime}ms...`)
+      await new Promise(resolve => setTimeout(resolve, waitTime))
+    }
+  }
+}
+
 export const config = {
   api: {
     bodyParser: {
@@ -69,15 +130,22 @@ export default async function handler(req, res) {
       }
     }
 
-    // Add image if provided
+    // Handle image: if base64, upload to Cloudinary first to get URL
     if (image) {
+      let imageUrl = image
+
       if (image.startsWith('data:')) {
-        return res.status(400).json({
-          error: 'KIE.AI requires image URLs, not base64',
-          suggestion: 'กรุณาใช้ CometAPI สำหรับการอัพโหลดภาพจากเครื่อง'
-        })
+        console.log('🔄 Base64 image detected, uploading to Cloudinary first...')
+        try {
+          imageUrl = await uploadToCloudinary(image)
+          console.log(`✅ Converted base64 → Cloudinary URL: ${imageUrl}`)
+        } catch (uploadError) {
+          console.error('❌ Failed to upload to Cloudinary:', uploadError)
+          throw new Error('Cannot upload image to Cloudinary')
+        }
       }
-      requestBody.input.image_urls = [image]
+
+      requestBody.input.image_urls = [imageUrl]
     }
 
     // Add Pro model parameters

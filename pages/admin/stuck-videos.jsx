@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Copy, Check, RefreshCw, Clock, CheckCircle, XCircle, ExternalLink } from 'lucide-react'
+import { Copy, Check, RefreshCw, Clock, CheckCircle, XCircle, ExternalLink, User } from 'lucide-react'
 
 export default function StuckVideosAdmin() {
   const [adminKey, setAdminKey] = useState('')
@@ -226,12 +226,16 @@ export default function StuckVideosAdmin() {
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-xs font-mono bg-purple-100 text-purple-700 px-2 py-1 rounded">
-                            {video.userId}
-                          </span>
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <div className="flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-1 rounded font-medium">
+                            <User className="h-3 w-3" />
+                            <span className="text-xs font-mono">{video.userId}</span>
+                          </div>
                           <span className="text-xs text-gray-500">
                             {formatTimeAgo(video.updatedAt)}
+                          </span>
+                          <span className="text-xs font-mono bg-gray-200 text-gray-600 px-2 py-1 rounded">
+                            ID: {video.taskId.slice(-8)}
                           </span>
                         </div>
 
