@@ -436,6 +436,16 @@ export default function ChatInterfaceGenerator() {
       return
     }
 
+    // Add timestamp
+    const currentTime = new Date().toLocaleString('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+
     // Add user message
     const userMessage = {
       id: Date.now(),
@@ -445,7 +455,8 @@ export default function ChatInterfaceGenerator() {
       mode: 'video-ads',
       duration: formData.duration,
       aspectRatio: formData.aspectRatio,
-      style: formData.style
+      style: formData.style,
+      timestamp: currentTime
     }
     setMessages(prev => [...prev, userMessage])
 
