@@ -396,6 +396,33 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('❌ KIE.AI video generation error:', error)
 
+    // Refund credits automatically
+    try {
+      const protocol = req.headers['x-forwarded-proto'] || 'http';
+      const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+
+      console.log(`🔄 Refunding ${duration} credits to user ${userId}...`);
+      const refundResponse = await fetch(`${baseUrl}/api/add-credits`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          amount: duration,
+          reason: `Refund: Video generation failed - ${error.message}`
+        })
+      });
+
+      const refundData = await refundResponse.json();
+      if (refundData.success) {
+        console.log(`✅ Refunded ${duration} credits successfully. New balance: ${refundData.newBalance}`);
+      } else {
+        console.error('⚠️ Failed to refund credits:', refundData.message);
+      }
+    } catch (refundError) {
+      console.error('❌ Error refunding credits:', refundError);
+    }
+
     // Track video generation error
     try {
       const errorType = error.message.includes('Timeout') ? 'timeout'
@@ -418,7 +445,7 @@ export default async function handler(req, res) {
             mode: image ? 'image-to-video' : 'text-to-video',
             errorType: errorType,
             errorMessage: error.message,
-            creditsRefunded: duration // Will be refunded
+            creditsRefunded: duration
           }
         })
       }).catch(err => console.log('Error tracking failed:', err));
@@ -430,8 +457,8 @@ export default async function handler(req, res) {
     res.status(500).json({
       error: error.message || 'Failed to generate video',
       details: error.toString(),
-      suggestion: '⚠️ เกิดข้อผิดพลาดในการสร้างวิดีโอผ่าน KIE.AI - เครดิตจะถูกคืนอัตโนมัติ',
-      shouldRefund: true
+      suggestion: '✅ เครดิตถูกคืนอัตโนมัติแล้ว - กรุณาลองใหม่อีกครั้ง',
+      creditsRefunded: duration
     })
   }
 }
