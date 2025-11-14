@@ -520,26 +520,7 @@ export default function ChatInterfaceGenerator() {
 
       const data = await response.json()
 
-      // Check if video is pending (mobile timeout case)
-      if (data.isPending) {
-        console.log('⏰ Video is pending (mobile mode), task saved for later checking')
-
-        // Show pending message
-        const pendingMessage = {
-          id: Date.now() + 2,
-          type: 'result',
-          mode: 'video-pending',
-          taskId: data.taskId,
-          message: data.message || '🎬 วิดีโอกำลังสร้างอยู่',
-          info: data.info || 'คุณสามารถปิดหน้านี้ได้ และกลับมาเช็คสถานะทีหลัง'
-        }
-        setMessages(prev => [...prev, pendingMessage])
-
-        // Don't save to history yet (wait for completion)
-        return
-      }
-
-      // Normal success case (desktop or video completed)
+      // Normal success case
       const resultMessage = {
         id: Date.now() + 2,
         type: 'result',
@@ -1149,21 +1130,7 @@ function MessageBubble({ message, onCreateVideoAd }) {
     return (
       <div className="flex justify-start">
         <div className="bg-[#1a1a1a] rounded-2xl overflow-hidden max-w-2xl border border-gray-800">
-          {message.mode === 'video-pending' ? (
-            <div className="p-6 text-center">
-              <div className="text-4xl mb-3">🎬</div>
-              <p className="text-white font-medium mb-2">{message.message}</p>
-              <p className="text-sm text-gray-400 mb-4">{message.info}</p>
-              <p className="text-xs text-gray-500">
-                Task ID: <span className="font-mono">{message.taskId}</span>
-              </p>
-              <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-xs text-yellow-400">
-                  💡 เช็คสถานะวิดีโอได้ที่ section "วิดีโอที่กำลังสร้าง" ด้านล่าง
-                </p>
-              </div>
-            </div>
-          ) : message.mode === 'video' ? (
+          {message.mode === 'video' ? (
             <video
               src={message.url}
               controls
