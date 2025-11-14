@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   try {
     // Check admin authorization (same key as /admin page)
     const adminKey = req.headers['x-admin-key'] || req.query.adminKey
-    if (adminKey !== 'nano-admin-2024') {
+    if (adminKey !== 'nano@admin2024') {
       return res.status(401).json({ error: 'Unauthorized - Invalid admin key' })
     }
 
