@@ -12,6 +12,7 @@ import historyAnimation from '../lib/animations/ประวัติการ�
 export default function Home() {
   const { data: session, status } = useSession()
   const { loadUserCredits } = useStore()
+  const [showTutorial, setShowTutorial] = useState(false)
 
   // Load user-specific credits when authenticated
   useEffect(() => {
@@ -22,6 +23,30 @@ export default function Home() {
       }
     }
   }, [status, session, loadUserCredits])
+
+  // Show tutorial popup after login (if not dismissed today)
+  useEffect(() => {
+    if (status === 'authenticated') {
+      const today = new Date().toDateString()
+      const lastDismissed = localStorage.getItem('tutorialDismissed')
+
+      if (lastDismissed !== today) {
+        // Delay popup slightly for better UX
+        const timer = setTimeout(() => {
+          setShowTutorial(true)
+        }, 1000)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [status])
+
+  const handleDismissTutorial = (dontShowAgain = false) => {
+    setShowTutorial(false)
+    if (dontShowAgain) {
+      const today = new Date().toDateString()
+      localStorage.setItem('tutorialDismissed', today)
+    }
+  }
 
   return (
     <>
@@ -111,7 +136,77 @@ export default function Home() {
       )}
 
       {/* Main App */}
-      {status === 'authenticated' && <ChatInterfaceGenerator />}
+      {status === 'authenticated' && (
+        <>
+          <ChatInterfaceGenerator />
+
+          {/* Tutorial Modal */}
+          {showTutorial && (
+            <div
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => handleDismissTutorial(false)}
+            >
+              <div
+                className="bg-[#1a1a1a] rounded-2xl border border-[#00F2EA] shadow-2xl max-w-3xl w-full"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] p-6 rounded-t-2xl">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                      <Sparkles className="h-6 w-6" />
+                      📺 วิธีใช้งาน PD Studio
+                    </h3>
+                    <button
+                      onClick={() => handleDismissTutorial(false)}
+                      className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                    >
+                      <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-6">
+                  <p className="text-gray-300 mb-4 text-center">
+                    🎬 ดูคลิปสอนใช้งานสั้นๆ ก่อนเริ่มสร้างคอนเทนต์กับ AI
+                  </p>
+
+                  {/* Video Container */}
+                  <div className="relative aspect-video rounded-xl overflow-hidden bg-black mb-6">
+                    <iframe
+                      className="w-full h-full"
+                      src="https://www.youtube.com/embed/_VLB418zkXs?autoplay=1&mute=1"
+                      title="วิธีใช้งาน PD Studio"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={() => handleDismissTutorial(true)}
+                      className="flex-1 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium transition-all"
+                    >
+                      ไม่ต้องแสดงอีกวันนี้
+                    </button>
+                    <button
+                      onClick={() => handleDismissTutorial(false)}
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] hover:shadow-lg text-white rounded-xl font-bold transition-all"
+                    >
+                      เริ่มใช้งานเลย! 🚀
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </>
   )
 }
