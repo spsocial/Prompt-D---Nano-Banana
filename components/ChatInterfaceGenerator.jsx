@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Image as ImageIcon, Film, Sparkles, Clock, AspectRatio as AspectRatioIcon, X, Download, Play, ChevronDown, Layers, User, History as HistoryIcon, CreditCard, LogOut } from 'lucide-react'
+import { Send, Image as ImageIcon, Film, Sparkles, Clock, AspectRatio as AspectRatioIcon, X, Download, Play, ChevronDown, Layers, User, History as HistoryIcon, CreditCard, LogOut, Volume2 } from 'lucide-react'
 import useStore from '../lib/store'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import VideoAdsModal from './VideoAdsModal'
+import VoiceGenerator from './VoiceGenerator'
 import FabButton from './FabButton'
 
 // Preset prompt styles for image generation
@@ -53,7 +54,7 @@ const IMAGE_MODELS = {
 }
 
 export default function ChatInterfaceGenerator() {
-  const [mode, setMode] = useState('video') // 'image' or 'video'
+  const [mode, setMode] = useState('video') // 'image', 'video', or 'voice'
   const [prompt, setPrompt] = useState('')
   const [duration, setDuration] = useState(10)
   const [aspectRatio, setAspectRatio] = useState('16:9')
@@ -617,6 +618,17 @@ export default function ChatInterfaceGenerator() {
                 <Film className="h-4 w-4 inline mr-1" />
                 Video
               </button>
+              <button
+                onClick={() => setMode('voice')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  mode === 'voice'
+                    ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Volume2 className="h-4 w-4 inline mr-1" />
+                Voice
+              </button>
             </div>
 
             {/* Right Section: Credits + Profile */}
@@ -713,34 +725,42 @@ export default function ChatInterfaceGenerator() {
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto space-y-6">
-          {messages.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-[#00F2EA]/20 to-[#FE2C55]/20 rounded-full mb-6">
-                <Sparkles className="h-10 w-10 text-[#00F2EA]" />
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-2">สร้างคอนเทนต์ด้วย AI</h2>
-              <p className="text-gray-400">บอก AI ว่าคุณต้องการอะไร แล้วปล่อยให้มันสร้างให้คุณ</p>
-            </div>
+          {/* Voice Mode - Show VoiceGenerator */}
+          {mode === 'voice' ? (
+            <VoiceGenerator />
           ) : (
             <>
-              {messages.map((msg) => (
-                <MessageBubble
-                  key={msg.id}
-                  message={msg}
-                  onCreateVideoAd={handleOpenAdsModalWithImage}
-                />
-              ))}
+              {messages.length === 0 ? (
+                <div className="text-center py-20">
+                  <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-[#00F2EA]/20 to-[#FE2C55]/20 rounded-full mb-6">
+                    <Sparkles className="h-10 w-10 text-[#00F2EA]" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-2">สร้างคอนเทนต์ด้วย AI</h2>
+                  <p className="text-gray-400">บอก AI ว่าคุณต้องการอะไร แล้วปล่อยให้มันสร้างให้คุณ</p>
+                </div>
+              ) : (
+                <>
+                  {messages.map((msg) => (
+                    <MessageBubble
+                      key={msg.id}
+                      message={msg}
+                      onCreateVideoAd={handleOpenAdsModalWithImage}
+                    />
+                  ))}
+                </>
+              )}
+              <div ref={messagesEndRef} />
             </>
           )}
-          <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Floating Input Box - TikTok Style */}
-      <div className="sticky bottom-0 z-20 backdrop-blur-lg bg-[#121212]/95 border-t border-gray-800 p-4">
-        <div className="max-w-4xl mx-auto">
-          {/* Uploaded Image Preview */}
-          {uploadedImage && (
+      {/* Floating Input Box - TikTok Style - Hide in Voice mode */}
+      {mode !== 'voice' && (
+        <div className="sticky bottom-0 z-20 backdrop-blur-lg bg-[#121212]/95 border-t border-gray-800 p-4">
+          <div className="max-w-4xl mx-auto">
+            {/* Uploaded Image Preview */}
+            {uploadedImage && (
             <div className="mb-3 relative inline-block">
               <img src={uploadedImage} alt="Upload" className="h-20 rounded-lg border border-gray-700" />
               <button
@@ -949,6 +969,7 @@ export default function ChatInterfaceGenerator() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Video Ads Modal */}
       <VideoAdsModal

@@ -14,13 +14,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { image, productName, userInput, duration, gender } = req.body
+    const { image, productName, userInput, duration, gender, mode } = req.body
 
     if (!image) {
       return res.status(400).json({ error: 'No image provided' })
     }
 
-    if (!productName) {
+    // ProductName is optional for voice mode
+    const isVoiceMode = mode === 'voice'
+    if (!isVoiceMode && !productName) {
       return res.status(400).json({ error: 'Product name is required' })
     }
 
@@ -30,14 +32,39 @@ export default async function handler(req, res) {
     // Convert base64 to proper format
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '')
 
-    console.log('🎙️ Analyzing product for ads script:', productName)
+    console.log(`🎙️ Analyzing ${isVoiceMode ? 'image for voice script' : 'product for ads script'}:`, productName || 'No product name')
 
-    // Determine word count target based on duration
-    const wordTarget = duration === 10 ? '25-30 คำ' : '40-45 คำ'
+    // Calculate word target based on duration (Thai: ~3 chars per word, ~17 chars/sec)
+    const estimatedWords = Math.floor(duration / 2) // Rough estimate: 2 seconds per word
+    const wordTarget = `${estimatedWords - 5}-${estimatedWords + 5} คำ`
     const genderSuffix = gender === 'female' ? 'ค่ะ' : 'ครับ'
 
-    // Create prompt for Gemini to analyze and generate script
-    const analysisPrompt = `วิเคราะห์รูปสินค้านี้ (${productName}) และสร้างบทพูดโฆษณาสั้นๆ กระชับ ประมาณ ${wordTarget}
+    // Create prompt based on mode
+    let analysisPrompt
+
+    if (isVoiceMode) {
+      // Voice mode: General narration/description
+      const genderTone = gender === 'female' ? 'ผู้หญิง (ใช้คำสุภาพ "ค่ะ")' : 'ผู้ชาย (ใช้คำสุภาพ "ครับ")'
+
+      analysisPrompt = `วิเคราะห์รูปภาพนี้และสร้างบทพูดสำหรับพากย์เสียง ระยะเวลาประมาณ ${duration} วินาที (${wordTarget})
+
+ผู้พูด: ${genderTone}
+
+${userInput ? `บริบท/คำแนะนำ: ${userInput}` : ''}
+
+กฎสำคัญ:
+1. อธิบายสิ่งที่เห็นในรูปอย่างละเอียดและน่าสนใจ
+2. ใช้ภาษาที่เป็นธรรมชาติ เหมือนคนพูด
+3. ความยาวให้พอดีกับเวลา ${duration} วินาที
+4. ไม่ต้องมีคำเรียกร้องให้ซื้อ (ไม่ใช่โฆษณา)
+5. พูดแบบนักบรรยาย หรือผู้บรรยายในสารคดี
+6. ถ้ามี userInput ให้นำบริบทมาใช้ในบทพูด
+7. ใช้คำสุภาพที่เหมาะสมกับเพศผู้พูด (${gender === 'female' ? 'ค่ะ' : 'ครับ'})
+
+ให้แค่บทพูดอย่างเดียว ไม่ต้องอธิบาย ไม่ต้องมีเครื่องหมายคำพูด`
+    } else {
+      // Ads mode: Sales-focused
+      analysisPrompt = `วิเคราะห์รูปสินค้านี้ (${productName}) และสร้างบทพูดโฆษณาสั้นๆ กระชับ ประมาณ ${wordTarget}
 
 ${userInput ? `คีย์เวิร์ดที่ต้องใช้: ${userInput}` : ''}
 
@@ -54,6 +81,7 @@ ${userInput ? `คีย์เวิร์ดที่ต้องใช้: ${u
 "${productName} {จุดเด่น} {ความพิเศษ} {คำกระตุ้น} จิ้มที่ตระก้าได้เลย${genderSuffix}!"
 
 ให้แค่บทพูดอย่างเดียว ไม่ต้องอธิบาย ไม่ต้องมีเครื่องหมายคำพูด`
+    }
 
     // Call Gemini API - use gemini-2.5-flash-image-preview for vision
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${geminiApiKey}`

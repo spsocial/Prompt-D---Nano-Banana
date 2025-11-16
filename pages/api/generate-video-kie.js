@@ -82,7 +82,7 @@ export default async function handler(req, res) {
         console.log('⚠️ KIE.AI requires image URL, not base64')
         return res.status(400).json({
           error: 'KIE.AI requires image URLs, not base64',
-          suggestion: 'กรุณาใช้ CometAPI สำหรับการอัพโหลดภาพจากเครื่อง'
+          suggestion: 'กรุณาใช้ URL ของภาพแทน base64'
         })
       }
       requestBody.input.image_urls = [image]
@@ -143,10 +143,6 @@ export default async function handler(req, res) {
     if (!taskId) {
       console.error('❌ No task ID received from KIE.AI')
       console.error('📄 Full response:', safeStringify(createData))
-      if (useFallback) {
-        console.log('🔄 No task ID, falling back to CometAPI...')
-        return fallbackToCometAPI(req, res)
-      }
       throw new Error('No task ID received from KIE.AI')
     }
 
@@ -307,11 +303,6 @@ export default async function handler(req, res) {
           console.log('✅ Updated database with failed status');
         } catch (err) {
           console.error('⚠️ Failed to update database:', err);
-        }
-
-        if (useFallback) {
-          console.log('🔄 Task failed, falling back to CometAPI...')
-          return fallbackToCometAPI(req, res)
         }
 
         throw new Error(errorMsg)

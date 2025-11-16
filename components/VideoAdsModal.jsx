@@ -9,6 +9,12 @@ const ADS_TEMPLATES = {
     description: 'สไตล์ CGI สมจริง เหมาะกับสินค้าทั่วไป',
     format: 'โฆษณา{productName} แนว CGI {gender}พูด"{script}" อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง'
   },
+  ugc: {
+    name: 'UGC Style',
+    icon: '📱',
+    description: 'สไตล์รีวิวจริง ถ่ายด้วยมือถือ ดูเป็นธรรมชาติ',
+    format: 'ช่วยสร้างคลิปรีวิวสินค้าแบบ UGC โดยใช้รูปสินค้าที่ให้ไป ให้คลิปดูเหมือนคนทั่วไปถ่ายเองด้วยมือถือ อยู่ในบรรยากาศบ้าน ๆ แสงธรรมชาติ มุมกล้องถือมือจริง มีการสั่นเล็กน้อยให้ดูสมจริง เน้นความเป็นกันเอง ซื่อตรง และเข้าถึงง่าย ให้มีช่วงโชว์สินค้าแบบใกล้ ๆ บอกประโยชน์ วิธีใช้ และความประทับใจเหมือนผู้ใช้จริงกำลังรีวิวสินค้าอยู่ {gender}พูด"{script}"'
+  },
   cinematic: {
     name: 'Cinematic Style',
     icon: '🎥',
@@ -34,6 +40,8 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
   const [generatedScript, setGeneratedScript] = useState('')
   const [styleTemplate, setStyleTemplate] = useState('cgi')
   const [cameo, setCameo] = useState('')
+  const [modelType, setModelType] = useState('none') // 'female', 'male', 'none'
+  const [modelDetails, setModelDetails] = useState('') // รายละเอียดนางแบบ/นายแบบ
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [showConfirmPopup, setShowConfirmPopup] = useState(false)
   const fileInputRef = useRef(null)
@@ -120,23 +128,70 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
 
   const buildFinalPrompt = () => {
     const template = ADS_TEMPLATES[styleTemplate]
-    const finalScript = script || 'สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ')
-    const styleName = styleTemplate === 'cgi' ? 'CGI' : styleTemplate === 'cinematic' ? 'Cinematic' : 'Minimalist'
+    const defaultScript = gender === 'none' ? '' : ('สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ'))
+    const finalScript = script || defaultScript
+
+    // Style name mapping
+    const styleNameMap = {
+      'cgi': 'CGI',
+      'ugc': 'UGC',
+      'cinematic': 'Cinematic',
+      'minimalist': 'Minimalist'
+    }
+    const styleName = styleNameMap[styleTemplate] || 'CGI'
 
     // Duration constraint: 10s -> max 9s speech, 15s -> max 14s speech
     const maxSpeechDuration = duration === 15 ? 14 : 9
 
+    // Build model description (นายแบบ/นางแบบ)
+    let modelDescription = ''
+    if (modelType !== 'none' && modelDetails.trim()) {
+      const modelGender = modelType === 'female' ? 'นางแบบ' : 'นายแบบ'
+      modelDescription = ` มี${modelGender}: ${modelDetails.trim()}`
+    }
+
+    // Build voice description (เสียงพูด)
+    let voiceDescription = ''
+    if (gender === 'none') {
+      voiceDescription = ' ไม่มีเสียงพูด'
+    } else {
+      const genderText = gender === 'female' ? 'ผู้หญิง' : 'ผู้ชาย'
+      voiceDescription = ` ${genderText}พูด"${finalScript}" อย่าพูดเกิน ${maxSpeechDuration} วินาที`
+    }
+
     let prompt
 
-    // Check if cameo is provided
-    if (cameo.trim()) {
-      // Format with cameo: "โฆษณา[สินค้า] โดย @[cameo] พูดถึง [บทพูด]"
-      const cleanCameo = cameo.trim().startsWith('@') ? cameo.trim() : `@${cameo.trim()}`
-      prompt = `โฆษณา${productName} แนว ${styleName} โดย ${cleanCameo} พูดถึง"${finalScript}" อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง อย่าพูดเกิน ${maxSpeechDuration} วินาที`
+    // UGC style has special format
+    if (styleTemplate === 'ugc') {
+      prompt = template.format
+        .replace('{gender}', gender === 'none' ? '' : (gender === 'female' ? 'ผู้หญิง' : 'ผู้ชาย'))
+        .replace('{script}', finalScript)
+
+      // Add model description if provided
+      if (modelDescription) {
+        prompt += modelDescription
+      }
+
+      // Add cameo if provided
+      if (cameo.trim()) {
+        const cleanCameo = cameo.trim().startsWith('@') ? cameo.trim() : `@${cameo.trim()}`
+        prompt += ` ใช้ cameo ${cleanCameo}`
+      }
+
+      // Add no voice instruction if needed
+      if (gender === 'none') {
+        prompt += ' ไม่ต้องมีเสียงพูด'
+      }
     } else {
-      // Format without cameo: "โฆษณา[สินค้า] [เพศ]พูด [บทพูด]"
-      const genderText = gender === 'female' ? 'ผู้หญิง' : 'ผู้ชาย'
-      prompt = `โฆษณา${productName} แนว ${styleName} ${genderText}พูด"${finalScript}" อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง อย่าพูดเกิน ${maxSpeechDuration} วินาที`
+      // Other styles (CGI, Cinematic, Minimalist)
+      if (cameo.trim()) {
+        // Format with cameo
+        const cleanCameo = cameo.trim().startsWith('@') ? cameo.trim() : `@${cameo.trim()}`
+        prompt = `โฆษณา${productName} แนว ${styleName} โดย ${cleanCameo}${modelDescription}${voiceDescription} อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง`
+      } else {
+        // Format without cameo
+        prompt = `โฆษณา${productName} แนว ${styleName}${modelDescription}${voiceDescription} อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง`
+      }
     }
 
     return prompt
@@ -154,7 +209,8 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
     }
 
     const finalPrompt = buildFinalPrompt()
-    const finalScript = script || 'สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ')
+    const defaultScript = gender === 'none' ? '' : ('สินค้าคุณภาพดี จิ้มที่ตระก้าได้เลย' + (gender === 'female' ? 'ค่ะ' : 'ครับ'))
+    const finalScript = script || defaultScript
 
     onSubmit({
       image: selectedImage,
@@ -163,7 +219,10 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
       duration: duration,
       aspectRatio: aspectRatio,
       productName: productName,
-      style: ADS_TEMPLATES[styleTemplate].name
+      style: ADS_TEMPLATES[styleTemplate].name,
+      modelType: modelType,
+      modelDetails: modelDetails,
+      gender: gender
     })
 
     // Reset form
@@ -177,6 +236,8 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
     setGeneratedScript('')
     setStyleTemplate('cgi')
     setCameo('')
+    setModelType('none')
+    setModelDetails('')
   }
 
   const getWordCount = (text) => {
@@ -311,103 +372,80 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
             <p className="text-xs text-gray-400 mt-1">ใส่ Cameo ID ของคุณจาก Sora 2 App เพื่อใช้ตัวละครที่สร้างไว้</p>
           </div>
 
-          {/* Gender and Duration */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Model Type (นายแบบ/นางแบบ) */}
+          <div>
+            <label className="block text-sm font-semibold text-white mb-2">
+              🎭 นายแบบ/นางแบบ
+            </label>
+            <select
+              value={modelType}
+              onChange={(e) => {
+                setModelType(e.target.value)
+                if (e.target.value === 'none') setModelDetails('')
+              }}
+              className="w-full px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00F2EA]"
+            >
+              <option value="none">ไม่มี</option>
+              <option value="female">👩 ผู้หญิง</option>
+              <option value="male">👨 ผู้ชาย</option>
+            </select>
+            {(modelType === 'female' || modelType === 'male') && (
+              <div className="mt-2">
+                <textarea
+                  value={modelDetails}
+                  onChange={(e) => setModelDetails(e.target.value)}
+                  placeholder={`ระบุรายละเอียด${modelType === 'female' ? 'นางแบบ' : 'นายแบบ'} เช่น: อายุ 25, ผิวขาว, สัญชาติไทย, ผมยาว, สูง 165 cm`}
+                  rows="2"
+                  className="w-full px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#00F2EA]"
+                />
+                <p className="text-xs text-gray-400 mt-1">ใส่รายละเอียดลักษณะที่ต้องการ (เผื่อไม่ใช้ Cameo)</p>
+              </div>
+            )}
+          </div>
+
+          {/* Gender, Duration, Aspect Ratio (Dropdowns) */}
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-semibold text-white mb-2">
-                👤 เพศผู้พูด
+                🗣️ เพศผู้พูด
               </label>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer p-3 bg-[#0a0a0a] rounded-lg border border-gray-700 hover:border-[#00F2EA] transition-colors">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="female"
-                    checked={gender === 'female'}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="text-[#00F2EA]"
-                  />
-                  <span className="text-white text-sm">ผู้หญิง</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer p-3 bg-[#0a0a0a] rounded-lg border border-gray-700 hover:border-[#00F2EA] transition-colors">
-                  <input
-                    type="radio"
-                    name="gender"
-                    value="male"
-                    checked={gender === 'male'}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="text-[#00F2EA]"
-                  />
-                  <span className="text-white text-sm">ผู้ชาย</span>
-                </label>
-              </div>
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="w-full px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00F2EA]"
+              >
+                <option value="female">ผู้หญิง</option>
+                <option value="male">ผู้ชาย</option>
+                <option value="none">ไม่มีเสียงพูด</option>
+              </select>
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-white mb-2">
                 ⏱️ ระยะเวลา
               </label>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer p-3 bg-[#0a0a0a] rounded-lg border border-gray-700 hover:border-[#00F2EA] transition-colors">
-                  <input
-                    type="radio"
-                    name="duration"
-                    value="10"
-                    checked={duration === 10}
-                    onChange={(e) => setDuration(parseInt(e.target.value))}
-                    className="text-[#00F2EA]"
-                  />
-                  <span className="text-white text-sm">10 วินาที (10 เครดิต)</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer p-3 bg-[#0a0a0a] rounded-lg border border-gray-700 hover:border-[#00F2EA] transition-colors">
-                  <input
-                    type="radio"
-                    name="duration"
-                    value="15"
-                    checked={duration === 15}
-                    onChange={(e) => setDuration(parseInt(e.target.value))}
-                    className="text-[#00F2EA]"
-                  />
-                  <span className="text-white text-sm">15 วินาที (15 เครดิต)</span>
-                </label>
-              </div>
+              <select
+                value={duration}
+                onChange={(e) => setDuration(parseInt(e.target.value))}
+                className="w-full px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00F2EA]"
+              >
+                <option value="10">10 วินาที (10 เครดิต)</option>
+                <option value="15">15 วินาที (15 เครดิต)</option>
+              </select>
             </div>
-          </div>
 
-          {/* Aspect Ratio */}
-          <div>
-            <label className="block text-sm font-semibold text-white mb-2">
-              📐 สัดส่วนวิดีโอ
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="flex items-center gap-2 cursor-pointer p-3 bg-[#0a0a0a] rounded-lg border border-gray-700 hover:border-[#00F2EA] transition-colors">
-                <input
-                  type="radio"
-                  name="aspectRatio"
-                  value="9:16"
-                  checked={aspectRatio === '9:16'}
-                  onChange={(e) => setAspectRatio(e.target.value)}
-                  className="text-[#00F2EA]"
-                />
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-10 bg-gradient-to-br from-[#00F2EA] to-[#FE2C55] rounded"></div>
-                  <span className="text-white text-sm">แนวตั้ง (9:16)</span>
-                </div>
+            <div>
+              <label className="block text-sm font-semibold text-white mb-2">
+                📐 สัดส่วน
               </label>
-              <label className="flex items-center gap-2 cursor-pointer p-3 bg-[#0a0a0a] rounded-lg border border-gray-700 hover:border-[#00F2EA] transition-colors">
-                <input
-                  type="radio"
-                  name="aspectRatio"
-                  value="16:9"
-                  checked={aspectRatio === '16:9'}
-                  onChange={(e) => setAspectRatio(e.target.value)}
-                  className="text-[#00F2EA]"
-                />
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-6 bg-gradient-to-br from-[#00F2EA] to-[#FE2C55] rounded"></div>
-                  <span className="text-white text-sm">แนวนอน (16:9)</span>
-                </div>
-              </label>
+              <select
+                value={aspectRatio}
+                onChange={(e) => setAspectRatio(e.target.value)}
+                className="w-full px-4 py-2 bg-[#0a0a0a] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#00F2EA]"
+              >
+                <option value="9:16">📱 แนวตั้ง (9:16)</option>
+                <option value="16:9">🖥️ แนวนอน (16:9)</option>
+              </select>
             </div>
           </div>
 

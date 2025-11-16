@@ -70,14 +70,14 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       credits: 60 // KIE: $1.00-1.30/10s = 60 credits
     },
     'sora-2-hd': {
-      name: 'Sora 2 HD (1080p - CometAPI)',
+      name: 'Sora 2 HD (1080p)',
       durations: [10], // Fixed 10 seconds only
       resolutions: {
         '16:9': ['1080p'], // Fixed 1080p
         '9:16': ['1080p']  // Fixed 1080p
       },
       aspectRatios: ['16:9', '9:16'], // Only horizontal and vertical
-      credits: 15 // CometAPI pricing
+      credits: 15
     }
   }
 
@@ -100,7 +100,7 @@ export default function VideoGenerator({ sourceImage = null, sourcePrompt = '', 
       setAspectRatio('16:9')
     }
 
-    // Note: Sora 2 now supports image-to-video with max_tokens parameter (confirmed by CometAPI team)
+    // Note: Sora 2 now supports image-to-video
   }, [model])
 
   // Auto-adjust resolution if not available for selected aspect ratio
