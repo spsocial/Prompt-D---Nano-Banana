@@ -468,7 +468,15 @@ export default function VoiceGenerator() {
       }
     } catch (error) {
       console.error('Preview error:', error)
-      alert('เกิดข้อผิดพลาด: ' + error.message)
+
+      // Better error message for API key issues
+      if (error.message.includes('API key not configured')) {
+        alert('❌ ไม่พบ API Key\n\n' +
+          'กรุณาตั้งค่า ELEVENLABS_API_KEY ใน environment variables\n\n' +
+          'หรือเลือกใช้ "Standard AI" (Gemini TTS) แทน ซึ่งไม่ต้องใช้ API key')
+      } else {
+        alert('เกิดข้อผิดพลาด: ' + error.message)
+      }
     } finally {
       setIsPreviewing(false)
     }
@@ -589,7 +597,15 @@ export default function VoiceGenerator() {
       // Refund credits on error
       await refundCredits(requiredCredits, error.message || 'Voice generation failed')
 
-      alert('❌ ' + error.message + '\n(เครดิตถูกคืนให้อัตโนมัติแล้ว)')
+      // Better error message for API key issues
+      if (error.message.includes('API key not configured')) {
+        alert('❌ ไม่พบ API Key\n\n' +
+          'กรุณาตั้งค่า ELEVENLABS_API_KEY ใน environment variables\n\n' +
+          'หรือเลือกใช้ "Standard AI" (Gemini TTS) แทน ซึ่งไม่ต้องใช้ API key\n\n' +
+          '(เครดิตถูกคืนให้อัตโนมัติแล้ว)')
+      } else {
+        alert('❌ ' + error.message + '\n(เครดิตถูกคืนให้อัตโนมัติแล้ว)')
+      }
     } finally {
       setIsGenerating(false)
     }

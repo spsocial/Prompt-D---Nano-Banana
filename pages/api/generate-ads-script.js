@@ -34,8 +34,9 @@ export default async function handler(req, res) {
 
     console.log(`🎙️ Analyzing ${isVoiceMode ? 'image for voice script' : 'product for ads script'}:`, productName || 'No product name')
 
-    // Calculate word target based on duration (Thai: ~3 chars per word, ~17 chars/sec)
-    const estimatedWords = Math.floor(duration / 2) // Rough estimate: 2 seconds per word
+    // Calculate word target based on duration
+    // Thai speaking rate: ~2.5 words per second (typical ads pace)
+    const estimatedWords = Math.floor(duration * 2.5)
     const wordTarget = `${estimatedWords - 5}-${estimatedWords + 5} คำ`
     const genderSuffix = gender === 'female' ? 'ค่ะ' : 'ครับ'
 
