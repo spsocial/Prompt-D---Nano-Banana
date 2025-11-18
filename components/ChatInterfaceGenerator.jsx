@@ -365,7 +365,8 @@ export default function ChatInterfaceGenerator() {
           body: JSON.stringify({
             prompts: prompts,
             originalImage: currentImage,
-            aspectRatio: aspectRatio
+            aspectRatio: aspectRatio,
+            userId: userId
           })
         })
 

@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai"
 import { safeLog, truncateDataUri } from '../../lib/logUtils';
+import { trackImageGeneration } from '../../lib/analytics-db';
 
 export const config = {
   api: {
@@ -15,7 +16,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prompts, apiKey, replicateApiKey, originalImage, aspectRatio = '1:1' } = req.body
+    const { prompts, apiKey, replicateApiKey, originalImage, aspectRatio = '1:1', userId } = req.body
 
     if (!prompts || !Array.isArray(prompts)) {
       return res.status(400).json({ error: 'No prompts provided' })
@@ -294,6 +295,30 @@ ${promptData.style} style with premium quality`
     const successCount = results.filter(r => r.isGenerated).length
     const placeholderCount = results.filter(r => r.isPlaceholder).length
     const quotaErrorCount = results.filter(r => r.isQuotaError).length
+
+    // Track successful image generations to analytics
+    if (userId && successCount > 0) {
+      try {
+        // API cost per image: 1.2 baht (Nano Banana pricing)
+        const apiCostPerImage = 1.2;
+
+        // Track each successful generation
+        for (const result of results) {
+          if (result.isGenerated) {
+            await trackImageGeneration(
+              userId,
+              result.style || 'Unknown',
+              `Generated ${successCount} images: ${result.prompt || 'No prompt'}`,
+              apiCostPerImage
+            );
+          }
+        }
+        console.log(`✅ Tracked ${successCount} image generations for user ${userId}`);
+      } catch (trackError) {
+        console.error('⚠️ Failed to track analytics:', trackError);
+        // Don't fail the request if tracking fails
+      }
+    }
 
     // If all requests hit quota, use mock generator
     if (quotaErrorCount === results.length) {
