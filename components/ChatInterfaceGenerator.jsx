@@ -597,33 +597,36 @@ export default function ChatInterfaceGenerator() {
             <div className="flex items-center gap-1 bg-[#1a1a1a] rounded-full p-1">
               <button
                 onClick={() => setMode('image')}
-                className={`px-4 py-2.5 rounded-full text-xs font-medium transition-all flex items-center justify-center ${
+                className={`px-4 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
                   mode === 'image'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
                 <ImageIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Image</span>
               </button>
               <button
                 onClick={() => setMode('video')}
-                className={`px-4 py-2.5 rounded-full text-xs font-medium transition-all flex items-center justify-center ${
+                className={`px-4 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
                   mode === 'video'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
                 <Film className="h-4 w-4" />
+                <span className="hidden sm:inline">Video</span>
               </button>
               <button
                 onClick={() => setMode('voice')}
-                className={`px-4 py-2.5 rounded-full text-xs font-medium transition-all flex items-center justify-center ${
+                className={`px-4 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
                   mode === 'voice'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
                 <Volume2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Voice</span>
               </button>
             </div>
 
