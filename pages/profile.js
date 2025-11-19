@@ -12,7 +12,12 @@ export default function Profile() {
 
   const [userId, setUserId] = useState('')
   const [copied, setCopied] = useState(false)
-  const [stats, setStats] = useState({ totalGenerated: 0, totalSpent: 0 })
+  const [stats, setStats] = useState({
+    totalImages: 0,
+    totalVideos: 0,
+    creditsUsed: 0,
+    totalCreditsAdded: 0
+  })
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -33,21 +38,20 @@ export default function Profile() {
       // Load stats from database via API
       const fetchStats = async () => {
         try {
-          const response = await fetch(`/api/credits?userId=${uid}`)
+          const response = await fetch(`/api/user/profile-stats?userId=${uid}`)
           const data = await response.json()
 
           if (data.success) {
-            setStats({
-              totalGenerated: data.totalGenerated || 0,
-              totalSpent: data.totalSpent || 0
-            })
+            setStats(data.stats)
           }
         } catch (error) {
           console.error('Error loading stats:', error)
           // Fallback to 0 if API fails
           setStats({
-            totalGenerated: 0,
-            totalSpent: 0
+            totalImages: 0,
+            totalVideos: 0,
+            creditsUsed: 0,
+            totalCreditsAdded: 0
           })
         }
       }
@@ -141,7 +145,7 @@ export default function Profile() {
               </div>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div className="bg-[#0a0a0a] rounded-xl p-4 border border-gray-800">
                   <div className="flex items-center gap-3">
                     <div className="p-3 bg-[#00F2EA]/20 rounded-lg">
@@ -156,26 +160,49 @@ export default function Profile() {
 
                 <div className="bg-[#0a0a0a] rounded-xl p-4 border border-gray-800">
                   <div className="flex items-center gap-3">
-                    <div className="p-3 bg-[#FE2C55]/20 rounded-lg">
-                      <Sparkles className="h-6 w-6 text-[#FE2C55]" />
+                    <div className="p-3 bg-purple-500/20 rounded-lg">
+                      <Sparkles className="h-6 w-6 text-purple-400" />
                     </div>
                     <div>
-                      <div className="text-gray-400 text-sm">สร้างแล้ว</div>
-                      <div className="text-2xl font-bold text-white">{stats.totalGenerated}</div>
+                      <div className="text-gray-400 text-sm">ภาพที่สร้าง</div>
+                      <div className="text-2xl font-bold text-white">{stats.totalImages || 0}</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-[#0a0a0a] rounded-xl p-4 border border-gray-800">
                   <div className="flex items-center gap-3">
-                    <div className="p-3 bg-purple-500/20 rounded-lg">
-                      <Wallet className="h-6 w-6 text-purple-400" />
+                    <div className="p-3 bg-[#FE2C55]/20 rounded-lg">
+                      <Sparkles className="h-6 w-6 text-[#FE2C55]" />
                     </div>
                     <div>
-                      <div className="text-gray-400 text-sm">ใช้ไปทั้งหมด</div>
-                      <div className="text-2xl font-bold text-white">{stats.totalSpent}</div>
+                      <div className="text-gray-400 text-sm">วิดีโอที่สร้าง</div>
+                      <div className="text-2xl font-bold text-white">{stats.totalVideos || 0}</div>
                     </div>
                   </div>
+                </div>
+
+                <div className="bg-[#0a0a0a] rounded-xl p-4 border border-gray-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-orange-500/20 rounded-lg">
+                      <Wallet className="h-6 w-6 text-orange-400" />
+                    </div>
+                    <div>
+                      <div className="text-gray-400 text-sm">เครดิตที่ใช้ไป</div>
+                      <div className="text-2xl font-bold text-white">{stats.creditsUsed || 0}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Money Stats */}
+              <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl p-4 border border-green-500/30 mb-8">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-green-400 text-sm mb-1">💰 ยอดเติมเงินรวม (ไม่รวมฟรี/เคลม)</div>
+                    <div className="text-3xl font-bold text-green-400">{stats.totalCreditsAdded || 0} <span className="text-lg">เครดิต</span></div>
+                  </div>
+                  <Wallet className="h-12 w-12 text-green-400 opacity-50" />
                 </div>
               </div>
 
