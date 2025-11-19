@@ -75,10 +75,25 @@ export default async function handler(req, res) {
         totals.newUsers += day.newUsers || 0;
       });
 
+      // Calculate costs
+      // Image cost: 0.68 baht per image (Nano Banana)
+      // Video cost: depends on duration (10s or 15s) - using Sora 2
+      // Assuming average video cost ~12 baht (mix of 10s and 15s)
+      const imageCost = totals.images * 0.68;
+      const videoCost = totals.videos * 12; // Average cost
+      const totalCost = imageCost + videoCost;
+
+      // Calculate profit (revenue - cost, only for paid transactions)
+      const profit = revenue - totalCost;
+      const profitMargin = revenue > 0 ? ((profit / revenue) * 100).toFixed(2) : 0;
+
       return {
         month: stat.month,
         revenue,
         transactions: paidTransactions,
+        cost: totalCost,
+        profit,
+        profitMargin,
         ...totals
       };
     }));

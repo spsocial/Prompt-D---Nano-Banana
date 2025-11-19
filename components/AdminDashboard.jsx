@@ -625,7 +625,7 @@ export default function AdminDashboard() {
               ) : historicalData ? (
                 <div>
                   {/* Summary Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                     <div className="bg-purple-50 p-4 rounded-lg">
                       <p className="text-sm text-gray-600">ภาพทั้งหมด</p>
                       <p className="text-2xl font-bold text-purple-600">{historicalData.totals.images}</p>
@@ -634,14 +634,29 @@ export default function AdminDashboard() {
                       <p className="text-sm text-gray-600">วิดีโอทั้งหมด</p>
                       <p className="text-2xl font-bold text-red-600">{historicalData.totals.videos}</p>
                     </div>
-                    <div className="bg-orange-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">วิดีโอ Error</p>
-                      <p className="text-2xl font-bold text-orange-600">{historicalData.totals.videoErrors}</p>
-                      <p className="text-xs text-orange-500 mt-1">เครดิตคืนอัตโนมัติ</p>
-                    </div>
                     <div className="bg-green-50 p-4 rounded-lg">
                       <p className="text-sm text-gray-600">รายได้</p>
                       <p className="text-2xl font-bold text-green-600">{formatCurrency(historicalData.totals.revenue)}</p>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">ต้นทุน</p>
+                      <p className="text-2xl font-bold text-orange-600">
+                        {formatCurrency(historicalData.chartData.reduce((sum, d) => sum + (d.cost || 0), 0))}
+                      </p>
+                    </div>
+                    <div className={`p-4 rounded-lg ${
+                      historicalData.chartData.reduce((sum, d) => sum + (d.profit || 0), 0) >= 0
+                        ? 'bg-emerald-50'
+                        : 'bg-red-50'
+                    }`}>
+                      <p className="text-sm text-gray-600">กำไร</p>
+                      <p className={`text-2xl font-bold ${
+                        historicalData.chartData.reduce((sum, d) => sum + (d.profit || 0), 0) >= 0
+                          ? 'text-emerald-600'
+                          : 'text-red-600'
+                      }`}>
+                        {formatCurrency(historicalData.chartData.reduce((sum, d) => sum + (d.profit || 0), 0))}
+                      </p>
                     </div>
                   </div>
 
@@ -666,24 +681,31 @@ export default function AdminDashboard() {
                             <th className="p-2">วันที่</th>
                             <th className="p-2">ภาพ</th>
                             <th className="p-2">วิดีโอ</th>
-                            <th className="p-2">Sora 2</th>
                             <th className="p-2">Error</th>
-                            <th className="p-2">User ใหม่</th>
                             <th className="p-2">รายได้</th>
+                            <th className="p-2">ต้นทุน</th>
+                            <th className="p-2 font-semibold">กำไร</th>
+                            <th className="p-2">User ใหม่</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {historicalData.chartData.slice().reverse().map((day, index) => (
-                            <tr key={day.date} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                              <td className="p-2 font-mono text-xs">{day.date}</td>
-                              <td className="p-2">{day.images}</td>
-                              <td className="p-2 font-semibold text-red-600">{day.videos}</td>
-                              <td className="p-2">{day.videosSora2}</td>
-                              <td className="p-2 text-orange-600">{day.videoErrors}</td>
-                              <td className="p-2">{day.newUsers}</td>
-                              <td className="p-2 text-green-600">{formatCurrency(day.revenue)}</td>
-                            </tr>
-                          ))}
+                          {historicalData.chartData.slice().reverse().map((day, index) => {
+                            const profit = day.profit || 0;
+                            const profitColor = profit >= 0 ? 'text-emerald-600' : 'text-red-600';
+
+                            return (
+                              <tr key={day.date} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                <td className="p-2 font-mono text-xs">{day.date}</td>
+                                <td className="p-2">{day.images}</td>
+                                <td className="p-2 font-semibold text-red-600">{day.videos}</td>
+                                <td className="p-2 text-orange-600">{day.videoErrors}</td>
+                                <td className="p-2 text-green-600">{formatCurrency(day.revenue)}</td>
+                                <td className="p-2 text-orange-600">{formatCurrency(day.cost || 0)}</td>
+                                <td className={`p-2 font-bold ${profitColor}`}>{formatCurrency(profit)}</td>
+                                <td className="p-2">{day.newUsers}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -752,6 +774,42 @@ export default function AdminDashboard() {
                 </div>
               ) : monthlyData && monthlyData.months ? (
                 <div>
+                  {/* Monthly Summary Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">รายได้รวม</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {formatCurrency(monthlyData.months.reduce((sum, m) => sum + m.revenue, 0))}
+                      </p>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">ต้นทุนรวม</p>
+                      <p className="text-2xl font-bold text-orange-600">
+                        {formatCurrency(monthlyData.months.reduce((sum, m) => sum + (m.cost || 0), 0))}
+                      </p>
+                    </div>
+                    <div className={`p-4 rounded-lg ${
+                      monthlyData.months.reduce((sum, m) => sum + (m.profit || 0), 0) >= 0
+                        ? 'bg-emerald-50'
+                        : 'bg-red-50'
+                    }`}>
+                      <p className="text-sm text-gray-600">กำไรรวม</p>
+                      <p className={`text-2xl font-bold ${
+                        monthlyData.months.reduce((sum, m) => sum + (m.profit || 0), 0) >= 0
+                          ? 'text-emerald-600'
+                          : 'text-red-600'
+                      }`}>
+                        {formatCurrency(monthlyData.months.reduce((sum, m) => sum + (m.profit || 0), 0))}
+                      </p>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <p className="text-sm text-gray-600">รายการทั้งหมด</p>
+                      <p className="text-2xl font-bold text-purple-600">
+                        {monthlyData.months.reduce((sum, m) => sum + m.transactions, 0)}
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Monthly Data Table */}
                   <div className="overflow-x-auto max-h-96 overflow-y-auto">
                     <table className="min-w-full text-sm">
@@ -759,10 +817,12 @@ export default function AdminDashboard() {
                         <tr className="text-left text-xs text-gray-600">
                           <th className="p-2">เดือน</th>
                           <th className="p-2">รายได้</th>
+                          <th className="p-2">ต้นทุน</th>
+                          <th className="p-2 font-semibold">กำไร</th>
+                          <th className="p-2">Margin</th>
                           <th className="p-2">รายการ</th>
                           <th className="p-2">ภาพ</th>
                           <th className="p-2">วิดีโอ</th>
-                          <th className="p-2">Sora 2</th>
                           <th className="p-2">Error</th>
                           <th className="p-2">User ใหม่</th>
                         </tr>
@@ -775,14 +835,19 @@ export default function AdminDashboard() {
                                              'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
                           const monthDisplay = `${thaiMonths[parseInt(monthNum) - 1]} ${parseInt(year) + 543}`;
 
+                          const profit = month.profit || 0;
+                          const profitColor = profit >= 0 ? 'text-emerald-600' : 'text-red-600';
+
                           return (
                             <tr key={month.month} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                               <td className="p-2 font-mono text-xs">{monthDisplay}</td>
                               <td className="p-2 font-semibold text-green-600">{formatCurrency(month.revenue)}</td>
+                              <td className="p-2 text-orange-600">{formatCurrency(month.cost || 0)}</td>
+                              <td className={`p-2 font-bold ${profitColor}`}>{formatCurrency(profit)}</td>
+                              <td className="p-2 text-xs text-gray-600">{month.profitMargin || 0}%</td>
                               <td className="p-2">{month.transactions}</td>
                               <td className="p-2">{month.images}</td>
                               <td className="p-2 font-semibold text-red-600">{month.videos}</td>
-                              <td className="p-2">{month.videosSora2}</td>
                               <td className="p-2 text-orange-600">{month.videoErrors}</td>
                               <td className="p-2">{month.newUsers}</td>
                             </tr>

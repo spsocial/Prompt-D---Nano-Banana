@@ -64,16 +64,32 @@ export default async function handler(req, res) {
     });
 
     // Format data for charts (only Sora 2 now)
-    const chartData = dailyStats.map(stat => ({
-      date: stat.date.toISOString().split('T')[0],
-      images: stat.totalImages || 0,
-      videos: stat.totalVideos || 0,
-      videosSora2: stat.videosSora2 || 0,
-      videoErrors: stat.videoErrors || 0,
-      revenue: stat.totalRevenue || 0,
-      transactions: stat.totalTransactions || 0,
-      newUsers: stat.newUsers || 0
-    }));
+    const chartData = dailyStats.map(stat => {
+      const images = stat.totalImages || 0;
+      const videos = stat.totalVideos || 0;
+      const revenue = stat.totalRevenue || 0;
+
+      // Calculate daily costs
+      const imageCost = images * 0.68; // Nano Banana
+      const videoCost = videos * 12;   // Average Sora 2 cost
+      const totalCost = imageCost + videoCost;
+
+      // Calculate daily profit
+      const profit = revenue - totalCost;
+
+      return {
+        date: stat.date.toISOString().split('T')[0],
+        images,
+        videos,
+        videosSora2: stat.videosSora2 || 0,
+        videoErrors: stat.videoErrors || 0,
+        revenue,
+        cost: totalCost,
+        profit,
+        transactions: stat.totalTransactions || 0,
+        newUsers: stat.newUsers || 0
+      };
+    });
 
     return res.status(200).json({
       range: range === 'all' ? 'all' : `${daysToFetch} days`,
