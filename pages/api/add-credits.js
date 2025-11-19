@@ -1,66 +1,88 @@
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
-    const { userId, credits, adminPassword } = req.body
+    const { userId, credits, amount, adminPassword, reason, isInternalCall } = req.body
 
-    // Validate admin password
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'nano2024'
+    // Support both 'credits' and 'amount' parameter names
+    const creditAmount = amount || credits
 
-    if (adminPassword !== ADMIN_PASSWORD) {
-      return res.status(401).json({
-        success: false,
-        message: 'ไม่มีสิทธิ์เข้าถึง'
-      })
+    // Check if this is an internal API call (from server-side)
+    const isInternal = isInternalCall === true || reason?.includes('Refund:')
+
+    // Validate admin password ONLY for external calls (from admin UI)
+    if (!isInternal) {
+      const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'nano2024'
+
+      if (adminPassword !== ADMIN_PASSWORD) {
+        return res.status(401).json({
+          success: false,
+          message: 'ไม่มีสิทธิ์เข้าถึง'
+        })
+      }
+    } else {
+      console.log(`🔄 Internal credit refund request: ${userId} - ${creditAmount} credits`);
     }
 
     // Validate inputs
-    if (!userId || !credits) {
+    if (!userId || !creditAmount) {
       return res.status(400).json({
         success: false,
         message: 'กรุณาระบุ User ID และจำนวนเครดิต'
       })
     }
 
-    const creditAmount = parseInt(credits)
-    if (isNaN(creditAmount) || creditAmount <= 0) {
+    const creditAmountInt = parseInt(creditAmount)
+    if (isNaN(creditAmountInt) || creditAmountInt <= 0) {
       return res.status(400).json({
         success: false,
         message: 'จำนวนเครดิตต้องเป็นตัวเลขมากกว่า 0'
       })
     }
 
-    // Generate a unique credit code for this transaction
-    const creditCode = `ADMIN_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    // Add credits to user in database
+    const user = await prisma.user.findUnique({
+      where: { userId }
+    });
 
-    // Store credit allocation in a way that can be retrieved by the user
-    // In a real application, this would be stored in a database
-    // For now, we'll return the credit code that the admin can give to the user
-
-    const creditData = {
-      userId,
-      credits: creditAmount,
-      code: creditCode,
-      createdAt: new Date().toISOString(),
-      createdBy: 'admin',
-      used: false
+    if (!user) {
+      await prisma.$disconnect();
+      return res.status(404).json({
+        success: false,
+        message: `ไม่พบผู้ใช้ ${userId} ในระบบ`
+      });
     }
 
-    // Log the credit allocation (in production, save to database)
-    console.log('Credit Allocation:', creditData)
+    // Update user credits
+    const updatedUser = await prisma.user.update({
+      where: { userId },
+      data: {
+        credits: {
+          increment: creditAmountInt
+        }
+      }
+    });
 
-    // Return success with credit code
+    await prisma.$disconnect();
+
+    // Log the credit addition
+    const logMessage = reason || `Admin added ${creditAmountInt} credits`;
+    console.log(`✅ Credits added: ${userId} +${creditAmountInt} (${logMessage})`);
+
+    // Return success
     return res.status(200).json({
       success: true,
-      message: `สร้างโค้ดเครดิต ${creditAmount} หน่วยสำเร็จ`,
-      data: {
-        userId,
-        credits: creditAmount,
-        code: creditCode,
-        instruction: `ให้ผู้ใช้กรอกโค้ด: ${creditCode} ในระบบเพื่อรับเครดิต`
-      }
+      message: isInternal
+        ? `คืนเครดิต ${creditAmountInt} หน่วยสำเร็จ`
+        : `เพิ่มเครดิต ${creditAmountInt} หน่วยสำเร็จ`,
+      newBalance: updatedUser.credits,
+      creditsAdded: creditAmountInt
     })
 
   } catch (error) {

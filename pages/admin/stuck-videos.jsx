@@ -82,6 +82,55 @@ export default function StuckVideosAdmin() {
     return `${diffDays} วันที่แล้ว`
   }
 
+  const translateErrorToThai = (error) => {
+    if (!error) return 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+
+    const errorLower = error.toLowerCase()
+
+    // OpenAI Content Policy Violations
+    if (errorLower.includes('content may violate') || errorLower.includes('content policies')) {
+      return '🚫 เนื้อหาอาจละเมิดนโยบายของ OpenAI (อาจมีเนื้อหาไม่เหมาะสม หรือละเอียดอ่อน)'
+    }
+
+    // Photorealistic People Detection
+    if (errorLower.includes('photorealistic people') || errorLower.includes('uploads of images containing')) {
+      return '🚫 ไม่รองรับการอัปโหลดภาพบุคคลจริง (Photorealistic People)'
+    }
+
+    // Third-party Content / Copyright
+    if (errorLower.includes('third-party content') || errorLower.includes('similarity to third-party')) {
+      return '🚫 เนื้อหาคล้ายกับลิขสิทธิ์ของบุคคลที่สาม (เช่น ตราสินค้า บุคคลดัง)'
+    }
+
+    // Suggestive / Racy Content
+    if (errorLower.includes('suggestive') || errorLower.includes('racy material')) {
+      return '🚫 เนื้อหามีลักษณะชวนจินตนาการหรือไม่เหมาะสม (Suggestive/Racy)'
+    }
+
+    // Nudity / Sexuality / Erotic
+    if (errorLower.includes('nudity') || errorLower.includes('sexuality') || errorLower.includes('erotic')) {
+      return '🚫 เนื้อหาเกี่ยวกับความเปลือยเปล่าหรือเนื้อหาทางเพศ'
+    }
+
+    // Cameo Access Issues
+    if (errorLower.includes('cameo') || errorLower.includes('not allowed to access')) {
+      return '⚠️ ไม่มีสิทธิ์เข้าถึง Cameo ที่ระบุ (ตรวจสอบว่ามี Cameo ID ถูกต้อง)'
+    }
+
+    // Internal / Unknown Errors
+    if (errorLower.includes('internal error')) {
+      return '⚠️ เกิดข้อผิดพลาดภายในระบบ กรุณาลองใหม่อีกครั้ง'
+    }
+
+    // Timeout
+    if (errorLower.includes('timeout')) {
+      return '⏱️ หมดเวลารอ (Timeout) - การสร้างวิดีโอใช้เวลานานเกินไป'
+    }
+
+    // Default: show original error with warning emoji
+    return `⚠️ ${error}`
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center p-4">
@@ -290,8 +339,18 @@ export default function StuckVideosAdmin() {
                         )}
 
                         {activeTab === 'failed' && video.error && (
-                          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                            Error: {video.error}
+                          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="text-sm font-semibold text-red-800 mb-1">
+                              {translateErrorToThai(video.error)}
+                            </div>
+                            <details className="text-xs text-red-600 mt-2">
+                              <summary className="cursor-pointer hover:text-red-800 font-medium">
+                                ดู Error ต้นฉบับ (English)
+                              </summary>
+                              <div className="mt-2 p-2 bg-red-100 rounded border border-red-300 font-mono">
+                                {video.error}
+                              </div>
+                            </details>
                           </div>
                         )}
                       </div>
