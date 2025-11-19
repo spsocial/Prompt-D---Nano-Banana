@@ -419,32 +419,37 @@ export default function VoiceGenerator() {
       // Only check for pre-generated files for ElevenLabs (Premium voices)
       // Gemini is free, so no need to save preview files
       if (provider === 'elevenlabs') {
-        const previewAudioPath = `/voice-previews/elevenlabs/${voiceId}.mp3`
+        // Find voice from database to get previewUrl
+        const voice = elevenlabsVoices.find(v => v.voiceId === voiceId)
 
-        console.log(`🔍 Checking for pre-generated ElevenLabs preview: ${previewAudioPath}`)
+        if (voice && voice.previewUrl) {
+          console.log(`🔍 Using pre-generated preview from Cloudinary: ${voice.previewUrl}`)
 
-        const audio = new Audio(previewAudioPath)
+          const audio = new Audio(voice.previewUrl)
 
-        // Setup promise to detect if audio loads successfully
-        const audioLoaded = new Promise((resolve, reject) => {
-          audio.addEventListener('canplay', () => resolve(true), { once: true })
-          audio.addEventListener('error', () => reject(new Error('File not found')), { once: true })
-        })
+          // Setup promise to detect if audio loads successfully
+          const audioLoaded = new Promise((resolve, reject) => {
+            audio.addEventListener('canplay', () => resolve(true), { once: true })
+            audio.addEventListener('error', () => reject(new Error('Failed to load preview')), { once: true })
+          })
 
-        try {
-          await audioLoaded
-          // Audio file exists and loaded successfully
-          console.log(`✅ Playing pre-generated preview (saves ElevenLabs credits!)`)
-          audio.play()
-          setAudioPlayer(audio)
+          try {
+            await audioLoaded
+            // Audio file exists and loaded successfully
+            console.log(`✅ Playing pre-generated preview (saves ElevenLabs credits!)`)
+            audio.play()
+            setAudioPlayer(audio)
 
-          audio.onended = () => {
-            setIsPreviewing(false)
+            audio.onended = () => {
+              setIsPreviewing(false)
+            }
+
+            return // Success, no need for API call
+          } catch (fileError) {
+            console.log(`⚠️ Failed to load preview file, falling back to ElevenLabs API`)
           }
-
-          return // Success, no need for API call
-        } catch (fileError) {
-          console.log(`⚠️ No pre-generated file found, falling back to ElevenLabs API`)
+        } else {
+          console.log(`⚠️ No preview URL found in database, falling back to ElevenLabs API`)
         }
       }
 
