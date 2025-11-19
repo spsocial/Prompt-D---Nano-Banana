@@ -12,7 +12,7 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile, req }) {
       // Called when user signs in
       console.log('🔐 User signing in:', user.email)
 
@@ -24,6 +24,15 @@ export const authOptions = {
       if (!existingUser) {
         // Create new user with email as userId
         const userId = 'U-' + user.email.split('@')[0].toUpperCase()
+
+        // เช็ค referral code จาก cookies (ถ้ามี)
+        let referredBy = null;
+        try {
+          // NextAuth ไม่ให้ access req.cookies โดยตรง แต่เราจะตั้งค่าทีหลังผ่าน API
+          // เพราะงั้นเราจะสร้าง user ธรรมดาก่อน แล้วให้ frontend เรียก API set-referral หลัง signin
+        } catch (e) {
+          console.log('No referral code found in cookies');
+        }
 
         await prisma.user.upsert({
           where: { email: user.email },
@@ -42,7 +51,8 @@ export const authOptions = {
             credits: 10, // Give 10 free credits for new users
             totalGenerated: 0,
             totalSpent: 0,
-            creditsUsed: 0
+            creditsUsed: 0,
+            // referredBy จะถูก set ทีหลังผ่าน API /api/affiliate/set-referral
           }
         })
 

@@ -386,7 +386,7 @@ export default function AdminDashboard() {
                   <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                     <p className="text-sm text-gray-600">ต้นทุนภาพ</p>
                     <p className="text-xl font-bold text-orange-600">{formatCurrency(stats.costs.imagesToday || 0)}</p>
-                    <p className="text-xs text-gray-500">API: NanoBanana (1.2฿/ภาพ)</p>
+                    <p className="text-xs text-gray-500">API: Nano Banana (0.68฿/ภาพ)</p>
                   </div>
                   <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                     <p className="text-sm text-gray-600">ต้นทุนวิดีโอ</p>

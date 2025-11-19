@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Shield, LogOut, Gift, UserPlus, Search, BarChart3 } from 'lucide-react'
+import { Shield, LogOut, Gift, UserPlus, Search, BarChart3, Wallet } from 'lucide-react'
 import AdminDashboard from './AdminDashboard'
 
 export default function AdminSettings() {
@@ -19,6 +19,16 @@ export default function AdminSettings() {
   const [checkUserId, setCheckUserId] = useState('')
   const [checkResult, setCheckResult] = useState(null)
 
+  // Withdrawal Management States
+  const [pendingWithdrawals, setPendingWithdrawals] = useState([])
+  const [loadingWithdrawals, setLoadingWithdrawals] = useState(false)
+  const [processingWithdrawal, setProcessingWithdrawal] = useState(null)
+  const [withdrawalForm, setWithdrawalForm] = useState({
+    withdrawalId: '',
+    slipUrl: '',
+    note: ''
+  })
+
   useEffect(() => {
     // Check if already authenticated
     const authStatus = sessionStorage.getItem('admin_authenticated') === 'true'
@@ -26,6 +36,13 @@ export default function AdminSettings() {
       setIsAuthenticated(true)
     }
   }, [])
+
+  useEffect(() => {
+    // Load pending withdrawals when switching to withdrawals tab
+    if (activeTab === 'withdrawals' && isAuthenticated) {
+      loadPendingWithdrawals()
+    }
+  }, [activeTab, isAuthenticated])
 
   const handlePasswordSubmit = (e) => {
     e.preventDefault()
@@ -135,6 +152,95 @@ export default function AdminSettings() {
     }
   }
 
+  // Withdrawal Management Functions
+  async function loadPendingWithdrawals() {
+    try {
+      setLoadingWithdrawals(true)
+      const response = await fetch('/api/affiliate/admin/pending-withdrawals')
+      const data = await response.json()
+
+      if (data.success) {
+        setPendingWithdrawals(data.withdrawals || [])
+      } else {
+        console.error('Failed to load withdrawals:', data.message)
+      }
+    } catch (error) {
+      console.error('Error loading withdrawals:', error)
+    } finally {
+      setLoadingWithdrawals(false)
+    }
+  }
+
+  async function handleApproveWithdrawal(withdrawalId) {
+    if (!confirm('ยืนยันการอนุมัติถอนเงิน?')) return
+
+    try {
+      setProcessingWithdrawal(withdrawalId)
+
+      const response = await fetch('/api/admin/approve-withdrawal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          withdrawalId,
+          action: 'approve',
+          slipUrl: withdrawalForm.slipUrl || null,
+          note: withdrawalForm.note || 'อนุมัติและโอนเงินเรียบร้อย'
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        alert('✅ อนุมัติการถอนเงินสำเร็จ')
+        // Reload withdrawals
+        await loadPendingWithdrawals()
+        // Clear form
+        setWithdrawalForm({ withdrawalId: '', slipUrl: '', note: '' })
+      } else {
+        alert(`❌ เกิดข้อผิดพลาด: ${data.error || data.message}`)
+      }
+    } catch (error) {
+      console.error('Error approving withdrawal:', error)
+      alert('เกิดข้อผิดพลาดในการอนุมัติ')
+    } finally {
+      setProcessingWithdrawal(null)
+    }
+  }
+
+  async function handleRejectWithdrawal(withdrawalId) {
+    const reason = prompt('กรุณาระบุเหตุผลในการปฏิเสธ:')
+    if (!reason) return
+
+    try {
+      setProcessingWithdrawal(withdrawalId)
+
+      const response = await fetch('/api/admin/approve-withdrawal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          withdrawalId,
+          action: 'reject',
+          note: reason
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        alert('✅ ปฏิเสธการถอนเงินแล้ว')
+        // Reload withdrawals
+        await loadPendingWithdrawals()
+      } else {
+        alert(`❌ เกิดข้อผิดพลาด: ${data.error || data.message}`)
+      }
+    } catch (error) {
+      console.error('Error rejecting withdrawal:', error)
+      alert('เกิดข้อผิดพลาดในการปฏิเสธ')
+    } finally {
+      setProcessingWithdrawal(null)
+    }
+  }
+
   // ถ้ายังไม่ได้ login แสดงหน้า password
   if (!isAuthenticated) {
     return (
@@ -240,10 +346,26 @@ export default function AdminSettings() {
             <BarChart3 className="h-4 w-4 mr-2" />
             Dashboard สถิติ
           </button>
+          <button
+            onClick={() => setActiveTab('withdrawals')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center ${
+              activeTab === 'withdrawals'
+                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+            }`}
+          >
+            <Wallet className="h-4 w-4 mr-2" />
+            อนุมัติถอนเงิน
+            {pendingWithdrawals.length > 0 && (
+              <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">
+                {pendingWithdrawals.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'credits' ? (
+        {activeTab === 'credits' && (
           <div>
 
         {/* Credit Management Section */}
@@ -384,8 +506,146 @@ export default function AdminSettings() {
           </div>
         </div>
           </div>
-        ) : (
+        )}
+
+        {activeTab === 'dashboard' && (
           <AdminDashboard />
+        )}
+
+        {activeTab === 'withdrawals' && (
+          <div>
+            {/* Withdrawal Management Section */}
+            <div className="mt-6 p-6 bg-gradient-to-r from-green-50/50 to-emerald-50/50 backdrop-blur-sm rounded-xl border border-green-200/50">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="text-lg font-semibold flex items-center">
+                  <Wallet className="h-5 w-5 mr-2 text-green-500" />
+                  💸 คำขอถอนเงินค่าคอมมิชชั่น
+                </h4>
+                <button
+                  onClick={loadPendingWithdrawals}
+                  disabled={loadingWithdrawals}
+                  className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {loadingWithdrawals ? '⏳ กำลังโหลด...' : '🔄 รีเฟรช'}
+                </button>
+              </div>
+
+              {loadingWithdrawals ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">กำลังโหลดคำขอถอนเงิน...</p>
+                </div>
+              ) : pendingWithdrawals.length === 0 ? (
+                <div className="text-center py-12 bg-white/50 rounded-xl">
+                  <p className="text-gray-500 text-lg">✅ ไม่มีคำขอถอนเงินที่รออนุมัติ</p>
+                  <p className="text-gray-400 text-sm mt-2">คำขอถอนเงินจะแสดงที่นี่</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingWithdrawals.map((withdrawal) => (
+                    <div
+                      key={withdrawal.withdrawalId}
+                      className="bg-white rounded-xl p-6 border-2 border-green-100 hover:border-green-300 transition-all shadow-sm"
+                    >
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h5 className="font-bold text-lg text-gray-800">{withdrawal.userName}</h5>
+                            <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                              รอดำเนินการ
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            📧 {withdrawal.userEmail}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            🆔 User ID: <span className="font-mono">{withdrawal.userId}</span>
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-green-600">{withdrawal.amount.toFixed(2)}฿</p>
+                          <p className="text-xs text-gray-500">จำนวนถอน</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">ธนาคาร</p>
+                          <p className="font-semibold text-gray-800">{withdrawal.bankName}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">เลขบัญชี</p>
+                          <p className="font-mono font-semibold text-gray-800">{withdrawal.bankAccount}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">ชื่อบัญชี</p>
+                          <p className="font-semibold text-gray-800">{withdrawal.accountName}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">วันที่ขอถอน</p>
+                          <p className="text-sm text-gray-700">
+                            {new Date(withdrawal.createdAt).toLocaleString('th-TH', {
+                              dateStyle: 'medium',
+                              timeStyle: 'short'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Admin Actions */}
+                      <div className="border-t pt-4 mt-4">
+                        <p className="text-sm font-semibold text-gray-700 mb-2">การดำเนินการของ Admin</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">ลิงก์สลิปโอนเงิน (ไม่บังคับ)</label>
+                            <input
+                              type="text"
+                              placeholder="https://... (ถ้ามี)"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-400"
+                              onChange={(e) => setWithdrawalForm({ ...withdrawalForm, slipUrl: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">หมายเหตุ (ไม่บังคับ)</label>
+                            <input
+                              type="text"
+                              placeholder="เช่น โอนเงินแล้ว..."
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-400"
+                              onChange={(e) => setWithdrawalForm({ ...withdrawalForm, note: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => handleApproveWithdrawal(withdrawal.withdrawalId)}
+                            disabled={processingWithdrawal === withdrawal.withdrawalId}
+                            className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {processingWithdrawal === withdrawal.withdrawalId ? '⏳ กำลังดำเนินการ...' : '✅ อนุมัติและโอนเงิน'}
+                          </button>
+                          <button
+                            onClick={() => handleRejectWithdrawal(withdrawal.withdrawalId)}
+                            disabled={processingWithdrawal === withdrawal.withdrawalId}
+                            className="flex-1 px-4 py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {processingWithdrawal === withdrawal.withdrawalId ? '⏳ กำลังดำเนินการ...' : '❌ ปฏิเสธคำขอ'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 p-3 bg-gradient-to-r from-blue-100/50 to-indigo-100/50 rounded-lg border border-blue-200">
+                <p className="text-xs text-blue-800">
+                  <span className="font-semibold">💡 คำแนะนำ:</span> เมื่ออนุมัติแล้วระบบจะโอนเงินจาก "pendingCommission" → "withdrawnCommission" อัตโนมัติ
+                  <br />หากปฏิเสธ เงินจะยังคงอยู่ใน "pendingCommission" ให้ผู้ใช้ขอถอนใหม่ได้
+                </p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

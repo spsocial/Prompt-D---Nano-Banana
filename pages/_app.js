@@ -1,12 +1,24 @@
 import '../styles/globals.css'
 import { useEffect } from 'react'
 import { SessionProvider, useSession } from 'next-auth/react'
+import { useRouter } from 'next/router'
 import useStore from '../lib/store'
 import { trackUser } from '../lib/analytics-client'
 
 function AppContent({ Component, pageProps }) {
   const { loadUserCredits, loadHistory, setUserId } = useStore()
   const { data: session, status } = useSession()
+  const router = useRouter()
+
+  // 🎯 Affiliate System: เช็ค referral code จาก URL
+  useEffect(() => {
+    const { ref } = router.query;
+    if (ref) {
+      // บันทึก referral code ลง localStorage
+      localStorage.setItem('referralCode', ref);
+      console.log('🔗 Referral code saved:', ref);
+    }
+  }, [router.query]);
 
   useEffect(() => {
     // Clean up old history from localStorage if it exists (one-time migration)
@@ -46,11 +58,43 @@ function AppContent({ Component, pageProps }) {
 
       // Store in localStorage for backward compatibility
       localStorage.setItem('nano_user_id', userId)
+
+      // 🎯 Affiliate System: Set referral code สำหรับ new user
+      const storedReferralCode = localStorage.getItem('referralCode');
+      if (storedReferralCode) {
+        // เรียก API เพื่อบันทึก referral code (จะบันทึกได้เฉพาะ new user ที่ยังไม่มี referredBy)
+        fetch('/api/affiliate/set-referral', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: userId,
+            referralCode: storedReferralCode
+          })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              console.log('🎉 Referral code set successfully:', storedReferralCode);
+              // ลบ referralCode ออกจาก localStorage เพราะบันทึกแล้ว
+              localStorage.removeItem('referralCode');
+            } else {
+              console.log('ℹ️ Referral code not set:', data.message);
+              // ถ้า user มี referredBy อยู่แล้ว ก็ลบ referralCode ออก
+              if (data.message.includes('already has')) {
+                localStorage.removeItem('referralCode');
+              }
+            }
+          })
+          .catch(err => {
+            console.error('Error setting referral code:', err);
+          });
+      }
     } else if (status === 'unauthenticated') {
-      // User is not logged in - clear old data
+      // User is not logged in - clear old data (แต่เก็บ referralCode ไว้)
       console.log('⚠️ User not authenticated - please login')
       setUserId(null)
       localStorage.removeItem('nano_user_id')
+      // ไม่ลบ referralCode เพราะต้องใช้ตอน login
     }
   }, [session, status, loadUserCredits, loadHistory, setUserId])
 

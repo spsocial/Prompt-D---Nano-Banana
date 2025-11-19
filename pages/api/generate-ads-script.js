@@ -29,10 +29,31 @@ export default async function handler(req, res) {
     // Use Gemini API key
     const geminiApiKey = process.env.GEMINI_API_KEY || 'AIzaSyCaUEO45dTltA6huicctEvJEOT0GC4Qzsg'
 
-    // Convert base64 to proper format
-    const base64Data = image.replace(/^data:image\/\w+;base64,/, '')
-
     console.log(`🎙️ Analyzing ${isVoiceMode ? 'image for voice script' : 'product for ads script'}:`, productName || 'No product name')
+
+    // Handle both base64 and URL images
+    let base64Data
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+      // Image is a URL - download and convert to base64
+      console.log('📥 Downloading image from URL:', image.substring(0, 80) + '...')
+      try {
+        const imageResponse = await fetch(image)
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to download image: ${imageResponse.status}`)
+        }
+        const arrayBuffer = await imageResponse.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        base64Data = buffer.toString('base64')
+        console.log('✅ Image downloaded and converted to base64')
+      } catch (downloadError) {
+        console.error('❌ Failed to download image:', downloadError)
+        throw new Error(`Cannot download image: ${downloadError.message}`)
+      }
+    } else {
+      // Image is already base64
+      base64Data = image.replace(/^data:image\/\w+;base64,/, '')
+      console.log('✅ Using provided base64 image')
+    }
 
     // Calculate word target based on duration
     // Thai speaking rate: ~2.5 words per second (typical ads pace)

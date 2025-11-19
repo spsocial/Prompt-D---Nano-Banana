@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { trackPayment } from '../../lib/analytics-db';
 import { safeLog, truncateDataUri } from '../../lib/logUtils';
+import { calculateCommission, getActiveReferralsThisMonth } from '../../lib/affiliate/commissionCalculator';
 
 const prisma = new PrismaClient();
 
@@ -111,6 +112,7 @@ export default async function handler(req, res) {
         where: { userId: userId },
         update: {
           credits: { increment: creditsToAdd },
+          totalSpent: { increment: slipAmount },
           lastActive: new Date()
         },
         create: {
@@ -118,18 +120,98 @@ export default async function handler(req, res) {
           firstSeen: new Date(),
           lastActive: new Date(),
           totalGenerated: 0,
-          totalSpent: 0,
+          totalSpent: slipAmount,
           credits: creditsToAdd,
           creditsUsed: 0
         }
       });
+
+      // สร้าง Transaction record
+      const transactionId = paymentRecord.transactionRef || `TX-${Date.now()}`;
+      const transaction = await prisma.transaction.create({
+        data: {
+          transactionId: transactionId,
+          userId: userId,
+          amount: slipAmount,
+          packageName: packageName || `เติมเครดิต ${creditsToAdd} เครดิต`,
+          status: 'completed',
+          referredBy: updatedUser.referredBy, // บันทึก referralCode ของคนแนะนำ (ถ้ามี)
+          commissionGenerated: false // จะ update เป็น true หลังสร้าง commission
+        }
+      });
+
+      // 🎯 Affiliate System: สร้าง Commission ถ้า user ถูกแนะนำมา
+      if (updatedUser.referredBy) {
+        try {
+          // หา affiliate (คนแนะนำ)
+          const affiliate = await prisma.user.findUnique({
+            where: { referralCode: updatedUser.referredBy }
+          });
+
+          if (affiliate) {
+            // ดึงรายการ commissions ของ affiliate เพื่อคำนวณ tier
+            const affiliateCommissions = await prisma.commission.findMany({
+              where: { affiliateId: affiliate.userId }
+            });
+
+            // คำนวณจำนวนคนที่ซื้อในเดือนนี้
+            const activeReferralsThisMonth = getActiveReferralsThisMonth(affiliateCommissions);
+
+            // เช็คว่าเป็นการซื้อครั้งแรกของคนนี้หรือไม่
+            const isFirstPurchase = updatedUser.totalSpent === slipAmount; // totalSpent = slipAmount = ซื้อครั้งแรก
+
+            // 🎁 คำนวณค่าคอมพร้อม Tier System + Bonus
+            const commissionData = calculateCommission(
+              slipAmount,
+              activeReferralsThisMonth,
+              isFirstPurchase
+            );
+
+            // สร้าง Commission record
+            await prisma.commission.create({
+              data: {
+                affiliateId: affiliate.userId,
+                referredUserId: userId,
+                referredUserName: updatedUser.name || updatedUser.email || 'User',
+                transactionId: transactionId,
+                packageName: packageName || `เติมเครดิต ${creditsToAdd} เครดิต`,
+                packageAmount: slipAmount,
+                commissionRate: commissionData.commissionRate,
+                commissionAmount: commissionData.totalCommission, // รวม base + bonus แล้ว
+                status: 'pending' // รอ admin approve
+              }
+            });
+
+            // อัพเดทยอดค่าคอมของ affiliate
+            await prisma.user.update({
+              where: { userId: affiliate.userId },
+              data: {
+                totalCommission: { increment: commissionData.totalCommission },
+                pendingCommission: { increment: commissionData.totalCommission },
+                activeReferrals: { increment: isFirstPurchase ? 1 : 0 } // เพิ่ม activeReferrals ถ้าเป็นการซื้อครั้งแรก
+              }
+            });
+
+            // อัพเดท Transaction ว่าสร้าง commission แล้ว
+            await prisma.transaction.update({
+              where: { transactionId: transactionId },
+              data: { commissionGenerated: true }
+            });
+
+            console.log(`[Affiliate] Commission created: ${commissionData.totalCommission}฿ (Tier: ${commissionData.tier.name} ${commissionData.tier.icon}, Rate: ${commissionData.commissionRate * 100}%, Bonus: ${commissionData.bonus}฿) for ${affiliate.userId} from ${userId}`);
+          }
+        } catch (commissionError) {
+          console.error('[Affiliate] Error creating commission:', commissionError);
+          // ไม่ throw error เพราะไม่อยากให้การ payment ล้มเหลว
+        }
+      }
 
       // Track payment in analytics
       await trackPayment(
         userId,
         slipAmount,
         packageName || `เติมเครดิต ${creditsToAdd} เครดิต`,
-        paymentRecord.transactionRef
+        transactionId
       );
 
       console.log('Credits added successfully:', updatedUser);
@@ -139,10 +221,11 @@ export default async function handler(req, res) {
         message: 'ยืนยันการชำระเงินสำเร็จ',
         data: {
           amount: slipAmount,
-          transactionRef: paymentRecord.transactionRef,
+          transactionRef: transactionId,
           userId: userId,
           credits: creditsToAdd,
-          newBalance: updatedUser.credits
+          newBalance: updatedUser.credits,
+          commissionGenerated: !!updatedUser.referredBy
         }
       })
     } catch (dbError) {

@@ -595,38 +595,38 @@ export default function ChatInterfaceGenerator() {
             </div>
 
             {/* Mode Toggle - TikTok Style */}
-            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#1a1a1a] rounded-full p-0.5 sm:p-1 flex-shrink-0">
+            <div className="flex items-center gap-1 bg-[#1a1a1a] rounded-full p-1 flex-shrink-0">
               <button
                 onClick={() => setMode('image')}
-                className={`px-2 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                className={`px-3 sm:px-4 py-2 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                   mode === 'image'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                <ImageIcon className="h-3 w-3 sm:h-4 sm:w-4 inline sm:mr-1" />
+                <ImageIcon className="h-4 w-4 sm:h-4 sm:w-4 inline sm:mr-1" />
                 <span className="hidden sm:inline">Image</span>
               </button>
               <button
                 onClick={() => setMode('video')}
-                className={`px-2 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                className={`px-3 sm:px-4 py-2 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                   mode === 'video'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                <Film className="h-3 w-3 sm:h-4 sm:w-4 inline sm:mr-1" />
+                <Film className="h-4 w-4 sm:h-4 sm:w-4 inline sm:mr-1" />
                 <span className="hidden sm:inline">Video</span>
               </button>
               <button
                 onClick={() => setMode('voice')}
-                className={`px-2 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                className={`px-3 sm:px-4 py-2 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                   mode === 'voice'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                <Volume2 className="h-3 w-3 sm:h-4 sm:w-4 inline sm:mr-1" />
+                <Volume2 className="h-4 w-4 sm:h-4 sm:w-4 inline sm:mr-1" />
                 <span className="hidden sm:inline">Voice</span>
               </button>
             </div>
@@ -701,6 +701,17 @@ export default function ChatInterfaceGenerator() {
                       >
                         <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />
                         เติมเครดิต
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false)
+                          router.push('/affiliate')
+                        }}
+                        className="w-full px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-300 hover:bg-[#00F2EA]/10 hover:text-[#00F2EA] flex items-center gap-2 transition-colors"
+                      >
+                        <span className="text-base sm:text-lg">💰</span>
+                        แนะนำเพื่อน (Affiliate)
                       </button>
 
                       <button

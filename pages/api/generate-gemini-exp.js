@@ -166,13 +166,13 @@ export default async function handler(req, res) {
       })
     }
 
-    // Track image generation with cost (NanoBanana cost: ~1.2 baht per image)
+    // Track image generation with cost (KIE.AI Nano Banana cost: 0.68 baht per image)
     try {
       await trackImageGeneration(
         userId,
-        'NanoBanana AI', // style
+        'Nano Banana', // style
         prompt,
-        1.2 // API cost in baht
+        0.68 // API cost in baht
       )
       console.log('📊 Image generation tracked successfully')
     } catch (trackError) {

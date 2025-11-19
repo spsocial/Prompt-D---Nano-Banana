@@ -41,12 +41,22 @@ export default function TopUp() {
 
   const packages = [
     { id: 1, name: 'ทดลอง', price: 29, credits: 15, perCredit: '1.93', popular: false, color: 'from-blue-500 to-blue-600' },
-    { id: 2, name: 'Starter', price: 59, credits: 35, perCredit: '1.69', popular: false, color: 'from-purple-500 to-purple-600' },
-    { id: 3, name: 'Popular', price: 99, credits: 60, perCredit: '1.65', popular: true, color: 'from-[#00F2EA] to-[#FE2C55]' },
-    { id: 4, name: 'Pro', price: 199, credits: 130, perCredit: '1.53', popular: false, color: 'from-pink-500 to-pink-600' },
-    { id: 5, name: 'Business', price: 399, credits: 280, perCredit: '1.43', popular: false, color: 'from-orange-500 to-orange-600' },
-    { id: 6, name: 'Enterprise', price: 999, credits: 750, perCredit: '1.33', popular: false, color: 'from-yellow-500 to-yellow-600' }
+    { id: 2, name: 'Basic', price: 99, credits: 65, perCredit: '1.52', popular: false, color: 'from-purple-500 to-purple-600' },
+    { id: 3, name: 'Pro', price: 199, credits: 140, perCredit: '1.42', popular: true, color: 'from-[#00F2EA] to-[#FE2C55]' },
+    { id: 4, name: 'Premium', price: 499, credits: 380, perCredit: '1.31', popular: false, color: 'from-pink-500 to-pink-600' },
+    { id: 5, name: 'Business', price: 999, credits: 800, perCredit: '1.25', popular: false, color: 'from-orange-500 to-orange-600' },
+    { id: 6, name: 'Enterprise', price: 1999, credits: 1700, perCredit: '1.18', popular: false, color: 'from-yellow-500 to-yellow-600' }
   ]
+
+  // คำนวณจำนวนที่สร้างได้สูงสุด
+  const calculateUsage = (credits) => {
+    return {
+      images: credits, // 1 credit per image
+      videosMin: Math.floor(credits / 15), // 15 credits per long video
+      videosMax: Math.floor(credits / 10), // 10 credits per short video
+      voices: credits // 1 credit per voice
+    }
+  }
 
   const handleCopyAccount = () => {
     navigator.clipboard.writeText('0902462826')
@@ -285,10 +295,34 @@ export default function TopUp() {
                         <div className={`text-2xl font-bold bg-gradient-to-r ${pkg.color} bg-clip-text text-transparent mb-2`}>
                           {pkg.credits} เครดิต
                         </div>
-                        <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+                        <div className="flex items-center justify-center gap-2 text-gray-400 text-sm mb-4">
                           <div className="w-8 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
                           <span>{pkg.perCredit} ฿/เครดิต</span>
                           <div className="w-8 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
+                        </div>
+
+                        {/* Usage Info */}
+                        <div className="space-y-2 text-left bg-[#0a0a0a] rounded-xl p-4 border border-gray-800">
+                          <div className="text-xs text-gray-500 font-semibold mb-2">🎯 สร้างได้สูงสุด:</div>
+                          {(() => {
+                            const usage = calculateUsage(pkg.credits);
+                            return (
+                              <>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-400">🎨 รูปภาพ</span>
+                                  <span className="font-bold text-white">{usage.images} รูป</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-400">🎬 วิดีโอ</span>
+                                  <span className="font-bold text-[#00F2EA]">{usage.videosMin}-{usage.videosMax} คลิป</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-400">🎙️ เสียง</span>
+                                  <span className="font-bold text-white">{usage.voices} เสียง</span>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
 

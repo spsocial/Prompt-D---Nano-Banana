@@ -47,7 +47,12 @@
       "WebFetch(domain:community.openai.com)",
       "WebFetch(domain:superprompt.com)",
       "WebFetch(domain:github.com)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(echo:*)",
+      "Bash(VOICE_TTS_SUMMARY.txt)",
+      "WebFetch(domain:elevenlabs.io)",
+      "Bash(ls:*)",
+      "Bash(xargs cat:*)"
     ],
     "deny": [],
     "ask": []

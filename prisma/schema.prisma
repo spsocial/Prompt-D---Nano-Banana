@@ -31,6 +31,20 @@ model User {
   videosGenerated Int    @default(0)  // Total videos generated
   videoCreditsUsed Int   @default(0)  // Total credits used for videos
 
+  // Affiliate fields
+  referralCode       String?   @unique  // รหัสแนะนำของตัวเอง (เช่น "PDSTUDIO-ABC123")
+  referredBy         String?              // ถูกแนะนำโดยใคร (referralCode ของคนแนะนำ)
+  referredByUser     User?     @relation("Referrals", fields: [referredBy], references: [referralCode], onDelete: SetNull)
+
+  // ค่าคอมมิชชั่นที่ได้รับ (เป็นนายหน้า)
+  totalCommission    Float     @default(0)  // เงินคอมรวมตลอดกาล (บาท)
+  pendingCommission  Float     @default(0)  // คอมที่รอถอน (บาท)
+  withdrawnCommission Float    @default(0)  // คอมที่ถอนไปแล้ว (บาท)
+
+  // จำนวนคนที่แนะนำมา
+  referralCount      Int       @default(0)  // จำนวนคนที่ signup ผ่าน link
+  activeReferrals    Int       @default(0)  // คนที่ซื้อ credits แล้ว
+
   // Relations
   accounts      Account[]
   sessions      Session[]
@@ -38,12 +52,19 @@ model User {
   images        ImageGeneration[]
   videos        VideoGeneration[]
 
+  // Affiliate relations
+  referredUsers      User[]       @relation("Referrals")
+  commissions        Commission[]
+  withdrawals        Withdrawal[]
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([userId])
   @@index([email])
   @@index([lastActive])
+  @@index([referralCode])
+  @@index([referredBy])
 }
 
 // NextAuth Account model
@@ -96,6 +117,10 @@ model Transaction {
   packageName   String
   status        String   @default("completed")
 
+  // Affiliate tracking
+  referredBy           String?  // referralCode ของคนแนะนำ (ถ้ามี)
+  commissionGenerated  Boolean  @default(false) // สร้าง commission แล้วหรือยัง
+
   // Relations
   user          User     @relation(fields: [userId], references: [userId])
 
@@ -103,6 +128,7 @@ model Transaction {
 
   @@index([userId])
   @@index([createdAt])
+  @@index([referredBy])
 }
 
 // Image generation tracking
@@ -235,4 +261,75 @@ model MonthlyStats {
   createdAt     DateTime @default(now())
 
   @@index([month])
+}
+
+// Commission model - ค่าคอมมิชชั่นที่นายหน้าได้รับ
+model Commission {
+  id            String   @id @default(cuid())
+  commissionId  String   @unique @default(cuid())
+
+  // ใครได้รับค่าคอม (นายหน้า)
+  affiliateId   String   // userId ของนายหน้า
+  affiliate     User     @relation(fields: [affiliateId], references: [userId], onDelete: Cascade)
+
+  // มาจากใคร (คนที่ถูกแนะนำ)
+  referredUserId String  // userId ของคนที่ถูกแนะนำ
+  referredUserName String? // ชื่อของคนที่ถูกแนะนำ (สำหรับแสดงผล)
+
+  // ข้อมูล Transaction
+  transactionId String  // อ้างอิงจาก Transaction.transactionId
+  packageName   String  // แพ็คเกจที่ซื้อ (เช่น "Popular", "Pro")
+  packageAmount Float   // ราคาแพ็ค (บาท)
+
+  // ค่าคอมมิชชั่น
+  commissionRate Float  @default(0.05) // อัตราค่าคอม (5% = 0.05)
+  commissionAmount Float              // จำนวนเงินคอม (บาท)
+
+  // สถานะ
+  status        String  @default("pending") // pending, approved, paid
+  approvedAt    DateTime?
+  paidAt        DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([affiliateId])
+  @@index([referredUserId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Withdrawal model - การถอนเงินค่าคอม
+model Withdrawal {
+  id            String   @id @default(cuid())
+  withdrawalId  String   @unique
+
+  // ข้อมูลผู้ถอน
+  userId        String
+  user          User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  // จำนวนเงิน
+  amount        Float    // จำนวนเงินที่ถอน (บาท)
+
+  // ข้อมูลบัญชีธนาคาร
+  bankName      String   // ชื่อธนาคาร
+  bankAccount   String   // เลขบัญชี
+  accountName   String   // ชื่อบัญชี
+
+  // สถานะ
+  status        String   @default("pending") // pending, processing, completed, rejected
+  slipUrl       String?  @db.Text // URL หลักฐานการโอน (ถ้ามี)
+  note          String?  @db.Text // หมายเหตุจาก admin
+
+  // วันที่
+  requestedAt   DateTime @default(now())
+  processedAt   DateTime?
+  completedAt   DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([requestedAt])
 }

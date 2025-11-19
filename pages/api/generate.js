@@ -80,20 +80,10 @@ export default async function handler(req, res) {
             console.log('📸 Original image size:', truncateDataUri(originalImage))
           }
 
-          // Prepare request body with image if provided
-          let requestBody
-
+          // Build enhanced prompt
+          let enhancedPrompt
           if (originalImage) {
-            // Extract base64 data from data URL
-            const base64Data = originalImage.replace(/^data:image\/\w+;base64,/, '')
-
-            // Include both image and text in the request
-            requestBody = {
-              contents: [{
-                role: 'user',
-                parts: [
-                  {
-                    text: `${promptData.prompt}
+            enhancedPrompt = `${promptData.prompt}
 
 Requirements:
 - Create a premium advertisement from the provided product image
@@ -101,129 +91,57 @@ Requirements:
 - Maintain product recognizability
 - ${promptData.style} aesthetic
 - Hyperrealistic quality with dramatic lighting`
-                  },
-                  {
-                    inlineData: {
-                      mimeType: 'image/jpeg',
-                      data: base64Data
-                    }
-                  }
-                ]
-              }],
-              generationConfig: {
-                temperature: 0.4,
-                topK: 32,
-                topP: 1,
-                maxOutputTokens: 8192,
-                imageConfig: {
-                  aspectRatio: aspectRatio
-                }
-              }
-            }
           } else {
-            // Text-only prompt
-            requestBody = {
-              contents: [{
-                role: 'user',
-                parts: [{
-                  text: `Create a photorealistic product advertisement image: ${promptData.prompt}
+            enhancedPrompt = `Create a photorealistic product advertisement image: ${promptData.prompt}
 
 ${promptData.style} style with premium quality`
-                }]
-              }],
-              generationConfig: {
-                temperature: 0.4,
-                topK: 32,
-                topP: 1,
-                maxOutputTokens: 8192,
-                imageConfig: {
-                  aspectRatio: aspectRatio
-                }
-              }
-            }
           }
 
-          // Use different models based on whether we have an image
-          const modelName = originalImage
-            ? 'gemini-2.5-flash-image-preview'  // Image-to-Image: use preview model
-            : 'gemini-2.5-flash-image'           // Text-to-Image: use standard model
-
-          console.log(`🎨 Calling ${modelName} API...`)
+          console.log(`🎨 Calling KIE.AI API...`)
 
           // Add delay between requests to avoid rate limiting
           if (index > 0) {
             await new Promise(resolve => setTimeout(resolve, 2000)) // 2 second delay
           }
 
+          // Call KIE.AI Nano Banana image generation endpoint
           const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`,
+            `${req.headers.origin || 'http://localhost:3000'}/api/generate-image-kie`,
             {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify(requestBody)
+              body: JSON.stringify({
+                prompt: enhancedPrompt,
+                aspectRatio: aspectRatio,
+                originalImage: originalImage || null, // Pass originalImage for image-edit mode
+                userId: userId
+              })
             }
           )
 
           if (!response.ok) {
             const errorData = await response.json()
-            throw new Error(JSON.stringify(errorData))
+            throw new Error(errorData.error || 'KIE.AI generation failed')
           }
 
           const responseData = await response.json()
 
-          // Check for generated image in response
-          let imageGenerated = false
-          let imageUrl = null
-          let description = ''
-
-          if (responseData.candidates && responseData.candidates[0]) {
-            const candidate = responseData.candidates[0]
-
-            if (candidate.content && candidate.content.parts) {
-              for (const part of candidate.content.parts) {
-                // Check for text
-                if (part.text) {
-                  description = part.text
-                  console.log(`📝 Description received for ${promptData.style}`)
-                }
-
-                // Check for media/image URL
-                if (part.media) {
-                  imageUrl = part.media
-                  imageGenerated = true
-                  console.log(`✅ Image URL received for ${promptData.style}!`)
-                }
-
-                // Check for inline data
-                if (part.inlineData) {
-                  const imageData = part.inlineData.data
-                  const mimeType = part.inlineData.mimeType || 'image/png'
-
-                  // Convert to data URL
-                  imageUrl = `data:${mimeType};base64,${imageData}`
-                  imageGenerated = true
-                  console.log(`✅ Image generated for ${promptData.style}!`)
-                }
-              }
-            }
-          }
-
-          // Return successful result
-          if (imageGenerated && imageUrl) {
+          // Return successful result from KIE.AI Nano Banana
+          if (responseData.success && responseData.imageUrl) {
             return {
               style: promptData.style,
-              imageUrl: imageUrl,
-              description: description || `Premium ${promptData.style} advertisement`,
+              imageUrl: responseData.imageUrl,
+              description: `Premium ${promptData.style} advertisement`,
               prompt: promptData.prompt,
               isGenerated: true,
-              model: 'gemini-2.5-flash-image-preview'
+              model: responseData.model || 'nano-banana'
             }
           }
 
-          // If no image generated, try Replicate fallback
-          if (!imageGenerated && replicateApiKey) {
+          // If KIE.AI failed, try Replicate fallback
+          if (replicateApiKey) {
             console.log(`⚡ Trying Replicate fallback for ${promptData.style}`)
 
             const replicateResponse = await fetch(
@@ -299,8 +217,8 @@ ${promptData.style} style with premium quality`
     // Track successful image generations to analytics
     if (userId && successCount > 0) {
       try {
-        // API cost per image: 1.2 baht (Nano Banana pricing)
-        const apiCostPerImage = 1.2;
+        // API cost per image: 0.68 baht (KIE.AI pricing)
+        const apiCostPerImage = 0.68;
 
         // Track each successful generation
         for (const result of results) {
@@ -348,7 +266,7 @@ ${promptData.style} style with premium quality`
       results,
       success: true,
       message: successCount > 0
-        ? `✨ สร้างภาพสำเร็จ ${successCount} ภาพด้วย Gemini 2.5 Flash!`
+        ? `✨ สร้างภาพสำเร็จ ${successCount} ภาพด้วย KIE.AI Nano Banana!`
         : quotaErrorCount > 0
         ? '⚠️ API quota หมด - ใช้ภาพตัวอย่าง'
         : placeholderCount > 0
@@ -360,14 +278,15 @@ ${promptData.style} style with premium quality`
         placeholders: placeholderCount,
         quotaErrors: quotaErrorCount
       },
-      model: 'gemini-2.5-flash-image-preview',
+      model: originalImage ? 'google/nano-banana-edit' : 'google/nano-banana',
+      mode: originalImage ? 'image-edit' : 'text-to-image',
       info: {
-        apiKeyStatus: successCount > 0 ? '✅ API key works!'
+        apiKeyStatus: successCount > 0 ? '✅ KIE.AI Nano Banana API works!'
                     : quotaErrorCount > 0 ? '🔄 Quota exceeded - รอ 1 นาที'
                     : '⚠️ Check API key permissions',
         note: quotaErrorCount > 0
           ? 'ใช้ภาพ Mock ชั่วคราว - API quota หมด'
-          : 'Gemini 2.5 Flash Image Preview model for image generation',
+          : 'KIE.AI Nano Banana model for affordable image generation (0.68฿/image)',
         fallback: replicateApiKey ? 'Replicate ready as backup' : 'Add Replicate key for backup'
       }
     })
@@ -378,8 +297,8 @@ ${promptData.style} style with premium quality`
     res.status(500).json({
       error: error.message || 'Failed to generate images',
       details: error.toString(),
-      suggestion: 'ตรวจสอบ API key - ต้องมีสิทธิ์ใช้ gemini-2.5-flash-image-preview model',
-      checkApiKey: 'ทดสอบ API key ที่ https://aistudio.google.com/app/apikey'
+      suggestion: 'ตรวจสอบ KIE_API_KEY ใน environment variables',
+      checkApiKey: 'ทดสอบ API key ที่ https://kie.ai'
     })
   }
 }
