@@ -586,53 +586,50 @@ export default function ChatInterfaceGenerator() {
     <div className="flex flex-col h-screen bg-[#000000]">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-[#121212]/90 border-b border-gray-800">
-        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-2 sm:py-4">
-          <div className="flex items-center justify-between gap-1 sm:gap-2">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
             {/* Logo */}
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              <img src="/logo.png" alt="PD Studio" className="h-6 w-6 sm:h-8 sm:w-8 object-contain" />
-              <h1 className="hidden xs:block text-base sm:text-xl font-bold text-white">PD Studio</h1>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <img src="/logo.png" alt="PD Studio" className="h-8 w-8 sm:h-9 sm:w-9 object-contain" />
+              <h1 className="text-lg sm:text-xl font-bold text-white">PD</h1>
             </div>
 
-            {/* Mode Toggle - TikTok Style */}
-            <div className="flex items-center gap-1 bg-[#1a1a1a] rounded-full p-1 flex-shrink-0">
+            {/* Mode Toggle - TikTok Style - วางกึ่งกลาง */}
+            <div className="flex items-center gap-1 bg-[#1a1a1a] rounded-full p-1">
               <button
                 onClick={() => setMode('image')}
-                className={`px-3 sm:px-4 py-2 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                className={`px-4 py-2.5 rounded-full text-xs font-medium transition-all flex items-center justify-center ${
                   mode === 'image'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                <ImageIcon className="h-4 w-4 sm:h-4 sm:w-4 inline sm:mr-1" />
-                <span className="hidden sm:inline">Image</span>
+                <ImageIcon className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setMode('video')}
-                className={`px-3 sm:px-4 py-2 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                className={`px-4 py-2.5 rounded-full text-xs font-medium transition-all flex items-center justify-center ${
                   mode === 'video'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                <Film className="h-4 w-4 sm:h-4 sm:w-4 inline sm:mr-1" />
-                <span className="hidden sm:inline">Video</span>
+                <Film className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setMode('voice')}
-                className={`px-3 sm:px-4 py-2 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                className={`px-4 py-2.5 rounded-full text-xs font-medium transition-all flex items-center justify-center ${
                   mode === 'voice'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                <Volume2 className="h-4 w-4 sm:h-4 sm:w-4 inline sm:mr-1" />
-                <span className="hidden sm:inline">Voice</span>
+                <Volume2 className="h-4 w-4" />
               </button>
             </div>
 
             {/* Right Section: Credits + Profile */}
-            <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               {/* Credits */}
               <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 bg-[#1a1a1a] rounded-full">
                 <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-[#FE2C55]" />
