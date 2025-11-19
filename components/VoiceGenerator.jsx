@@ -274,6 +274,13 @@ const PREVIEW_TEXT = {
   neutral: 'สวัสดีนี่คือเสียงเอไอจากเว็บพ้อมดี คุณชอบรึป่าว'
 }
 
+// Pre-generated audio files for voice previews (to save API credits)
+// Format: voiceId -> audio file path
+const VOICE_PREVIEW_FILES = {
+  // Gemini voices will use previewAudio field if available
+  // Otherwise fallback to API call
+}
+
 export default function VoiceGenerator() {
   const [scriptText, setScriptText] = useState('')
   const [provider, setProvider] = useState('gemini') // 'gemini' or 'elevenlabs'
@@ -416,69 +423,107 @@ export default function VoiceGenerator() {
     }
   }
 
-  // Handle preview (free, using fixed sample text)
+  // Handle preview using pre-generated audio files (to save API credits)
   const handlePreview = async () => {
     setIsPreviewing(true)
 
     try {
-      const apiEndpoint = provider === 'gemini'
-        ? '/api/generate-voice-gemini'
-        : '/api/generate-voice-elevenlabs'
-
       const voiceId = provider === 'gemini' ? selectedVoice : selectedElevenlabsVoice
 
-      // Get gender for preview text
-      let gender = 'neutral'
+      // Check if pre-generated audio file exists
+      let previewAudioPath = null
+
       if (provider === 'gemini') {
-        gender = GEMINI_VOICES[selectedVoice]?.gender || 'neutral'
+        // For Gemini voices, check if preview file exists
+        previewAudioPath = `/voice-previews/gemini/${voiceId}.mp3`
       } else {
-        const voice = ELEVENLABS_VOICES.find(v => v.id === selectedElevenlabsVoice)
-        gender = voice?.gender || 'neutral'
+        // For ElevenLabs voices
+        previewAudioPath = `/voice-previews/elevenlabs/${voiceId}.mp3`
       }
 
-      // Use fixed preview text based on gender
-      const previewText = PREVIEW_TEXT[gender] || PREVIEW_TEXT.neutral
+      // Try to load and play from pre-generated file first
+      console.log(`🔍 Checking for pre-generated preview: ${previewAudioPath}`)
 
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: previewText, // ใช้ข้อความตายตัว ไม่ใช้ข้อความจากผู้ใช้
-          ...(provider === 'gemini' ? { voice: voiceId } : { voiceId }),
-          userId: 'preview', // ไม่หักเครดิต
-          isPreview: true
-        })
+      const audio = new Audio(previewAudioPath)
+
+      // Setup promise to detect if audio loads successfully
+      const audioLoaded = new Promise((resolve, reject) => {
+        audio.addEventListener('canplay', () => resolve(true), { once: true })
+        audio.addEventListener('error', () => reject(new Error('File not found')), { once: true })
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'ไม่สามารถสร้างตัวอย่างเสียงได้')
-      }
-
-      const data = await response.json()
-
-      if (data.success && data.audioUrl) {
-        const audio = new Audio(data.audioUrl)
+      try {
+        await audioLoaded
+        // Audio file exists and loaded successfully
+        console.log(`✅ Playing pre-generated preview (saves API credits)`)
         audio.play()
         setAudioPlayer(audio)
 
         audio.onended = () => {
           setIsPreviewing(false)
         }
+
+        return // Success, no need for API call
+      } catch (fileError) {
+        console.log(`⚠️ No pre-generated file found, falling back to API`)
       }
+
+      // Fallback: Generate via API (costs credits)
+      await generatePreviewViaAPI()
+
     } catch (error) {
       console.error('Preview error:', error)
-
-      // Better error message for API key issues
-      if (error.message.includes('API key not configured')) {
-        alert('❌ ไม่พบ API Key\n\n' +
-          'กรุณาตั้งค่า ELEVENLABS_API_KEY ใน environment variables\n\n' +
-          'หรือเลือกใช้ "Standard AI" (Gemini TTS) แทน ซึ่งไม่ต้องใช้ API key')
-      } else {
-        alert('เกิดข้อผิดพลาด: ' + error.message)
-      }
-    } finally {
+      alert('เกิดข้อผิดพลาด: ' + error.message)
       setIsPreviewing(false)
+    }
+  }
+
+  // Fallback function for API-based preview (costs credits)
+  const generatePreviewViaAPI = async () => {
+    const apiEndpoint = provider === 'gemini'
+      ? '/api/generate-voice-gemini'
+      : '/api/generate-voice-elevenlabs'
+
+    const voiceId = provider === 'gemini' ? selectedVoice : selectedElevenlabsVoice
+
+    // Get gender for preview text
+    let gender = 'neutral'
+    if (provider === 'gemini') {
+      gender = GEMINI_VOICES[selectedVoice]?.gender || 'neutral'
+    } else {
+      const voice = ELEVENLABS_VOICES.find(v => v.id === selectedElevenlabsVoice)
+      gender = voice?.gender || 'neutral'
+    }
+
+    // Use fixed preview text based on gender
+    const previewText = PREVIEW_TEXT[gender] || PREVIEW_TEXT.neutral
+
+    const response = await fetch(apiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: previewText,
+        ...(provider === 'gemini' ? { voice: voiceId } : { voiceId }),
+        userId: 'preview',
+        isPreview: true
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'ไม่สามารถสร้างตัวอย่างเสียงได้')
+    }
+
+    const data = await response.json()
+
+    if (data.success && data.audioUrl) {
+      const audio = new Audio(data.audioUrl)
+      audio.play()
+      setAudioPlayer(audio)
+
+      audio.onended = () => {
+        setIsPreviewing(false)
+      }
     }
   }
 
