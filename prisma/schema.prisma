@@ -333,3 +333,24 @@ model Withdrawal {
   @@index([status])
   @@index([requestedAt])
 }
+
+// Voice model - เสียง TTS สำหรับระบบ
+model Voice {
+  id            String   @id @default(cuid())
+  voiceId       String   @unique  // ElevenLabs Voice ID
+  name          String              // ชื่อเสียง (เช่น "เสียงกวนทีน")
+  provider      String   @default("elevenlabs") // elevenlabs, gemini
+  gender        String              // male, female, neutral
+  description   String?  @db.Text   // คำอธิบายเสียง
+  previewUrl    String?  @db.Text   // URL ไฟล์เสียงตัวอย่าง (Cloudinary)
+  isActive      Boolean  @default(true) // เปิดใช้งานหรือไม่
+  sortOrder     Int      @default(0)    // ลำดับการแสดงผล
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([provider])
+  @@index([gender])
+  @@index([isActive])
+  @@index([sortOrder])
+}

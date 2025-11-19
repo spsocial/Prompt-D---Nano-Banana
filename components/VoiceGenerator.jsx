@@ -222,50 +222,8 @@ const GEMINI_VOICES = {
 }
 
 // ElevenLabs Custom Voices - เสียงโคลนคุณภาพสูง
-const ELEVENLABS_VOICES = [
-  {
-    id: 'AXw7rxvMAEe68vknaJRv',
-    name: 'เสียงกวนทีน',
-    gender: 'male',
-    description: 'เสียงโคลนพิเศษ - สไตล์กวนๆ สนุกสนาน'
-  },
-  {
-    id: 'ocXeZcpfl3y8l2JH0Dyv',
-    name: 'เสียงน้องมิ้นท์',
-    gender: 'female',
-    description: 'เสียงผู้หญิงน่ารัก - น้ำเสียงหวาน เป็นกันเอง'
-  },
-  {
-    id: 'oKIE62mvU7YR0KSC6cjd',
-    name: 'เสียงพี่ชิล',
-    gender: 'male',
-    description: 'เสียงผู้ชายสบายๆ - โทนสบายๆ กันเอง ฟังง่าย'
-  },
-  {
-    id: 'gkEgy6IJoIagFuyBcxDu',
-    name: 'เสียงบอส',
-    gender: 'male',
-    description: 'เสียงผู้ชายห้วนๆ - โทนผู้ใหญ่ มีน้ำหนัก'
-  },
-  {
-    id: 'yvV1FSiWQfVfAv6TKN2O',
-    name: 'เสียงพี่พอด',
-    gender: 'female',
-    description: 'เสียงผู้หญิงโทนต่ำ - สไตล์ podcast มีน้ำหนัก เป็นผู้ใหญ่'
-  },
-  {
-    id: 'fJnvnbC7A9PHKFt2Zi5I',
-    name: 'เสียงนักพูด',
-    gender: 'male',
-    description: 'เสียงผู้ชายกลางๆ - พูดเก่ง ชัดเจน เหมาะกับนำเสนอ'
-  },
-  {
-    id: 'GYFXpkcXjA3N82uHvHn3',
-    name: 'เสียงสบายหู',
-    gender: 'female',
-    description: 'เสียงผู้หญิงน่าฟัง - ฟังสบาย ไพเราะ เหมาะกับเนื้อหายาว'
-  },
-]
+// ElevenLabs voices are now loaded from database via API
+// ไปจัดการเสียงได้ที่หน้า /admin/manage-voices
 
 // ข้อความตายตัวสำหรับทดลองฟัง (ป้องกันการเสียเครดิตจากผู้ใช้)
 const PREVIEW_TEXT = {
@@ -285,13 +243,17 @@ export default function VoiceGenerator() {
   const [scriptText, setScriptText] = useState('')
   const [provider, setProvider] = useState('gemini') // 'gemini' or 'elevenlabs'
   const [selectedVoice, setSelectedVoice] = useState('Puck')
-  const [selectedElevenlabsVoice, setSelectedElevenlabsVoice] = useState(ELEVENLABS_VOICES[0]?.id || '')
+  const [selectedElevenlabsVoice, setSelectedElevenlabsVoice] = useState('')
   const [selectedGender, setSelectedGender] = useState('female')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isPreviewing, setIsPreviewing] = useState(false)
   const [generatedAudio, setGeneratedAudio] = useState(null)
   const [audioPlayer, setAudioPlayer] = useState(null)
   const [isPlaying, setIsPlaying] = useState(false)
+
+  // Load ElevenLabs voices from API
+  const [elevenlabsVoices, setElevenlabsVoices] = useState([])
+  const [loadingVoices, setLoadingVoices] = useState(false)
 
   // AI Script Generator States
   const [showAiModal, setShowAiModal] = useState(false)
@@ -310,12 +272,36 @@ export default function VoiceGenerator() {
   const audioRef = useRef(null)
   const fileInputRef = useRef(null)
 
+  // Load ElevenLabs voices from API on mount
+  useEffect(() => {
+    loadElevenlabsVoices()
+  }, [])
+
+  const loadElevenlabsVoices = async () => {
+    setLoadingVoices(true)
+    try {
+      const response = await fetch('/api/voices?provider=elevenlabs&activeOnly=true')
+      const data = await response.json()
+      if (data.success) {
+        setElevenlabsVoices(data.voices)
+        // Auto-select first voice
+        if (data.voices.length > 0) {
+          setSelectedElevenlabsVoice(data.voices[0].voiceId)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading voices:', error)
+    } finally {
+      setLoadingVoices(false)
+    }
+  }
+
   // Auto-select first voice when switching provider
   useEffect(() => {
-    if (provider === 'elevenlabs' && ELEVENLABS_VOICES.length > 0) {
-      setSelectedElevenlabsVoice(ELEVENLABS_VOICES[0].id)
+    if (provider === 'elevenlabs' && elevenlabsVoices.length > 0 && !selectedElevenlabsVoice) {
+      setSelectedElevenlabsVoice(elevenlabsVoices[0].voiceId)
     }
-  }, [provider])
+  }, [provider, elevenlabsVoices])
 
   // Calculate credits based on character count (for Premium AI only)
   const calculateCredits = (text, providerType) => {
@@ -430,45 +416,41 @@ export default function VoiceGenerator() {
     try {
       const voiceId = provider === 'gemini' ? selectedVoice : selectedElevenlabsVoice
 
-      // Check if pre-generated audio file exists
-      let previewAudioPath = null
+      // Only check for pre-generated files for ElevenLabs (Premium voices)
+      // Gemini is free, so no need to save preview files
+      if (provider === 'elevenlabs') {
+        const previewAudioPath = `/voice-previews/elevenlabs/${voiceId}.mp3`
 
-      if (provider === 'gemini') {
-        // For Gemini voices, check if preview file exists
-        previewAudioPath = `/voice-previews/gemini/${voiceId}.mp3`
-      } else {
-        // For ElevenLabs voices
-        previewAudioPath = `/voice-previews/elevenlabs/${voiceId}.mp3`
-      }
+        console.log(`🔍 Checking for pre-generated ElevenLabs preview: ${previewAudioPath}`)
 
-      // Try to load and play from pre-generated file first
-      console.log(`🔍 Checking for pre-generated preview: ${previewAudioPath}`)
+        const audio = new Audio(previewAudioPath)
 
-      const audio = new Audio(previewAudioPath)
+        // Setup promise to detect if audio loads successfully
+        const audioLoaded = new Promise((resolve, reject) => {
+          audio.addEventListener('canplay', () => resolve(true), { once: true })
+          audio.addEventListener('error', () => reject(new Error('File not found')), { once: true })
+        })
 
-      // Setup promise to detect if audio loads successfully
-      const audioLoaded = new Promise((resolve, reject) => {
-        audio.addEventListener('canplay', () => resolve(true), { once: true })
-        audio.addEventListener('error', () => reject(new Error('File not found')), { once: true })
-      })
+        try {
+          await audioLoaded
+          // Audio file exists and loaded successfully
+          console.log(`✅ Playing pre-generated preview (saves ElevenLabs credits!)`)
+          audio.play()
+          setAudioPlayer(audio)
 
-      try {
-        await audioLoaded
-        // Audio file exists and loaded successfully
-        console.log(`✅ Playing pre-generated preview (saves API credits)`)
-        audio.play()
-        setAudioPlayer(audio)
+          audio.onended = () => {
+            setIsPreviewing(false)
+          }
 
-        audio.onended = () => {
-          setIsPreviewing(false)
+          return // Success, no need for API call
+        } catch (fileError) {
+          console.log(`⚠️ No pre-generated file found, falling back to ElevenLabs API`)
         }
-
-        return // Success, no need for API call
-      } catch (fileError) {
-        console.log(`⚠️ No pre-generated file found, falling back to API`)
       }
 
-      // Fallback: Generate via API (costs credits)
+      // Fallback: Generate via API
+      // For Gemini: always use API (free)
+      // For ElevenLabs: fallback if file not found
       await generatePreviewViaAPI()
 
     } catch (error) {
@@ -491,7 +473,7 @@ export default function VoiceGenerator() {
     if (provider === 'gemini') {
       gender = GEMINI_VOICES[selectedVoice]?.gender || 'neutral'
     } else {
-      const voice = ELEVENLABS_VOICES.find(v => v.id === selectedElevenlabsVoice)
+      const voice = elevenlabsVoices.find(v => v.voiceId === selectedElevenlabsVoice)
       gender = voice?.gender || 'neutral'
     }
 
@@ -595,7 +577,7 @@ export default function VoiceGenerator() {
           voiceName = `${GEMINI_VOICES[selectedVoice].name} - ${GEMINI_VOICES[selectedVoice].style}`
           providerName = 'Standard AI'
         } else {
-          const voice = ELEVENLABS_VOICES.find(v => v.id === selectedElevenlabsVoice)
+          const voice = elevenlabsVoices.find(v => v.voiceId === selectedElevenlabsVoice)
           voiceName = voice ? voice.name : 'Premium Voice'
           providerName = 'Premium AI'
         }
@@ -799,11 +781,11 @@ export default function VoiceGenerator() {
             <button
               type="button"
               onClick={() => setProvider('elevenlabs')}
-              disabled={isGenerating || ELEVENLABS_VOICES.length === 0}
+              disabled={isGenerating || loadingVoices || elevenlabsVoices.length === 0}
               className={`p-4 rounded-xl border-2 transition-all text-left ${
                 provider === 'elevenlabs'
                   ? 'border-[#FE2C55] bg-[#FE2C55]/10'
-                  : ELEVENLABS_VOICES.length === 0
+                  : elevenlabsVoices.length === 0
                   ? 'border-gray-800 bg-[#0a0a0a] opacity-50 cursor-not-allowed'
                   : 'border-gray-700 bg-[#0a0a0a] hover:border-gray-600'
               }`}
@@ -815,7 +797,9 @@ export default function VoiceGenerator() {
                   </div>
                   <div>
                     <p className="text-white font-semibold text-sm">Premium AI</p>
-                    <p className="text-xs text-gray-400">{ELEVENLABS_VOICES.length} เสียงโคลน</p>
+                    <p className="text-xs text-gray-400">
+                      {loadingVoices ? 'กำลังโหลด...' : `${elevenlabsVoices.length} เสียงโคลน`}
+                    </p>
                   </div>
                 </div>
                 {provider === 'elevenlabs' && (
@@ -834,9 +818,9 @@ export default function VoiceGenerator() {
               </div>
             </button>
           </div>
-          {provider === 'elevenlabs' && ELEVENLABS_VOICES.length === 0 && (
+          {provider === 'elevenlabs' && elevenlabsVoices.length === 0 && !loadingVoices && (
             <p className="text-xs text-amber-400 mt-2 flex items-center gap-1">
-              ⚠️ กรุณาเพิ่ม Voice ID ใน ELEVENLABS_VOICES (components/VoiceGenerator.jsx)
+              ⚠️ ยังไม่มีเสียง Premium ในระบบ กรุณาเพิ่มเสียงที่หน้า Admin
             </p>
           )}
         </div>
@@ -937,15 +921,15 @@ export default function VoiceGenerator() {
                   value={selectedElevenlabsVoice}
                   onChange={(e) => setSelectedElevenlabsVoice(e.target.value)}
                   className="flex-1 px-4 py-3 bg-[#0a0a0a] border border-amber-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  disabled={isGenerating || ELEVENLABS_VOICES.length === 0}
+                  disabled={isGenerating || loadingVoices || elevenlabsVoices.length === 0}
                 >
-                  {ELEVENLABS_VOICES.length > 0 ? (
+                  {elevenlabsVoices.length > 0 ? (
                     <>
                       {/* Male Voices */}
-                      {ELEVENLABS_VOICES.filter(v => v.gender === 'male').length > 0 && (
+                      {elevenlabsVoices.filter(v => v.gender === 'male').length > 0 && (
                         <optgroup label="👨 เสียงผู้ชาย">
-                          {ELEVENLABS_VOICES.filter(v => v.gender === 'male').map((voice) => (
-                            <option key={voice.id} value={voice.id}>
+                          {elevenlabsVoices.filter(v => v.gender === 'male').map((voice) => (
+                            <option key={voice.id} value={voice.voiceId}>
                               {voice.name} - {voice.description}
                             </option>
                           ))}
@@ -953,10 +937,10 @@ export default function VoiceGenerator() {
                       )}
 
                       {/* Female Voices */}
-                      {ELEVENLABS_VOICES.filter(v => v.gender === 'female').length > 0 && (
+                      {elevenlabsVoices.filter(v => v.gender === 'female').length > 0 && (
                         <optgroup label="👩 เสียงผู้หญิง">
-                          {ELEVENLABS_VOICES.filter(v => v.gender === 'female').map((voice) => (
-                            <option key={voice.id} value={voice.id}>
+                          {elevenlabsVoices.filter(v => v.gender === 'female').map((voice) => (
+                            <option key={voice.id} value={voice.voiceId}>
                               {voice.name} - {voice.description}
                             </option>
                           ))}
@@ -964,10 +948,10 @@ export default function VoiceGenerator() {
                       )}
 
                       {/* Neutral Voices */}
-                      {ELEVENLABS_VOICES.filter(v => v.gender === 'neutral').length > 0 && (
+                      {elevenlabsVoices.filter(v => v.gender === 'neutral').length > 0 && (
                         <optgroup label="⚧ เสียงเป็นกลาง">
-                          {ELEVENLABS_VOICES.filter(v => v.gender === 'neutral').map((voice) => (
-                            <option key={voice.id} value={voice.id}>
+                          {elevenlabsVoices.filter(v => v.gender === 'neutral').map((voice) => (
+                            <option key={voice.id} value={voice.voiceId}>
                               {voice.name} - {voice.description}
                             </option>
                           ))}
@@ -980,7 +964,7 @@ export default function VoiceGenerator() {
                 </select>
                 <button
                   onClick={handlePreview}
-                  disabled={isPreviewing || isGenerating || ELEVENLABS_VOICES.length === 0}
+                  disabled={isPreviewing || isGenerating || loadingVoices || elevenlabsVoices.length === 0}
                   className="px-6 py-3 bg-[#0a0a0a] border border-amber-600 hover:border-amber-500 hover:bg-gray-800 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isPreviewing ? (
@@ -1011,7 +995,8 @@ export default function VoiceGenerator() {
               isGenerating ||
               !scriptText.trim() ||
               userCredits < currentTier.credits ||
-              (provider === 'elevenlabs' && ELEVENLABS_VOICES.length === 0)
+              loadingVoices ||
+              (provider === 'elevenlabs' && elevenlabsVoices.length === 0)
             }
             className="w-full px-6 py-4 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] hover:shadow-lg hover:shadow-[#00F2EA]/50 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
@@ -1035,9 +1020,9 @@ export default function VoiceGenerator() {
               ⚠️ เครดิตไม่เพียงพอ! ต้องการ {currentTier.credits} เครดิต
             </p>
           )}
-          {provider === 'elevenlabs' && ELEVENLABS_VOICES.length === 0 && (
+          {provider === 'elevenlabs' && elevenlabsVoices.length === 0 && !loadingVoices && (
             <p className="text-xs text-amber-400 text-center mt-2">
-              ⚠️ กรุณาเพิ่มเสียง Premium ก่อนใช้งาน
+              ⚠️ กรุณาเพิ่มเสียง Premium ที่หน้า Admin ก่อนใช้งาน
             </p>
           )}
         </div>

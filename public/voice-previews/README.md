@@ -1,32 +1,27 @@
-# Voice Preview Files
+# Voice Preview Files (ElevenLabs Only)
 
-This folder contains pre-generated audio files for voice previews to save API credits.
+This folder contains pre-generated audio files for **ElevenLabs** voice previews to save API credits.
+
+**Note:** Gemini TTS is free, so we don't need to save preview files for it. Only ElevenLabs requires pre-generated files.
 
 ## Structure
 
 ```
 voice-previews/
-├── gemini/          # Gemini TTS voices (30 voices)
-│   ├── Puck.mp3
-│   ├── Zephyr.mp3
-│   ├── Kore.mp3
-│   └── ...
-└── elevenlabs/      # ElevenLabs voices (premium, 4 voices)
-    ├── VOICE_ID_1.mp3
-    ├── VOICE_ID_2.mp3
-    └── ...
+└── elevenlabs/      # ElevenLabs voices (premium, 7 voices)
+    ├── AXw7rxvMAEe68vknaJRv.mp3  (เสียงกวนทีน - ชาย)
+    ├── oKIE62mvU7YR0KSC6cjd.mp3  (เสียงพี่ชิล - ชาย)
+    ├── gkEgy6IJoIagFuyBcxDu.mp3  (เสียงบอส - ชาย)
+    ├── fJnvnbC7A9PHKFt2Zi5I.mp3  (เสียงนักพูด - ชาย)
+    ├── ocXeZcpfl3y8l2JH0Dyv.mp3  (เสียงน้องมิ้นท์ - หญิง)
+    ├── yvV1FSiWQfVfAv6TKN2O.mp3  (เสียงพี่พอด - หญิง)
+    └── GYFXpkcXjA3N82uHvHn3.mp3  (เสียงสบายหู - หญิง)
 ```
 
 ## Preview Text (Thai)
 
-All preview audio files should use this exact text:
+All preview audio files use this exact text:
 
-**Male voices:**
-```
-สวัสดีนี่คือเสียงเอไอจากเว็บพ้อมดี คุณชอบรึป่าว
-```
-
-**Female voices:**
 ```
 สวัสดีนี่คือเสียงเอไอจากเว็บพ้อมดี คุณชอบรึป่าว
 ```
