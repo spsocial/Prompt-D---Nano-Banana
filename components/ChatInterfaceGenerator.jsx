@@ -589,9 +589,8 @@ export default function ChatInterfaceGenerator() {
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2 sm:gap-3">
             {/* Logo */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <img src="/logo.png" alt="PD Studio" className="h-8 w-8 sm:h-9 sm:w-9 object-contain" />
-              <h1 className="text-lg sm:text-xl font-bold text-white">PD</h1>
+            <div className="flex items-center flex-shrink-0">
+              <img src="/logo.png" alt="PD Studio" className="h-9 w-9 sm:h-10 sm:w-10 object-contain" />
             </div>
 
             {/* Mode Toggle - TikTok Style - วางกึ่งกลาง */}
