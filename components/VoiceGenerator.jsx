@@ -877,7 +877,7 @@ export default function VoiceGenerator() {
               <label className="block text-sm font-semibold text-white mb-3">
                 🎧 สไตล์เสียง (Voice Style)
               </label>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <select
                   value={selectedVoice}
                   onChange={(e) => setSelectedVoice(e.target.value)}
@@ -893,17 +893,17 @@ export default function VoiceGenerator() {
                 <button
                   onClick={handlePreview}
                   disabled={isPreviewing || isGenerating}
-                  className="px-6 py-3 bg-[#0a0a0a] border border-gray-700 hover:border-[#00F2EA] hover:bg-gray-800 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="w-full sm:w-auto px-6 py-3 bg-[#0a0a0a] border border-gray-700 hover:border-[#00F2EA] hover:bg-gray-800 text-white rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isPreviewing ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span className="hidden sm:inline">ฟัง...</span>
+                      <span>ฟัง...</span>
                     </>
                   ) : (
                     <>
                       <Volume2 className="h-5 w-5 text-[#00F2EA]" />
-                      <span className="hidden sm:inline">ทดลองฟัง</span>
+                      <span>ทดลองฟัง</span>
                     </>
                   )}
                 </button>
