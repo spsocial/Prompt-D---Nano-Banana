@@ -587,14 +587,14 @@ export default function ChatInterfaceGenerator() {
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-[#121212]/90 border-b border-gray-800">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2 sm:gap-3">
+          <div className="relative flex items-center justify-between">
             {/* Logo */}
-            <div className="flex items-center flex-shrink-0">
+            <div className="flex items-center flex-shrink-0 z-10">
               <img src="/logo.png" alt="PD Studio" className="h-9 w-9 sm:h-10 sm:w-10 object-contain" />
             </div>
 
-            {/* Mode Toggle - TikTok Style - วางกึ่งกลาง */}
-            <div className="flex items-center gap-1 bg-[#1a1a1a] rounded-full p-1">
+            {/* Mode Toggle - TikTok Style - Centered with absolute positioning */}
+            <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-[#1a1a1a] rounded-full p-1">
               <button
                 onClick={() => setMode('image')}
                 className={`px-4 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
@@ -631,7 +631,7 @@ export default function ChatInterfaceGenerator() {
             </div>
 
             {/* Right Section: Credits + Profile */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 z-10">
               {/* Credits */}
               <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 bg-[#1a1a1a] rounded-full">
                 <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-[#FE2C55]" />
