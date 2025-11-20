@@ -360,7 +360,7 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
           {/* Cameo (Optional) */}
           <div>
             <label className="block text-sm font-semibold text-white mb-2">
-              👤 Cameo (นายแบบ/นางแบบ Sora 2)
+              👤 Cameo, Character (นายแบบ/นางแบบ Sora 2)
             </label>
             <input
               type="text"
