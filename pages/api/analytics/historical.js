@@ -61,24 +61,46 @@ export default async function handler(req, res) {
       totals.newUsers += stat.newUsers || 0;
     });
 
-    // Calculate newUsers for each day from User.firstSeen (more accurate than dailyStats)
+    // Calculate newUsers and ACTUAL revenue for each day (more accurate than dailyStats)
     const chartDataWithUsers = await Promise.all(dailyStats.map(async (stat) => {
       const images = stat.totalImages || 0;
       const videos = stat.totalVideos || 0;
-      const revenue = stat.totalRevenue || 0;
+
+      // Calculate day boundaries
+      const dayStart = new Date(stat.date);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+
+      // Calculate ACTUAL REVENUE from transactions (exclude free credits)
+      const dayTransactions = await prisma.transaction.findMany({
+        where: {
+          createdAt: {
+            gte: dayStart,
+            lt: dayEnd
+          }
+        }
+      });
+
+      let actualRevenue = 0;
+      let paidTransactionCount = 0;
+
+      dayTransactions.forEach(t => {
+        // Skip free credit transactions
+        if (!t.packageName?.includes('ฟรี') &&
+            !t.packageName?.toLowerCase().includes('free')) {
+          actualRevenue += t.amount || 0;
+          paidTransactionCount++;
+        }
+      });
 
       // Use ACTUAL API costs from database (tracked during generation)
       const imageCost = stat.apiCostImages || 0;  // Real cost from Nano Banana API
       const videoCost = stat.apiCostVideos || 0;  // Real cost from KIE Sora 2 API (5.1฿)
       const totalCost = imageCost + videoCost;
 
-      // Calculate daily profit
-      const profit = revenue - totalCost;
+      // Calculate daily profit using ACTUAL revenue
+      const profit = actualRevenue - totalCost;
 
       // Calculate NEW USERS for this specific day from User.firstSeen
-      const dayStart = new Date(stat.date);
-      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-
       const newUsersCount = await prisma.user.count({
         where: {
           firstSeen: {
@@ -94,12 +116,12 @@ export default async function handler(req, res) {
         videos,
         videosSora2: stat.videosSora2 || 0,
         videoErrors: stat.videoErrors || 0,
-        revenue,
+        revenue: actualRevenue,  // Use ACTUAL revenue from transactions (exclude free)
         cost: totalCost,
         imageCost,  // Show individual costs for transparency
         videoCost,
         profit,
-        transactions: stat.totalTransactions || 0,
+        transactions: paidTransactionCount,  // Only count paid transactions
         newUsers: newUsersCount  // Calculated from actual User.firstSeen data
       };
     }));
