@@ -58,13 +58,15 @@ export default async function handler(req, res) {
         }
       });
 
-      // Aggregate stats from daily data (only Sora 2 now)
+      // Aggregate stats from daily data (use ACTUAL API costs)
       const totals = {
         images: 0,
         videos: 0,
         videosSora2: 0,
         videoErrors: 0,
-        newUsers: 0
+        newUsers: 0,
+        imageCost: 0,  // Track actual image costs
+        videoCost: 0   // Track actual video costs
       };
 
       dailyStats.forEach(day => {
@@ -73,15 +75,13 @@ export default async function handler(req, res) {
         totals.videosSora2 += day.videosSora2 || 0;
         totals.videoErrors += day.videoErrors || 0;
         totals.newUsers += day.newUsers || 0;
+        // Use ACTUAL API costs from database
+        totals.imageCost += day.apiCostImages || 0;
+        totals.videoCost += day.apiCostVideos || 0;
       });
 
-      // Calculate costs
-      // Image cost: 0.68 baht per image (Nano Banana)
-      // Video cost: depends on duration (10s or 15s) - using Sora 2
-      // Assuming average video cost ~12 baht (mix of 10s and 15s)
-      const imageCost = totals.images * 0.68;
-      const videoCost = totals.videos * 12; // Average cost
-      const totalCost = imageCost + videoCost;
+      // Calculate total cost from actual tracked costs
+      const totalCost = totals.imageCost + totals.videoCost;
 
       // Calculate profit (revenue - cost, only for paid transactions)
       const profit = revenue - totalCost;

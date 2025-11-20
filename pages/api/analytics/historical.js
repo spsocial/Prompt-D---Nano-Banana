@@ -1,5 +1,6 @@
 // API endpoint for fetching historical analytics data
 import { PrismaClient } from '@prisma/client';
+import { getThailandToday, getThailandDaysAgo } from '../../../lib/timezone.js';
 
 const prisma = new PrismaClient();
 
@@ -11,23 +12,20 @@ export default async function handler(req, res) {
   try {
     const { range = '7' } = req.query; // Default to last 7 days
 
-    const now = new Date();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Use Thailand timezone
+    const today = getThailandToday();
 
     let startDate;
     let daysToFetch;
 
     if (range === 'all') {
       // Fetch all available data (limit to 90 days for performance)
-      startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
       daysToFetch = 90;
+      startDate = getThailandDaysAgo(90);
     } else {
       daysToFetch = parseInt(range);
-      startDate = new Date(Date.now() - daysToFetch * 24 * 60 * 60 * 1000);
+      startDate = getThailandDaysAgo(daysToFetch);
     }
-
-    startDate.setHours(0, 0, 0, 0);
 
     // Fetch daily stats for the range
     const dailyStats = await prisma.dailyStats.findMany({
@@ -63,15 +61,15 @@ export default async function handler(req, res) {
       totals.newUsers += stat.newUsers || 0;
     });
 
-    // Format data for charts (only Sora 2 now)
+    // Format data for charts (use actual API costs from database)
     const chartData = dailyStats.map(stat => {
       const images = stat.totalImages || 0;
       const videos = stat.totalVideos || 0;
       const revenue = stat.totalRevenue || 0;
 
-      // Calculate daily costs
-      const imageCost = images * 0.68; // Nano Banana
-      const videoCost = videos * 12;   // Average Sora 2 cost
+      // Use ACTUAL API costs from database (tracked during generation)
+      const imageCost = stat.apiCostImages || 0;  // Real cost from Nano Banana API
+      const videoCost = stat.apiCostVideos || 0;  // Real cost from KIE Sora 2 API (5.1฿)
       const totalCost = imageCost + videoCost;
 
       // Calculate daily profit
@@ -85,6 +83,8 @@ export default async function handler(req, res) {
         videoErrors: stat.videoErrors || 0,
         revenue,
         cost: totalCost,
+        imageCost,  // Show individual costs for transparency
+        videoCost,
         profit,
         transactions: stat.totalTransactions || 0,
         newUsers: stat.newUsers || 0

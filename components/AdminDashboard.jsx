@@ -186,10 +186,16 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-          <Activity className="h-7 w-7 mr-2 text-yellow-500" />
-          📊 Admin Dashboard
-        </h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+            <Activity className="h-7 w-7 mr-2 text-yellow-500" />
+            📊 Admin Dashboard
+          </h2>
+          <p className="text-xs text-gray-500 mt-1 ml-9">
+            <Clock className="h-3 w-3 inline mr-1" />
+            ข้อมูลรีเซ็ตทุกวันเวลา 00:00 น. (เวลาไทย UTC+7) | ต้นทุนคำนวณจาก API จริง
+          </p>
+        </div>
         <div className="flex space-x-2">
           <button
             onClick={loadStats}
@@ -386,12 +392,18 @@ export default function AdminDashboard() {
                   <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                     <p className="text-sm text-gray-600">ต้นทุนภาพ</p>
                     <p className="text-xl font-bold text-orange-600">{formatCurrency(stats.costs.imagesToday || 0)}</p>
-                    <p className="text-xs text-gray-500">API: Nano Banana (0.68฿/ภาพ)</p>
+                    <p className="text-xs text-gray-500">
+                      API: Nano Banana ({stats.images.today} ภาพ)
+                    </p>
+                    <p className="text-xs text-emerald-600 font-medium">✓ ใช้ต้นทุนจริงจาก API</p>
                   </div>
                   <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                     <p className="text-sm text-gray-600">ต้นทุนวิดีโอ</p>
                     <p className="text-xl font-bold text-red-600">{formatCurrency(stats.costs.videosToday || 0)}</p>
-                    <p className="text-xs text-gray-500">API: Sora 2 (5.1฿/คลิป)</p>
+                    <p className="text-xs text-gray-500">
+                      API: KIE Sora 2 ({stats.videos?.today || 0} คลิป)
+                    </p>
+                    <p className="text-xs text-emerald-600 font-medium">✓ ใช้ต้นทุนจริงจาก API</p>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-300">
                     <p className="text-sm text-gray-600">ต้นทุนรวมวันนี้</p>
