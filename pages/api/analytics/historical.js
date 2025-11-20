@@ -61,8 +61,8 @@ export default async function handler(req, res) {
       totals.newUsers += stat.newUsers || 0;
     });
 
-    // Format data for charts (use actual API costs from database)
-    const chartData = dailyStats.map(stat => {
+    // Calculate newUsers for each day from User.firstSeen (more accurate than dailyStats)
+    const chartDataWithUsers = await Promise.all(dailyStats.map(async (stat) => {
       const images = stat.totalImages || 0;
       const videos = stat.totalVideos || 0;
       const revenue = stat.totalRevenue || 0;
@@ -74,6 +74,19 @@ export default async function handler(req, res) {
 
       // Calculate daily profit
       const profit = revenue - totalCost;
+
+      // Calculate NEW USERS for this specific day from User.firstSeen
+      const dayStart = new Date(stat.date);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+
+      const newUsersCount = await prisma.user.count({
+        where: {
+          firstSeen: {
+            gte: dayStart,
+            lt: dayEnd
+          }
+        }
+      });
 
       return {
         date: stat.date.toISOString().split('T')[0],
@@ -87,9 +100,11 @@ export default async function handler(req, res) {
         videoCost,
         profit,
         transactions: stat.totalTransactions || 0,
-        newUsers: stat.newUsers || 0
+        newUsers: newUsersCount  // Calculated from actual User.firstSeen data
       };
-    });
+    }));
+
+    const chartData = chartDataWithUsers;
 
     return res.status(200).json({
       range: range === 'all' ? 'all' : `${daysToFetch} days`,
