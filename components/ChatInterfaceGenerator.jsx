@@ -50,6 +50,14 @@ const IMAGE_MODELS = {
     name: 'Nano Banana',
     icon: '🍌',
     description: 'Gemini 2.5 - วิเคราะห์และสร้างโฆษณา'
+  },
+  'nano-banana-pro': {
+    id: 'nano-banana-pro',
+    name: 'Nano Banana PRO',
+    icon: '⚡',
+    description: 'KIE.AI - ความละเอียดสูง 1K/2K/4K (3 เครดิต)',
+    credits: 3,
+    maxImages: 1 // สร้างได้ทีละ 1 รูป
   }
 }
 
@@ -95,6 +103,13 @@ export default function ChatInterfaceGenerator() {
       return prev
     })
   }, [mode])
+
+  // Lock numberOfImages to 1 when Nano Banana PRO is selected
+  useEffect(() => {
+    if (selectedModel === 'nano-banana-pro') {
+      setNumberOfImages(1)
+    }
+  }, [selectedModel])
 
   const textareaRef = useRef(null)
   const messagesEndRef = useRef(null)
@@ -158,7 +173,9 @@ export default function ChatInterfaceGenerator() {
     // Calculate credits
     const requiredCredits = mode === 'video'
       ? (duration === 15 ? 15 : 10)
-      : (numberOfImages * 1) // 1 credit per image
+      : selectedModel === 'nano-banana-pro'
+        ? 3 // 3 credits per image for Nano Banana PRO
+        : (numberOfImages * 1) // 1 credit per image for Nano Banana
 
     if (userCredits < requiredCredits) {
       alert(`เครดิตไม่เพียงพอ! ต้องการ ${requiredCredits} เครดิต`)
@@ -323,81 +340,125 @@ export default function ChatInterfaceGenerator() {
         })
 
       } else {
-        // Image generation with Nano Banana
+        // Image generation
         const selectedStylePrompt = PROMPT_STYLES[selectedStyle].prompt
         const finalPrompt = selectedStyle === 'custom' ? currentPrompt : (currentPrompt || selectedStylePrompt)
 
-        // Step 1: Analyze (if image provided) or prepare prompts
-        let prompts = []
-
-        if (currentImage) {
-          // Image-to-Image: analyze first
-          const analyzeResponse = await fetch('/api/analyze', {
+        if (selectedModel === 'nano-banana-pro') {
+          // Nano Banana PRO - ใช้ KIE.AI API
+          const generateResponse = await fetch('/api/generate-image-kie-pro', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              image: currentImage,
-              customPrompt: finalPrompt,
-              selectedStyle: selectedStyle,
-              numberOfImages: numberOfImages,
-              aspectRatio: aspectRatio
+              prompt: finalPrompt,
+              aspectRatio: aspectRatio,
+              resolution: '1K', // Default resolution
+              outputFormat: 'png',
+              imageInput: currentImage ? [currentImage] : [],
+              userId: userId || 'anonymous'
             })
           })
 
-          if (!analyzeResponse.ok) {
-            throw new Error('Failed to analyze image')
+          setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
+
+          if (!generateResponse.ok) {
+            throw new Error('Failed to generate image with Nano Banana PRO')
           }
 
-          const { prompts: analyzedPrompts } = await analyzeResponse.json()
-          prompts = analyzedPrompts.slice(0, numberOfImages)
-        } else {
-          // Text-to-Image: use custom prompt directly
-          prompts = Array(numberOfImages).fill(null).map((_, i) => ({
-            style: `Text-to-Image ${i + 1}`,
-            prompt: finalPrompt
-          }))
-        }
+          const result = await generateResponse.json()
 
-        // Step 2: Generate images
-        const generateResponse = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompts: prompts,
-            originalImage: currentImage,
-            aspectRatio: aspectRatio,
-            userId: userId
-          })
-        })
-
-        setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
-
-        if (!generateResponse.ok) {
-          throw new Error('Failed to generate images')
-        }
-
-        const { results } = await generateResponse.json()
-
-        // Add each result as separate message
-        results.forEach((result, index) => {
+          // Add result message
           const resultMessage = {
-            id: Date.now() + 2 + index,
+            id: Date.now() + 2,
             type: 'result',
             mode: 'image',
             url: result.imageUrl,
             data: result
           }
           setMessages(prev => [...prev, resultMessage])
-        })
 
-        // Save each image to history
-        for (const result of results) {
+          // Save to history
           await addToHistory({
             imageUrl: result.imageUrl,
-            prompt: result.prompt || finalPrompt,
-            style: result.style || PROMPT_STYLES[selectedStyle].name,
+            prompt: finalPrompt,
+            style: 'Nano Banana PRO',
             aspectRatio: aspectRatio
           })
+
+        } else {
+          // Nano Banana (original) - ใช้ Gemini
+          // Step 1: Analyze (if image provided) or prepare prompts
+          let prompts = []
+
+          if (currentImage) {
+            // Image-to-Image: analyze first
+            const analyzeResponse = await fetch('/api/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                image: currentImage,
+                customPrompt: finalPrompt,
+                selectedStyle: selectedStyle,
+                numberOfImages: numberOfImages,
+                aspectRatio: aspectRatio
+              })
+            })
+
+            if (!analyzeResponse.ok) {
+              throw new Error('Failed to analyze image')
+            }
+
+            const { prompts: analyzedPrompts } = await analyzeResponse.json()
+            prompts = analyzedPrompts.slice(0, numberOfImages)
+          } else {
+            // Text-to-Image: use custom prompt directly
+            prompts = Array(numberOfImages).fill(null).map((_, i) => ({
+              style: `Text-to-Image ${i + 1}`,
+              prompt: finalPrompt
+            }))
+          }
+
+          // Step 2: Generate images
+          const generateResponse = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompts: prompts,
+              originalImage: currentImage,
+              aspectRatio: aspectRatio,
+              userId: userId
+            })
+          })
+
+          setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
+
+          if (!generateResponse.ok) {
+            throw new Error('Failed to generate images')
+          }
+
+          const { results } = await generateResponse.json()
+
+          // Add each result as separate message
+          results.forEach((result, index) => {
+            const resultMessage = {
+              id: Date.now() + 2 + index,
+              type: 'result',
+              mode: 'image',
+              url: result.imageUrl,
+              data: result
+            }
+            setMessages(prev => [...prev, resultMessage])
+          })
+
+          // Save each image to history
+          for (const result of results) {
+            await addToHistory({
+              imageUrl: result.imageUrl,
+              prompt: result.prompt || finalPrompt,
+              style: result.style || PROMPT_STYLES[selectedStyle].name,
+              aspectRatio: aspectRatio
+            })
+          }
         }
       }
 
@@ -894,7 +955,8 @@ export default function ChatInterfaceGenerator() {
                       value={numberOfImages}
                       onChange={(e) => setNumberOfImages(parseInt(e.target.value))}
                       className="px-3 py-1 bg-[#0a0a0a] border border-gray-700 rounded-lg text-xs text-white hover:bg-gray-800 transition-colors focus:outline-none focus:ring-1 focus:ring-[#00F2EA]"
-                      disabled={isGenerating}
+                      disabled={isGenerating || selectedModel === 'nano-banana-pro'}
+                      title={selectedModel === 'nano-banana-pro' ? 'Nano Banana PRO สร้างได้ทีละ 1 รูปเท่านั้น' : ''}
                     >
                       <option value="1">1 รูป</option>
                       <option value="2">2 รูป</option>

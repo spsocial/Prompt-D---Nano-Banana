@@ -1,4 +1,7 @@
 import { safeStringify } from '../../lib/logUtils';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // Helper function to upload base64 image to Cloudinary (with retry)
 async function uploadToCloudinary(base64Image, retries = 3) {
@@ -307,6 +310,70 @@ export default async function handler(req, res) {
 
     console.log(`🎉 KIE.AI Nano Banana PRO generation complete!`)
     console.log(`🖼️ Image URL: ${imageUrl}`)
+
+    // Log usage to database
+    try {
+      console.log('📊 Logging usage to database...')
+
+      const API_COST = 4.0 // 4 baht per image for Nano Banana PRO
+      const CREDITS_USED = 3 // 3 credits per image
+
+      await prisma.imageGeneration.create({
+        data: {
+          userId: userId,
+          style: 'nano-banana-pro', // For backward compatibility
+          model: 'nano-banana-pro',
+          prompt: prompt,
+          aspectRatio: aspectRatio,
+          resolution: resolution,
+          creditsUsed: CREDITS_USED,
+          apiCost: API_COST,
+          success: true
+        }
+      })
+
+      // Update daily stats
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      await prisma.dailyStats.upsert({
+        where: { date: today },
+        update: {
+          totalImages: { increment: 1 },
+          imagesNanoBananaPro: { increment: 1 },
+          apiCostImages: { increment: API_COST }
+        },
+        create: {
+          date: today,
+          totalImages: 1,
+          imagesNanoBananaPro: 1,
+          apiCostImages: API_COST
+        }
+      })
+
+      // Update monthly stats
+      const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+
+      await prisma.monthlyStats.upsert({
+        where: { month: monthKey },
+        update: {
+          totalImages: { increment: 1 },
+          imagesNanoBananaPro: { increment: 1 },
+          apiCostImages: { increment: API_COST }
+        },
+        create: {
+          month: monthKey,
+          totalImages: 1,
+          imagesNanoBananaPro: 1,
+          apiCostImages: API_COST
+        }
+      })
+
+      console.log('✅ Usage logged successfully')
+    } catch (logError) {
+      console.error('❌ Failed to log usage:', logError)
+      // Don't fail the request if logging fails
+    }
 
     // Return success response
     res.status(200).json({

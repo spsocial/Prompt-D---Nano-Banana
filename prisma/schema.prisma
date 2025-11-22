@@ -30,6 +30,8 @@ model User {
   creditsUsed   Int      @default(0)  // Total credits used (images)
   videosGenerated Int    @default(0)  // Total videos generated
   videoCreditsUsed Int   @default(0)  // Total credits used for videos
+  voicesGenerated Int    @default(0)  // Total voices generated
+  voiceCreditsUsed Int   @default(0)  // Total credits used for voices
 
   // Affiliate fields
   referralCode       String?   @unique  // รหัสแนะนำของตัวเอง (เช่น "PDSTUDIO-ABC123")
@@ -135,8 +137,14 @@ model Transaction {
 model ImageGeneration {
   id            String   @id @default(cuid())
   userId        String
-  style         String
+  style         String   // For backward compatibility with old Banana AI style-based generation
+  model         String?  // nano-banana, nano-banana-pro (new field)
   prompt        String?  @db.Text
+  aspectRatio   String?  // Aspect ratio (e.g., 1:1, 16:9)
+  resolution    String?  // For Nano Banana PRO: 1K, 2K, 4K
+  creditsUsed   Int      @default(1) // Credits used (1 for Nano Banana, 3 for Nano Banana PRO)
+  apiCost       Float    @default(0) // API cost in baht (0.5 for Nano Banana, 4 for Nano Banana PRO)
+  success       Boolean  @default(true)
 
   // Relations
   user          User     @relation(fields: [userId], references: [userId])
@@ -145,7 +153,9 @@ model ImageGeneration {
 
   @@index([userId])
   @@index([style])
+  @@index([model])
   @@index([createdAt])
+  @@index([success])
 }
 
 // Video generation tracking
@@ -222,6 +232,11 @@ model DailyStats {
   newUsers      Int      @default(0)
   activeUsers   Int      @default(0)
   totalImages   Int      @default(0)
+
+  // Image generation tracking by model
+  imagesNanoBanana    Int   @default(0)  // Regular Nano Banana (1 credit, 0.5 baht cost)
+  imagesNanoBananaPro Int   @default(0)  // Nano Banana PRO (3 credits, 4 baht cost)
+
   totalVideos   Int      @default(0)
   videosSora2   Int      @default(0)
   videosSora2HD Int      @default(0)
@@ -233,6 +248,18 @@ model DailyStats {
   // API Costs tracking
   apiCostImages Float    @default(0)  // Total API cost for images (in baht)
   apiCostVideos Float    @default(0)  // Total API cost for videos (in baht)
+
+  // Voice TTS tracking
+  totalVoices   Int      @default(0)  // Total voice generations
+  voicesGemini  Int      @default(0)  // Gemini voices (1 credit)
+  voicesElevenlabs Int   @default(0)  // ElevenLabs voices (2-6 credits)
+  voicesTier2   Int      @default(0)  // 2 credits (1-200 chars)
+  voicesTier3   Int      @default(0)  // 3 credits (201-400 chars)
+  voicesTier4   Int      @default(0)  // 4 credits (401-600 chars)
+  voicesTier5   Int      @default(0)  // 5 credits (601-800 chars)
+  voicesTier6   Int      @default(0)  // 6 credits (801-1000 chars)
+  voiceErrors   Int      @default(0)  // Failed voice generations
+  apiCostVoices Float    @default(0)  // Total API cost for voices (in baht)
 
   createdAt     DateTime @default(now())
 
@@ -246,6 +273,11 @@ model MonthlyStats {
   totalUsers    Int      @default(0)
   activeUsers   Int      @default(0)
   totalImages   Int      @default(0)
+
+  // Image generation tracking by model
+  imagesNanoBanana    Int   @default(0)  // Regular Nano Banana (1 credit, 0.5 baht cost)
+  imagesNanoBananaPro Int   @default(0)  // Nano Banana PRO (3 credits, 4 baht cost)
+
   totalVideos   Int      @default(0)
   videosSora2   Int      @default(0)
   videosSora2HD Int      @default(0)
@@ -257,6 +289,18 @@ model MonthlyStats {
   // API Costs tracking
   apiCostImages Float    @default(0)  // Total API cost for images (in baht)
   apiCostVideos Float    @default(0)  // Total API cost for videos (in baht)
+
+  // Voice TTS tracking
+  totalVoices   Int      @default(0)  // Total voice generations
+  voicesGemini  Int      @default(0)  // Gemini voices (1 credit)
+  voicesElevenlabs Int   @default(0)  // ElevenLabs voices (2-6 credits)
+  voicesTier2   Int      @default(0)  // 2 credits (1-200 chars)
+  voicesTier3   Int      @default(0)  // 3 credits (201-400 chars)
+  voicesTier4   Int      @default(0)  // 4 credits (401-600 chars)
+  voicesTier5   Int      @default(0)  // 5 credits (601-800 chars)
+  voicesTier6   Int      @default(0)  // 6 credits (801-1000 chars)
+  voiceErrors   Int      @default(0)  // Failed voice generations
+  apiCostVoices Float    @default(0)  // Total API cost for voices (in baht)
 
   createdAt     DateTime @default(now())
 
@@ -353,4 +397,44 @@ model Voice {
   @@index([gender])
   @@index([isActive])
   @@index([sortOrder])
+}
+
+// Voice generation tracking (for analytics)
+model VoiceGeneration {
+  id            String   @id @default(cuid())
+  userId        String
+  voice         String              // Voice name/ID
+  provider      String              // "gemini" or "elevenlabs"
+  textLength    Int                 // Length of text (characters)
+  creditsUsed   Int                 // Credits used (1, 2, 3, 4, 5, or 6)
+  revenue       Float               // Revenue = creditsUsed * 1 baht
+  apiCost       Float               // Actual API cost (for reference)
+  profit        Float               // Fixed profit based on tier
+  profitMargin  Float               // Profit percentage
+  success       Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([provider])
+  @@index([creditsUsed])
+  @@index([createdAt])
+}
+
+// Voice generation errors/failures
+model VoiceError {
+  id            String   @id @default(cuid())
+  userId        String
+  voice         String              // Voice name/ID
+  provider      String              // "gemini" or "elevenlabs"
+  errorType     String              // api_error, rate_limit, invalid_input, etc.
+  errorMessage  String?  @db.Text
+  creditsRefunded Int               // Credits that were refunded
+
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([provider])
+  @@index([errorType])
+  @@index([createdAt])
 }
