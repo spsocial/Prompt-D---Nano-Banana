@@ -77,6 +77,7 @@ export default function ChatInterfaceGenerator() {
   const [selectedStyle, setSelectedStyle] = useState('premium')
   const [numberOfImages, setNumberOfImages] = useState(1)
   const [selectedModel, setSelectedModel] = useState('banana')
+  const [resolution, setResolution] = useState('1K') // For Nano Banana PRO: 1K, 2K, 4K
   const [showProfileMenu, setShowProfileMenu] = useState(false)
 
   // Confirmation popup
@@ -352,7 +353,7 @@ export default function ChatInterfaceGenerator() {
             body: JSON.stringify({
               prompt: finalPrompt,
               aspectRatio: aspectRatio,
-              resolution: '1K', // Default resolution
+              resolution: resolution, // Use resolution from state (1K, 2K, 4K)
               outputFormat: 'png',
               imageInput: currentImage ? [currentImage] : [],
               userId: userId || 'anonymous'
@@ -977,6 +978,20 @@ export default function ChatInterfaceGenerator() {
                         </option>
                       ))}
                     </select>
+
+                    {/* Resolution Selector - Only show for Nano Banana PRO */}
+                    {selectedModel === 'nano-banana-pro' && (
+                      <select
+                        value={resolution}
+                        onChange={(e) => setResolution(e.target.value)}
+                        className="px-3 py-1 bg-[#0a0a0a] border border-orange-500 rounded-lg text-xs text-white hover:bg-gray-800 transition-colors focus:outline-none focus:ring-1 focus:ring-orange-400"
+                        disabled={isGenerating}
+                      >
+                        <option value="1K">⚡ 1K (เร็ว)</option>
+                        <option value="2K">💎 2K (ปานกลาง)</option>
+                        <option value="4K">🔥 4K (สูงสุด)</option>
+                      </select>
+                    )}
                   </>
                 )}
 
