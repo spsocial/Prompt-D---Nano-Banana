@@ -3,6 +3,7 @@ import { Sparkles, Film, Image as ImageIcon, Upload, Wand2, Lock } from 'lucide-
 import ImageUploader from './ImageUploader'
 import VideoGenerator from './VideoGenerator'
 import GeminiImageGenerator from './GeminiImageGenerator'
+import NanoBananaProGenerator from './NanoBananaProGenerator'
 import useStore from '../lib/store'
 
 // Model configurations
@@ -15,6 +16,16 @@ const IMAGE_MODELS = {
     requiresImage: true,
     hasPresetStyles: true,
     color: 'yellow'
+  },
+  'nano-banana-pro': {
+    id: 'nano-banana-pro',
+    name: 'Nano Banana PRO',
+    description: 'KIE.AI - สร้างภาพความละเอียดสูง 1K/2K/4K',
+    icon: '⚡',
+    requiresImage: false,
+    hasPresetStyles: false,
+    color: 'orange',
+    credits: 3 // คิด 3 เครดิตต่อ 1 รูป
   },
   'dalle-3': {
     id: 'dalle-3',
@@ -203,6 +214,7 @@ export default function UnifiedGenerator() {
             // Dynamic color classes (Tailwind safe-list)
             const activeClasses = {
               yellow: 'border-yellow-500 bg-yellow-50 shadow-lg',
+              orange: 'border-orange-500 bg-orange-50 shadow-lg',
               red: 'border-red-500 bg-red-50 shadow-lg',
               pink: 'border-pink-500 bg-pink-50 shadow-lg',
               blue: 'border-blue-500 bg-blue-50 shadow-lg',
@@ -255,7 +267,11 @@ export default function UnifiedGenerator() {
           <ImageUploader />
         )}
 
-        {mode === 'image' && selectedModel !== 'banana' && (
+        {mode === 'image' && selectedModel === 'nano-banana-pro' && (
+          <NanoBananaProGenerator />
+        )}
+
+        {mode === 'image' && selectedModel !== 'banana' && selectedModel !== 'nano-banana-pro' && (
           <div className="text-center py-12 text-gray-500">
             <Wand2 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
             <div className="text-lg font-semibold">Coming Soon!</div>
@@ -275,7 +291,9 @@ export default function UnifiedGenerator() {
         <p className="text-sm text-blue-800">
           <span className="font-bold">💡 เคล็ดลับ:</span>
           {mode === 'image'
-            ? ' เลือก AI Model ที่เหมาะกับงานของคุณ - Banana AI เหมาะกับการสร้างโฆษณาสินค้า'
+            ? selectedModel === 'nano-banana-pro'
+              ? ' Nano Banana PRO สร้างได้ทีละ 1 รูป ความละเอียดสูง 1K-4K เหมาะสำหรับงานคุณภาพสูง (3 เครดิต/รูป)'
+              : ' เลือก AI Model ที่เหมาะกับงานของคุณ - Banana AI เหมาะกับการสร้างโฆษณาสินค้า, Nano Banana PRO เหมาะกับงานคุณภาพสูง'
             : ' Model HD ให้คุณภาพสูงสุด แต่ใช้เวลานานกว่า - Model Fast เร็วและประหยัด เลือกตามความต้องการ'
           }
         </p>
