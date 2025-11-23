@@ -107,6 +107,13 @@ export default async function handler(req, res) {
       // Add credits to user in database
       const creditsToAdd = credits || Math.floor(slipAmount / 0.5); // Default: 1 credit per 0.5 baht
 
+      // เช็คว่า user มีอยู่แล้วหรือไม่ และ totalSpent เป็นเท่าไหร่ ก่อน update
+      const existingUser = await prisma.user.findUnique({
+        where: { userId: userId }
+      });
+
+      const isFirstPurchase = !existingUser || existingUser.totalSpent === 0;
+
       // Update user credits in database
       const updatedUser = await prisma.user.upsert({
         where: { userId: userId },
@@ -157,10 +164,8 @@ export default async function handler(req, res) {
             // คำนวณจำนวนคนที่ซื้อในเดือนนี้
             const activeReferralsThisMonth = getActiveReferralsThisMonth(affiliateCommissions);
 
-            // เช็คว่าเป็นการซื้อครั้งแรกของคนนี้หรือไม่
-            const isFirstPurchase = updatedUser.totalSpent === slipAmount; // totalSpent = slipAmount = ซื้อครั้งแรก
-
             // 🎁 คำนวณค่าคอมพร้อม Tier System + Bonus
+            // isFirstPurchase ถูกเช็คไว้ก่อน upsert แล้ว (line 115)
             const commissionData = calculateCommission(
               slipAmount,
               activeReferralsThisMonth,
