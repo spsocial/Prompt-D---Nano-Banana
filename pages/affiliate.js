@@ -324,9 +324,9 @@ export default function AffiliateDashboard() {
                 </div>
               ))}
             </div>
-            <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-200">
-              <p className="text-sm text-green-800">
-                <span className="font-bold">🎁 โบนัสพิเศษ:</span> +5฿ เมื่อคนที่แนะนำซื้อครั้งแรก (ขั้นต่ำ 99฿)
+            <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
+              <p className="text-sm text-blue-800">
+                <span className="font-bold">💰 ระบบมาตรฐาน:</span> คิดค่าคอมทุกยอดเติมเงิน ตาม % ของ Tier ที่คุณอยู่ตอนนั้น
               </p>
             </div>
           </div>
