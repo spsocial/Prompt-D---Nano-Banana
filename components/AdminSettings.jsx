@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Shield, LogOut, Gift, UserPlus, Search, BarChart3, Wallet } from 'lucide-react'
+import { Shield, LogOut, Gift, UserPlus, Search, BarChart3, Wallet, Film, Mic } from 'lucide-react'
 import AdminDashboard from './AdminDashboard'
+import Link from 'next/link'
 
 export default function AdminSettings() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -82,7 +83,7 @@ export default function AdminSettings() {
       const data = await response.json()
 
       if (data.success) {
-        const message = `👤 User ID: ${checkUserId}\n💳 เครดิตคงเหลือ: ${data.credits} เครดิต\n📊 ใช้ไปแล้ว: ${data.totalGenerated} ภาพ`
+        const message = `👤 User ID: ${checkUserId}\n💳 เครดิตคงเหลือ: ${data.credits} เครดิต\n💰 เคยเติมมาทั้งหมด: ${data.totalSpent || 0} บาท`
         setCheckResult({ type: 'success', message })
       } else {
         setCheckResult({ type: 'error', message: `❌ เกิดข้อผิดพลาด: ${data.message}` })
@@ -323,7 +324,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex space-x-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6">
           <button
             onClick={() => setActiveTab('credits')}
             className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center ${
@@ -346,6 +347,21 @@ export default function AdminSettings() {
             <BarChart3 className="h-4 w-4 mr-2" />
             Dashboard สถิติ
           </button>
+
+          {/* Navigation Links */}
+          <Link href="/admin/stuck-videos">
+            <button className="px-4 py-2 rounded-lg font-medium transition-all flex items-center bg-orange-100 hover:bg-orange-200 text-orange-700">
+              <Film className="h-4 w-4 mr-2" />
+              วิดีโอค้าง
+            </button>
+          </Link>
+          <Link href="/admin/manage-voices">
+            <button className="px-4 py-2 rounded-lg font-medium transition-all flex items-center bg-cyan-100 hover:bg-cyan-200 text-cyan-700">
+              <Mic className="h-4 w-4 mr-2" />
+              จัดการเสียง
+            </button>
+          </Link>
+
           <button
             onClick={() => setActiveTab('withdrawals')}
             className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center ${
