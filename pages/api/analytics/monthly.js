@@ -64,6 +64,7 @@ export default async function handler(req, res) {
         videos: 0,
         videosSora2: 0,
         videoErrors: 0,
+        voices: 0,
         imageCost: 0,  // Track actual image costs
         videoCost: 0   // Track actual video costs
       };
@@ -73,6 +74,7 @@ export default async function handler(req, res) {
         totals.videos += day.totalVideos || 0;
         totals.videosSora2 += day.videosSora2 || 0;
         totals.videoErrors += day.videoErrors || 0;
+        totals.voices += day.totalVoices || 0;
         // Use ACTUAL API costs from database
         totals.imageCost += day.apiCostImages || 0;
         totals.videoCost += day.apiCostVideos || 0;

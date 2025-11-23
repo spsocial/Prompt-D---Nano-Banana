@@ -46,6 +46,7 @@ export default async function handler(req, res) {
       videos: 0,
       videosSora2: 0,
       videoErrors: 0,
+      voices: 0,
       revenue: 0,
       transactions: 0,
       newUsers: 0
@@ -56,6 +57,7 @@ export default async function handler(req, res) {
       totals.videos += stat.totalVideos || 0;
       totals.videosSora2 += stat.videosSora2 || 0;
       totals.videoErrors += stat.videoErrors || 0;
+      totals.voices += stat.totalVoices || 0;
       totals.revenue += stat.totalRevenue || 0;
       totals.transactions += stat.totalTransactions || 0;
       totals.newUsers += stat.newUsers || 0;
@@ -65,6 +67,7 @@ export default async function handler(req, res) {
     const chartDataWithUsers = await Promise.all(dailyStats.map(async (stat) => {
       const images = stat.totalImages || 0;
       const videos = stat.totalVideos || 0;
+      const voices = stat.totalVoices || 0;
 
       // Calculate day boundaries
       const dayStart = new Date(stat.date);
@@ -116,6 +119,7 @@ export default async function handler(req, res) {
         videos,
         videosSora2: stat.videosSora2 || 0,
         videoErrors: stat.videoErrors || 0,
+        voices,
         revenue: actualRevenue,  // Use ACTUAL revenue from transactions (exclude free)
         cost: totalCost,
         imageCost,  // Show individual costs for transparency
