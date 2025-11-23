@@ -734,19 +734,19 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* Monthly Revenue Data */}
+      {/* Historical Data */}
       <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200">
         <div
           className="p-6 flex justify-between items-center cursor-pointer"
-          onClick={() => toggleSection('monthly')}
+          onClick={() => toggleSection('historical')}
         >
           <h3 className="text-lg font-semibold flex items-center">
-            <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
-            💰 รายได้รายเดือนย้อนหลัง
+            <BarChart3 className="h-5 w-5 mr-2 text-cyan-500" />
+            📊 สถิติย้อนหลัง
           </h3>
-          {expandedSections.monthly ? <ChevronUp /> : <ChevronDown />}
+          {expandedSections.historical ? <ChevronUp /> : <ChevronDown />}
         </div>
-        {expandedSections.monthly && (
+        {expandedSections.historical && (
           <div className="px-6 pb-6 border-t">
             <div className="mt-4">
               {/* Range Selector */}
@@ -1025,6 +1025,57 @@ export default function AdminDashboard() {
               ) : (
                 <p className="text-center text-gray-500 py-4">ไม่มีข้อมูลรายเดือน</p>
               )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Top 10 Users */}
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200">
+        <div
+          className="p-6 flex justify-between items-center cursor-pointer"
+          onClick={() => toggleSection('topUsers')}
+        >
+          <h3 className="text-lg font-semibold flex items-center">
+            <Award className="h-5 w-5 mr-2 text-yellow-500" />
+            🏆 Top 10 ผู้ใช้งาน
+          </h3>
+          {expandedSections.topUsers ? <ChevronUp /> : <ChevronDown />}
+        </div>
+        {expandedSections.topUsers && stats.topUsers && (
+          <div className="px-6 pb-6 border-t">
+            <div className="overflow-x-auto mt-4">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-100">
+                  <tr className="text-left text-xs text-gray-600">
+                    <th className="p-2">อันดับ</th>
+                    <th className="p-2">User ID</th>
+                    <th className="p-2">ภาพสร้าง</th>
+                    <th className="p-2">วิดีโอสร้าง</th>
+                    <th className="p-2">ยอดใช้จ่าย</th>
+                    <th className="p-2">เครดิตคงเหลือ</th>
+                    <th className="p-2">วันที่เข้าใช้ล่าสุด</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.topUsers.map((user, index) => (
+                    <tr key={user.userId} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="p-2 font-bold">
+                        {index === 0 && '🥇'}
+                        {index === 1 && '🥈'}
+                        {index === 2 && '🥉'}
+                        {index > 2 && `${index + 1}`}
+                      </td>
+                      <td className="p-2 font-mono text-xs">{user.userId}</td>
+                      <td className="p-2 text-blue-600 font-semibold">{user.totalGenerated || 0}</td>
+                      <td className="p-2 text-red-600 font-semibold">{user.videosGenerated || 0}</td>
+                      <td className="p-2 text-green-600 font-semibold">{formatCurrency(user.totalSpent || 0)}</td>
+                      <td className="p-2">{user.credits || 0}</td>
+                      <td className="p-2 text-xs text-gray-600">{formatDate(user.lastActive)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

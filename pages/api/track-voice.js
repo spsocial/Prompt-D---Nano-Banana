@@ -16,21 +16,33 @@ export default async function handler(req, res) {
 
       console.log(`📊 Tracking voice generation: ${userId} - ${voice}`);
 
-      // Create voice generation record (if you want to create a new table)
-      // For now, we'll just log it and you can add DB tracking later
+      // Calculate credits used and revenue based on text length
+      let creditsUsed = 1;
+      if (textLength > 100) creditsUsed = 2;
+      if (textLength > 200) creditsUsed = 3;
+      if (textLength > 300) creditsUsed = 4;
+      if (textLength > 400) creditsUsed = 5;
+      if (textLength > 500) creditsUsed = 6;
 
-      // You can create a VoiceGeneration table similar to VideoGeneration
-      // await prisma.voiceGeneration.create({
-      //   data: {
-      //     userId,
-      //     voice,
-      //     textLength,
-      //     duration,
-      //     provider,
-      //     apiCost,
-      //     createdAt: new Date()
-      //   }
-      // });
+      const revenue = creditsUsed * 1; // 1 baht per credit
+      const profit = revenue - (apiCost || 0);
+      const profitMargin = revenue > 0 ? ((profit / revenue) * 100).toFixed(2) : 0;
+
+      // Create voice generation record
+      await prisma.voiceGeneration.create({
+        data: {
+          userId,
+          voice,
+          textLength,
+          provider,
+          creditsUsed,
+          revenue,
+          apiCost: apiCost || 0,
+          profit,
+          profitMargin: parseFloat(profitMargin),
+          success: true
+        }
+      });
 
       console.log('✅ Voice generation tracked successfully');
 
