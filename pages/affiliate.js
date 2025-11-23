@@ -240,12 +240,13 @@ export default function AffiliateDashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">คนที่แนะนำทั้งหมด</p>
+                  <p className="text-sm text-gray-500">แนะนำทั้งหมด</p>
                   <p className="text-3xl font-bold text-gray-800 mt-1">{stats?.stats?.totalReferrals || 0}</p>
+                  <p className="text-xs text-gray-400 mt-1">คนที่สมัครผ่านลิงก์</p>
                 </div>
                 <div className="text-4xl">👥</div>
               </div>
@@ -254,8 +255,9 @@ export default function AffiliateDashboard() {
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">คนที่ซื้อแล้ว</p>
+                  <p className="text-sm text-gray-500">ซื้อแล้วทั้งหมด</p>
                   <p className="text-3xl font-bold text-green-600 mt-1">{stats?.stats?.activeReferrals || 0}</p>
+                  <p className="text-xs text-gray-400 mt-1">คนที่ซื้อ credits</p>
                 </div>
                 <div className="text-4xl">✅</div>
               </div>
@@ -264,22 +266,11 @@ export default function AffiliateDashboard() {
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">ค่าคอมรวมทั้งหมด</p>
-                  <p className="text-3xl font-bold text-purple-600 mt-1">{stats?.stats?.totalCommission?.toFixed(2) || 0}฿</p>
-                  <p className="text-xs text-gray-400 mt-1">ที่เคยได้มาทั้งหมด</p>
+                  <p className="text-sm text-gray-500">ซื้อในเดือนนี้</p>
+                  <p className="text-3xl font-bold text-blue-600 mt-1">{stats?.stats?.activeReferralsThisMonth || 0}</p>
+                  <p className="text-xs text-gray-400 mt-1">คนที่ซื้อเดือนนี้</p>
                 </div>
-                <div className="text-4xl">💰</div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">ถอนไปแล้ว</p>
-                  <p className="text-3xl font-bold text-orange-600 mt-1">{stats?.stats?.withdrawnCommission?.toFixed(2) || 0}฿</p>
-                  <p className="text-xs text-gray-400 mt-1">ที่โอนไปแล้ว</p>
-                </div>
-                <div className="text-4xl">🏦</div>
+                <div className="text-4xl">📊</div>
               </div>
             </div>
 
@@ -291,6 +282,42 @@ export default function AffiliateDashboard() {
                   <p className="text-xs text-blue-100 mt-1">คงเหลือพร้อมถอน</p>
                 </div>
                 <div className="text-4xl">💳</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Commission Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-100">ค่าคอมทั้งหมด</p>
+                  <p className="text-3xl font-bold mt-1">{stats?.stats?.totalCommission?.toFixed(2) || 0}฿</p>
+                  <p className="text-xs text-purple-100 mt-1">รวมตลอดกาล</p>
+                </div>
+                <div className="text-4xl">💰</div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl shadow-lg p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-yellow-100">รอถอน</p>
+                  <p className="text-3xl font-bold mt-1">{stats?.stats?.pendingCommission?.toFixed(2) || 0}฿</p>
+                  <p className="text-xs text-yellow-100 mt-1">พร้อมถอนได้</p>
+                </div>
+                <div className="text-4xl">⏳</div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-100">ถอนไปแล้ว</p>
+                  <p className="text-3xl font-bold mt-1">{stats?.stats?.withdrawnCommission?.toFixed(2) || 0}฿</p>
+                  <p className="text-xs text-green-100 mt-1">โอนเข้าบัญชี</p>
+                </div>
+                <div className="text-4xl">🏦</div>
               </div>
             </div>
           </div>

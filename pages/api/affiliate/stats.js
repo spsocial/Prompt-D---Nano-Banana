@@ -1,5 +1,6 @@
 // API endpoint for affiliate statistics
 import { PrismaClient } from '@prisma/client';
+import { getCommissionTier, getReferralsToNextTier } from '../../../lib/affiliate/commissionCalculator';
 
 const prisma = new PrismaClient();
 
@@ -120,15 +121,39 @@ export default async function handler(req, res) {
         0
       );
 
+      // 🔧 FIX: คำนวณจำนวนคนที่ซื้อในเดือนนี้ (unique users)
+      const uniqueUsersThisMonth = new Set(commissionsThisMonth.map(c => c.referredUserId));
+      const activeReferralsThisMonth = uniqueUsersThisMonth.size;
+
+      // 🔧 FIX: คำนวณ tier และ next tier ที่ถูกต้อง
+      const currentTier = getCommissionTier(activeReferralsThisMonth);
+      const tierProgress = getReferralsToNextTier(activeReferralsThisMonth);
+
       return res.status(200).json({
         success: true,
         hasReferralCode: true,
         referralCode: user.referralCode,
 
+        // 🔧 FIX: เพิ่ม tier information
+        currentTier: {
+          name: currentTier.name,
+          icon: currentTier.icon,
+          rate: currentTier.rate,
+          minReferrals: currentTier.minReferrals,
+          maxReferrals: currentTier.maxReferrals
+        },
+        nextTier: tierProgress.nextTier ? {
+          name: tierProgress.nextTier.name,
+          icon: tierProgress.nextTier.icon,
+          rate: tierProgress.nextTier.rate,
+          minReferrals: tierProgress.nextTier.minReferrals
+        } : null,
+
         // สถิติรวม
         stats: {
           totalReferrals: referredUsers.length,
           activeReferrals: activeReferralsCount,
+          activeReferralsThisMonth: activeReferralsThisMonth, // 🔧 เพิ่มฟิลด์นี้
           totalCommission: user.totalCommission,
           pendingCommission: user.pendingCommission,
           withdrawnCommission: user.withdrawnCommission,
@@ -140,6 +165,7 @@ export default async function handler(req, res) {
           referralsThisMonth: referredUsers.filter(
             u => new Date(u.firstSeen) >= firstDayThisMonth
           ).length,
+          activeReferralsThisMonth: activeReferralsThisMonth, // 🔧 เพิ่มฟิลด์นี้ด้วย
           earningsThisMonth: earningsThisMonth
         },
 

@@ -161,8 +161,19 @@ export default async function handler(req, res) {
               where: { affiliateId: affiliate.userId }
             });
 
-            // คำนวณจำนวนคนที่ซื้อในเดือนนี้
-            const activeReferralsThisMonth = getActiveReferralsThisMonth(affiliateCommissions);
+            // 🔧 FIX: คำนวณจำนวนคนที่ซื้อในเดือนนี้ (รวมคนที่กำลังซื้ออยู่ด้วย)
+            let activeReferralsThisMonth = getActiveReferralsThisMonth(affiliateCommissions);
+
+            // ถ้าเป็นการซื้อครั้งแรกของคนนี้ในเดือนนี้ ให้บวกเพิ่ม 1
+            const now = new Date();
+            const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const hasCommissionThisMonth = affiliateCommissions.some(
+              c => c.referredUserId === userId && new Date(c.createdAt) >= firstDayThisMonth
+            );
+
+            if (!hasCommissionThisMonth) {
+              activeReferralsThisMonth += 1;
+            }
 
             // 🎁 คำนวณค่าคอมพร้อม Tier System + Bonus
             // isFirstPurchase ถูกเช็คไว้ก่อน upsert แล้ว (line 115)
