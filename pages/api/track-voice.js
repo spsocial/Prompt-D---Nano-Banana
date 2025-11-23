@@ -12,19 +12,15 @@ export default async function handler(req, res) {
 
     if (action === 'success') {
       // Track successful voice generation
-      const { userId, voice, textLength, duration, provider, apiCost } = data;
+      const { userId, voice, textLength, duration, provider, apiCost, creditsUsed } = data;
 
       console.log(`📊 Tracking voice generation: ${userId} - ${voice}`);
 
-      // Calculate credits used and revenue based on text length
-      let creditsUsed = 1;
-      if (textLength > 100) creditsUsed = 2;
-      if (textLength > 200) creditsUsed = 3;
-      if (textLength > 300) creditsUsed = 4;
-      if (textLength > 400) creditsUsed = 5;
-      if (textLength > 500) creditsUsed = 6;
+      // Use creditsUsed from API (already calculated based on text length)
+      // If not provided, use default based on provider
+      const credits = creditsUsed || (provider === 'elevenlabs' ? 2 : 1);
 
-      const revenue = creditsUsed * 1; // 1 baht per credit
+      const revenue = credits * 1; // 1 baht per credit
       const profit = revenue - (apiCost || 0);
       const profitMargin = revenue > 0 ? ((profit / revenue) * 100).toFixed(2) : 0;
 
@@ -34,8 +30,8 @@ export default async function handler(req, res) {
           userId,
           voice,
           textLength,
-          provider,
-          creditsUsed,
+          provider: provider.toLowerCase(), // Ensure lowercase for consistency
+          creditsUsed: credits,
           revenue,
           apiCost: apiCost || 0,
           profit,
@@ -44,7 +40,7 @@ export default async function handler(req, res) {
         }
       });
 
-      console.log('✅ Voice generation tracked successfully');
+      console.log(`✅ Voice generation tracked: ${credits} credits, ${revenue}฿ revenue, ${profit.toFixed(2)}฿ profit`);
 
       return res.status(200).json({ success: true });
 

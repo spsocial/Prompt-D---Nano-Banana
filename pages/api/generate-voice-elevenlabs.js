@@ -25,6 +25,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Text is required' });
     }
 
+    // Check text length limit
+    if (text.length > 1200) {
+      return res.status(400).json({
+        error: 'Text too long',
+        message: 'ข้อความยาวเกินไป กรุณาใช้ไม่เกิน 1,200 ตัวอักษร'
+      });
+    }
+
     if (!voiceId) {
       return res.status(400).json({ error: 'Voice ID is required' });
     }
@@ -95,9 +103,17 @@ export default async function handler(req, res) {
     const estimatedDuration = Math.ceil(text.length / 150);
 
     // Calculate API cost
-    // ElevenLabs Starter: $5/month for 30,000 chars = $0.000167 per char
-    // = 0.006 THB per char (at 36 THB/USD)
-    const apiCost = (text.length * 0.006).toFixed(2);
+    // ElevenLabs: 748 THB for 100,000 characters = 0.00748 THB per char
+    const apiCost = (text.length * 0.00748).toFixed(2);
+
+    // Calculate credits based on text length (new pricing)
+    // Max: 1200 characters
+    let creditsUsed = 2; // 1-100 chars
+    if (text.length > 100) creditsUsed = 3;   // 101-200 chars
+    if (text.length > 200) creditsUsed = 4;   // 201-300 chars
+    if (text.length > 300) creditsUsed = 5;   // 301-400 chars
+    if (text.length > 400) creditsUsed = 6;   // 401-500 chars
+    if (text.length > 500) creditsUsed = 8;   // 501-1200 chars
 
     // Track analytics (only for non-preview)
     if (!isPreview && userId !== 'preview') {
@@ -116,8 +132,9 @@ export default async function handler(req, res) {
               voice: voiceId,
               textLength: text.length,
               duration: estimatedDuration,
-              provider: 'ElevenLabs',
-              apiCost: parseFloat(apiCost)
+              provider: 'elevenlabs',
+              apiCost: parseFloat(apiCost),
+              creditsUsed: creditsUsed
             }
           })
         }).catch(err => console.log('Analytics tracking failed:', err));
@@ -136,7 +153,7 @@ export default async function handler(req, res) {
       duration: estimatedDuration,
       provider: 'Premium AI',
       mimeType: 'audio/mpeg',
-      credits: isPreview ? 0 : 5, // 5 credits for Premium Voice
+      credits: isPreview ? 0 : creditsUsed, // Credits based on text length
       apiCost: parseFloat(apiCost),
       isPreview
     });

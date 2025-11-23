@@ -178,8 +178,9 @@ export default async function handler(req, res) {
               voice,
               textLength: text.length,
               duration: estimatedDuration,
-              provider: 'Gemini TTS',
-              apiCost: 0 // Free tier for now
+              provider: 'gemini',
+              apiCost: 0, // Free tier for now
+              creditsUsed: 1 // Gemini = 1 credit
             }
           })
         }).catch(err => console.log('Analytics tracking failed:', err));
