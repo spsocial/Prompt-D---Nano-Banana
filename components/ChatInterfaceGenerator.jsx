@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Image as ImageIcon, Film, Sparkles, Clock, AspectRatio as AspectRatioIcon, X, Download, Play, ChevronDown, Layers, User, History as HistoryIcon, CreditCard, LogOut, Volume2 } from 'lucide-react'
+import { Send, Image as ImageIcon, Film, Sparkles, Clock, AspectRatio as AspectRatioIcon, X, Download, Play, ChevronDown, Layers, User, History as HistoryIcon, CreditCard, LogOut, Volume2, MessageCircle } from 'lucide-react'
 import useStore from '../lib/store'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import VideoAdsModal from './VideoAdsModal'
 import VoiceGenerator from './VoiceGenerator'
+import AIChatGenerator from './AIChatGenerator'
 import FabButton from './FabButton'
 
 // Preset prompt styles for image generation
@@ -62,7 +63,7 @@ const IMAGE_MODELS = {
 }
 
 export default function ChatInterfaceGenerator() {
-  const [mode, setMode] = useState('video') // 'image', 'video', or 'voice'
+  const [mode, setMode] = useState('video') // 'image', 'video', 'voice', or 'chat'
   const [prompt, setPrompt] = useState('')
   const [duration, setDuration] = useState(10)
   const [aspectRatio, setAspectRatio] = useState('16:9')
@@ -659,7 +660,7 @@ export default function ChatInterfaceGenerator() {
             <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-[#1a1a1a] rounded-full p-1">
               <button
                 onClick={() => setMode('image')}
-                className={`px-4 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
+                className={`px-3 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
                   mode === 'image'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
                     : 'text-gray-400 hover:text-white'
@@ -670,7 +671,7 @@ export default function ChatInterfaceGenerator() {
               </button>
               <button
                 onClick={() => setMode('video')}
-                className={`px-4 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
+                className={`px-3 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
                   mode === 'video'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
                     : 'text-gray-400 hover:text-white'
@@ -681,7 +682,7 @@ export default function ChatInterfaceGenerator() {
               </button>
               <button
                 onClick={() => setMode('voice')}
-                className={`px-4 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
+                className={`px-3 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
                   mode === 'voice'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
                     : 'text-gray-400 hover:text-white'
@@ -689,6 +690,17 @@ export default function ChatInterfaceGenerator() {
               >
                 <Volume2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Voice</span>
+              </button>
+              <button
+                onClick={() => setMode('chat')}
+                className={`px-3 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
+                  mode === 'chat'
+                    ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">Chat</span>
               </button>
             </div>
 
@@ -794,14 +806,22 @@ export default function ChatInterfaceGenerator() {
         </div>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-8 pt-16 sm:pt-24">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Voice Mode - Show VoiceGenerator */}
-          {mode === 'voice' ? (
+      {/* Content Area */}
+      {mode === 'voice' ? (
+        <div className="flex-1 overflow-y-auto px-4 py-8 pt-16 sm:pt-24">
+          <div className="max-w-4xl mx-auto">
             <VoiceGenerator />
-          ) : (
-            <>
+          </div>
+        </div>
+      ) : mode === 'chat' ? (
+        <div className="flex-1 flex flex-col pt-16 sm:pt-20">
+          <AIChatGenerator />
+        </div>
+      ) : (
+        <>
+          {/* Messages Area for Image/Video modes */}
+          <div className="flex-1 overflow-y-auto px-4 py-8 pt-16 sm:pt-24">
+            <div className="max-w-4xl mx-auto space-y-6">
               {messages.length === 0 ? (
                 <div className="text-center py-20">
                   <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-[#00F2EA]/20 to-[#FE2C55]/20 rounded-full mb-6">
@@ -822,13 +842,13 @@ export default function ChatInterfaceGenerator() {
                 </>
               )}
               <div ref={messagesEndRef} />
-            </>
-          )}
-        </div>
-      </div>
+            </div>
+          </div>
+        </>
+      )}
 
-      {/* Floating Input Box - TikTok Style - Hide in Voice mode */}
-      {mode !== 'voice' && (
+      {/* Floating Input Box - TikTok Style - Hide in Voice and Chat modes */}
+      {mode !== 'voice' && mode !== 'chat' && (
         <div className="sticky bottom-0 z-20 backdrop-blur-lg bg-[#121212]/95 border-t border-gray-800 p-4">
           <div className="max-w-4xl mx-auto">
             {/* Uploaded Image Preview */}

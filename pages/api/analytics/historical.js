@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       totals.videos += stat.totalVideos || 0;
       totals.videosSora2 += stat.videosSora2 || 0;
       totals.videoErrors += stat.videoErrors || 0;
-      totals.voices += stat.totalVoices || 0;
+      totals.voices += stat.totalVoices || 0;  // Count voices from dailyStats
       totals.revenue += stat.totalRevenue || 0;
       totals.transactions += stat.totalTransactions || 0;
       totals.newUsers += stat.newUsers || 0;
@@ -119,7 +119,7 @@ export default async function handler(req, res) {
         videos,
         videosSora2: stat.videosSora2 || 0,
         videoErrors: stat.videoErrors || 0,
-        voices,
+        voices: stat.totalVoices || 0,  // Use voice data from dailyStats
         revenue: actualRevenue,  // Use ACTUAL revenue from transactions (exclude free)
         cost: totalCost,
         imageCost,  // Show individual costs for transparency
