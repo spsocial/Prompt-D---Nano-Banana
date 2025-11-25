@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Image as ImageIcon, X, Bot, User, Sparkles, Copy, Check, Trash2 } from 'lucide-react'
+import { Send, Image as ImageIcon, X, Bot, User, Sparkles, Copy, Check, Trash2, Unlock, Crown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
+import ChatUnlockModal from './ChatUnlockModal'
+import useStore from '../lib/store'
 
 // Model configurations
 const CHAT_MODELS = {
@@ -51,6 +53,7 @@ const compressImage = (base64String, maxWidth = 1024, quality = 0.7) => {
 
 export default function AIChatGenerator() {
   const { data: session } = useSession()
+  const { userCredits, loadUserCredits } = useStore()
   const [messages, setMessages] = useState([])
   const [inputMessage, setInputMessage] = useState('')
   const [uploadedImage, setUploadedImage] = useState(null)
@@ -60,6 +63,7 @@ export default function AIChatGenerator() {
   const [copiedIndex, setCopiedIndex] = useState(null)
   const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash')
   const [requestUsage, setRequestUsage] = useState(null)
+  const [showUnlockModal, setShowUnlockModal] = useState(false)
 
   const textareaRef = useRef(null)
   const messagesEndRef = useRef(null)
@@ -659,18 +663,43 @@ export default function AIChatGenerator() {
                   </span>
                 </label>
 
-                {/* Usage Info */}
-                <div className="text-xs text-gray-500 ml-2">
-                  {requestUsage ? (
-                    <span>
-                      ใช้ฟรี <span className={`font-semibold ${
-                        requestUsage.requestsUsed >= requestUsage.dailyLimit
-                          ? 'text-[#FE2C55]'
-                          : 'text-[#00F2EA]'
-                      }`}>{requestUsage.requestsUsed}/{requestUsage.dailyLimit}</span> ครั้ง
-                    </span>
-                  ) : (
-                    <span>โหลด...</span>
+                {/* Usage Info + Unlock Button */}
+                <div className="flex items-center gap-2 ml-2">
+                  <div className="text-xs text-gray-500">
+                    {requestUsage ? (
+                      requestUsage.isUnlimited ? (
+                        // Unlimited status
+                        <span className="flex items-center gap-1">
+                          <Crown className="h-3 w-3 text-yellow-500" />
+                          <span className="text-yellow-500 font-semibold">Unlimited</span>
+                          <span className="text-gray-500">
+                            (หมด {new Date(requestUsage.unlimitedUntil).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })})
+                          </span>
+                        </span>
+                      ) : (
+                        // Normal usage
+                        <span>
+                          ใช้ฟรี <span className={`font-semibold ${
+                            requestUsage.requestsUsed >= requestUsage.dailyLimit
+                              ? 'text-[#FE2C55]'
+                              : 'text-[#00F2EA]'
+                          }`}>{requestUsage.requestsUsed}/{requestUsage.dailyLimit}</span> ครั้ง
+                        </span>
+                      )
+                    ) : (
+                      <span>โหลด...</span>
+                    )}
+                  </div>
+
+                  {/* Unlock Button - Show when limit reached and not unlimited */}
+                  {requestUsage && !requestUsage.isUnlimited && requestUsage.requestsUsed >= requestUsage.dailyLimit && (
+                    <button
+                      onClick={() => setShowUnlockModal(true)}
+                      className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-white text-xs font-medium rounded-lg transition-all animate-pulse hover:animate-none"
+                    >
+                      <Unlock className="h-3 w-3" />
+                      <span>ปลดล็อค</span>
+                    </button>
                   )}
                 </div>
 
@@ -705,6 +734,36 @@ export default function AIChatGenerator() {
           </div>
         </div>
       </div>
+
+      {/* Unlock Modal */}
+      <ChatUnlockModal
+        isOpen={showUnlockModal}
+        onClose={() => setShowUnlockModal(false)}
+        userCredits={userCredits}
+        onUnlock={(data) => {
+          // Reload usage data after unlock
+          const loadUsageData = async () => {
+            try {
+              const response = await fetch(`/api/chat-ai/usage?model=${selectedModel}`)
+              if (response.ok) {
+                const usageData = await response.json()
+                if (usageData.requestUsage) {
+                  setRequestUsage(usageData.requestUsage)
+                }
+              }
+            } catch (error) {
+              console.error('Failed to reload usage data:', error)
+            }
+          }
+          loadUsageData()
+
+          // Reload user credits
+          if (session?.user?.email) {
+            const userId = `U-${session.user.email.split('@')[0].toUpperCase()}`
+            loadUserCredits(userId)
+          }
+        }}
+      />
     </>
   )
 }

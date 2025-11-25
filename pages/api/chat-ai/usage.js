@@ -18,12 +18,52 @@ const CHAT_MODELS = {
   }
 }
 
+// Check if user has active unlimited subscription
+async function checkUnlimitedAccess(userId) {
+  const now = new Date()
+
+  const activeUnlimited = await prisma.chatUnlock.findFirst({
+    where: {
+      userId,
+      packageType: 'unlimited_24h',
+      unlimitedUntil: {
+        gt: now
+      }
+    },
+    orderBy: {
+      unlimitedUntil: 'desc'
+    }
+  })
+
+  if (activeUnlimited) {
+    return {
+      isUnlimited: true,
+      unlimitedUntil: activeUnlimited.unlimitedUntil,
+      dailyRequestCount: activeUnlimited.dailyRequestCount
+    }
+  }
+
+  return { isUnlimited: false }
+}
+
 async function getRequestUsage(userId, modelKey) {
   const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
   const modelConfig = CHAT_MODELS[modelKey]
 
   if (!modelConfig) {
     throw new Error('Invalid model')
+  }
+
+  // First check unlimited access
+  const unlimitedStatus = await checkUnlimitedAccess(userId)
+  if (unlimitedStatus.isUnlimited) {
+    return {
+      isUnlimited: true,
+      unlimitedUntil: unlimitedStatus.unlimitedUntil,
+      requestsUsed: unlimitedStatus.dailyRequestCount,
+      requestsRemaining: 'unlimited',
+      dailyLimit: 'unlimited'
+    }
   }
 
   const userUsage = await prisma.chatTokenUsage.findUnique({

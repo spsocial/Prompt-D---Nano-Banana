@@ -114,6 +114,68 @@ Generate the following JSON structure exactly:
   "notes": "ผู้ใช้สามารถแก้ไขข้อความทั้งหมดได้ตามต้องการ"
 }`
 
+// Hidden spam protection limits (not shown to users)
+const SPAM_LIMITS = {
+  maxDailyRequests: 200,      // Max 200 requests per day (even for unlimited)
+  maxMessageLength: 2000,     // Max 2000 characters per message
+  minRequestInterval: 1000    // Min 1 second between requests (ms)
+}
+
+// Check if user has active unlimited subscription
+async function checkUnlimitedAccess(userId) {
+  const now = new Date()
+
+  const activeUnlimited = await prisma.chatUnlock.findFirst({
+    where: {
+      userId,
+      packageType: 'unlimited_24h',
+      unlimitedUntil: {
+        gt: now
+      }
+    },
+    orderBy: {
+      unlimitedUntil: 'desc'
+    }
+  })
+
+  if (activeUnlimited) {
+    return {
+      isUnlimited: true,
+      unlimitedUntil: activeUnlimited.unlimitedUntil,
+      dailyRequestCount: activeUnlimited.dailyRequestCount
+    }
+  }
+
+  return { isUnlimited: false }
+}
+
+// Update daily request count for spam protection (hidden)
+async function incrementDailyRequestCount(userId) {
+  const today = new Date().toISOString().split('T')[0]
+
+  // Find today's unlock record (if any)
+  const unlock = await prisma.chatUnlock.findFirst({
+    where: {
+      userId,
+      createdAt: {
+        gte: new Date(today)
+      }
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  })
+
+  if (unlock) {
+    await prisma.chatUnlock.update({
+      where: { id: unlock.id },
+      data: {
+        dailyRequestCount: { increment: 1 }
+      }
+    })
+  }
+}
+
 async function checkAndUpdateRequestUsage(userId, modelKey) {
   const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
   const modelConfig = CHAT_MODELS[modelKey]
@@ -122,6 +184,35 @@ async function checkAndUpdateRequestUsage(userId, modelKey) {
     throw new Error('Invalid model selected')
   }
 
+  // First check if user has unlimited access
+  const unlimitedStatus = await checkUnlimitedAccess(userId)
+
+  if (unlimitedStatus.isUnlimited) {
+    // Check hidden spam limit
+    if (unlimitedStatus.dailyRequestCount >= SPAM_LIMITS.maxDailyRequests) {
+      return {
+        allowed: false,
+        isUnlimited: true,
+        unlimitedUntil: unlimitedStatus.unlimitedUntil,
+        requestsUsed: unlimitedStatus.dailyRequestCount,
+        requestsRemaining: 0,
+        dailyLimit: 'unlimited',
+        // Hidden error - user sees generic message
+        hiddenError: 'spam_limit_reached'
+      }
+    }
+
+    return {
+      allowed: true,
+      isUnlimited: true,
+      unlimitedUntil: unlimitedStatus.unlimitedUntil,
+      requestsUsed: unlimitedStatus.dailyRequestCount,
+      requestsRemaining: 'unlimited',
+      dailyLimit: 'unlimited'
+    }
+  }
+
+  // Normal free tier check
   const userUsage = await prisma.chatTokenUsage.findUnique({
     where: {
       userId_model_date: {
@@ -215,6 +306,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Message or image is required' })
     }
 
+    // Hidden spam protection: Check message length
+    if (message && message.length > SPAM_LIMITS.maxMessageLength) {
+      return res.status(400).json({
+        error: `ข้อความยาวเกินไป (สูงสุด ${SPAM_LIMITS.maxMessageLength} ตัวอักษร)`
+      })
+    }
+
     // Validate and default model
     const modelKey = model || 'gemini-2.0-flash'
     if (!CHAT_MODELS[modelKey]) {
@@ -231,15 +329,27 @@ export default async function handler(req, res) {
 
     const userId = session.user.userId
 
-    // Check rate limit for this specific model
+    // Check rate limit for this specific model (also checks unlimited status)
     const rateLimitCheck = await checkAndUpdateRequestUsage(userId, modelKey)
     if (!rateLimitCheck.allowed) {
+      // Different message for spam limit vs normal limit
+      if (rateLimitCheck.hiddenError === 'spam_limit_reached') {
+        return res.status(429).json({
+          error: 'ระบบขัดข้อง กรุณาลองใหม่ภายหลัง', // Generic message for spam
+          requestsUsed: rateLimitCheck.requestsUsed,
+          requestsRemaining: 0,
+          dailyLimit: rateLimitCheck.dailyLimit
+        })
+      }
+
       return res.status(429).json({
         error: 'คุณใช้งานครบจำนวนที่กำหนดสำหรับวันนี้แล้ว',
         requestsUsed: rateLimitCheck.requestsUsed,
         requestsRemaining: 0,
         dailyLimit: rateLimitCheck.dailyLimit,
-        resetMessage: 'จำกัดการใช้งานจะรีเซ็ตในวันพรุ่งนี้'
+        resetMessage: 'จำกัดการใช้งานจะรีเซ็ตในวันพรุ่งนี้',
+        isUnlimited: rateLimitCheck.isUnlimited || false,
+        unlimitedUntil: rateLimitCheck.unlimitedUntil || null
       })
     }
 
@@ -328,8 +438,15 @@ export default async function handler(req, res) {
     const response = result.response
     const text = response.text()
 
-    // Increment request count for this model
-    await incrementRequestUsage(userId, modelKey)
+    // Increment request count for this model (only for non-unlimited)
+    if (!rateLimitCheck.isUnlimited) {
+      await incrementRequestUsage(userId, modelKey)
+    }
+
+    // Increment hidden spam counter for unlimited users
+    if (rateLimitCheck.isUnlimited) {
+      await incrementDailyRequestCount(userId)
+    }
 
     // Get updated usage stats for this model
     const updatedUsage = await checkAndUpdateRequestUsage(userId, modelKey)

@@ -455,3 +455,29 @@ model ChatTokenUsage {
   @@index([model])
   @@index([date])
 }
+
+// Chat unlock tracking (paid packages for AI Chat)
+model ChatUnlock {
+  id            String   @id @default(cuid())
+  userId        String
+  packageType   String   // "flash_only", "both_models", "unlimited_24h"
+  creditsUsed   Int      // 1, 2, or 5 credits
+
+  // For "flash_only" and "both_models": bonus requests granted
+  flashBonus    Int      @default(0) // +30 requests for flash
+  proBonus      Int      @default(0) // +5 requests for pro
+
+  // For "unlimited_24h": time-based access
+  unlimitedUntil DateTime? // When unlimited access expires (24h from purchase)
+
+  // Hidden spam protection tracking
+  dailyRequestCount Int  @default(0) // Count requests today (hidden limit: 200)
+
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime? // For time-limited packages
+
+  @@index([userId])
+  @@index([packageType])
+  @@index([unlimitedUntil])
+  @@index([createdAt])
+}
