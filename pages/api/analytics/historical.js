@@ -67,11 +67,22 @@ export default async function handler(req, res) {
     const chartDataWithUsers = await Promise.all(dailyStats.map(async (stat) => {
       const images = stat.totalImages || 0;
       const videos = stat.totalVideos || 0;
-      const voices = stat.totalVoices || 0;
 
       // Calculate day boundaries
       const dayStart = new Date(stat.date);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+
+      // Get voice count from VoiceGeneration table (more accurate if DailyStats wasn't updated)
+      const voiceCountFromDb = await prisma.voiceGeneration.count({
+        where: {
+          createdAt: {
+            gte: dayStart,
+            lt: dayEnd
+          }
+        }
+      });
+      // Use the higher value between DailyStats and VoiceGeneration count
+      const voices = Math.max(stat.totalVoices || 0, voiceCountFromDb);
 
       // Calculate ACTUAL REVENUE from transactions (exclude free credits)
       const dayTransactions = await prisma.transaction.findMany({
@@ -119,7 +130,7 @@ export default async function handler(req, res) {
         videos,
         videosSora2: stat.videosSora2 || 0,
         videoErrors: stat.videoErrors || 0,
-        voices: stat.totalVoices || 0,  // Use voice data from dailyStats
+        voices,  // Use the higher value between DailyStats and VoiceGeneration
         revenue: actualRevenue,  // Use ACTUAL revenue from transactions (exclude free)
         cost: totalCost,
         imageCost,  // Show individual costs for transparency

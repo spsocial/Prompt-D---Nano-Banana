@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { getThailandToday, getThailandCurrentMonth } from '../../lib/timezone.js';
 
 const prisma = new PrismaClient();
 
@@ -37,6 +38,75 @@ export default async function handler(req, res) {
           profit,
           profitMargin: parseFloat(profitMargin),
           success: true
+        }
+      });
+
+      // Determine tier based on credits
+      const tierIncrements = {
+        voicesTier2: credits === 2 ? 1 : 0,
+        voicesTier3: credits === 3 ? 1 : 0,
+        voicesTier4: credits === 4 ? 1 : 0,
+        voicesTier5: credits === 5 ? 1 : 0,
+        voicesTier6: credits === 6 ? 1 : 0
+      };
+
+      // Update daily stats (using Thailand timezone)
+      const today = getThailandToday();
+
+      await prisma.dailyStats.upsert({
+        where: { date: today },
+        update: {
+          totalVoices: { increment: 1 },
+          voicesGemini: provider.toLowerCase() === 'gemini' ? { increment: 1 } : undefined,
+          voicesElevenlabs: provider.toLowerCase() === 'elevenlabs' ? { increment: 1 } : undefined,
+          voicesTier2: tierIncrements.voicesTier2 > 0 ? { increment: 1 } : undefined,
+          voicesTier3: tierIncrements.voicesTier3 > 0 ? { increment: 1 } : undefined,
+          voicesTier4: tierIncrements.voicesTier4 > 0 ? { increment: 1 } : undefined,
+          voicesTier5: tierIncrements.voicesTier5 > 0 ? { increment: 1 } : undefined,
+          voicesTier6: tierIncrements.voicesTier6 > 0 ? { increment: 1 } : undefined,
+          apiCostVoices: { increment: apiCost || 0 }
+        },
+        create: {
+          date: today,
+          totalVoices: 1,
+          voicesGemini: provider.toLowerCase() === 'gemini' ? 1 : 0,
+          voicesElevenlabs: provider.toLowerCase() === 'elevenlabs' ? 1 : 0,
+          voicesTier2: tierIncrements.voicesTier2,
+          voicesTier3: tierIncrements.voicesTier3,
+          voicesTier4: tierIncrements.voicesTier4,
+          voicesTier5: tierIncrements.voicesTier5,
+          voicesTier6: tierIncrements.voicesTier6,
+          apiCostVoices: apiCost || 0
+        }
+      });
+
+      // Update monthly stats (using Thailand timezone)
+      const month = getThailandCurrentMonth();
+
+      await prisma.monthlyStats.upsert({
+        where: { month },
+        update: {
+          totalVoices: { increment: 1 },
+          voicesGemini: provider.toLowerCase() === 'gemini' ? { increment: 1 } : undefined,
+          voicesElevenlabs: provider.toLowerCase() === 'elevenlabs' ? { increment: 1 } : undefined,
+          voicesTier2: tierIncrements.voicesTier2 > 0 ? { increment: 1 } : undefined,
+          voicesTier3: tierIncrements.voicesTier3 > 0 ? { increment: 1 } : undefined,
+          voicesTier4: tierIncrements.voicesTier4 > 0 ? { increment: 1 } : undefined,
+          voicesTier5: tierIncrements.voicesTier5 > 0 ? { increment: 1 } : undefined,
+          voicesTier6: tierIncrements.voicesTier6 > 0 ? { increment: 1 } : undefined,
+          apiCostVoices: { increment: apiCost || 0 }
+        },
+        create: {
+          month,
+          totalVoices: 1,
+          voicesGemini: provider.toLowerCase() === 'gemini' ? 1 : 0,
+          voicesElevenlabs: provider.toLowerCase() === 'elevenlabs' ? 1 : 0,
+          voicesTier2: tierIncrements.voicesTier2,
+          voicesTier3: tierIncrements.voicesTier3,
+          voicesTier4: tierIncrements.voicesTier4,
+          voicesTier5: tierIncrements.voicesTier5,
+          voicesTier6: tierIncrements.voicesTier6,
+          apiCostVoices: apiCost || 0
         }
       });
 

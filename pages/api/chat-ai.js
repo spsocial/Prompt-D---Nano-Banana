@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from './auth/[...nextauth]'
 import { PrismaClient } from '@prisma/client'
+import { formatThailandDate, getThailandToday } from '../../lib/timezone.js'
 
 const prisma = new PrismaClient()
 
@@ -151,14 +152,14 @@ async function checkUnlimitedAccess(userId) {
 
 // Update daily request count for spam protection (hidden)
 async function incrementDailyRequestCount(userId) {
-  const today = new Date().toISOString().split('T')[0]
+  const today = getThailandToday() // Thailand timezone
 
   // Find today's unlock record (if any)
   const unlock = await prisma.chatUnlock.findFirst({
     where: {
       userId,
       createdAt: {
-        gte: new Date(today)
+        gte: today
       }
     },
     orderBy: {
@@ -177,7 +178,7 @@ async function incrementDailyRequestCount(userId) {
 }
 
 async function checkAndUpdateRequestUsage(userId, modelKey) {
-  const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+  const today = formatThailandDate(new Date()) // YYYY-MM-DD in Thailand timezone
   const modelConfig = CHAT_MODELS[modelKey]
 
   if (!modelConfig) {
@@ -260,7 +261,7 @@ async function checkAndUpdateRequestUsage(userId, modelKey) {
 }
 
 async function incrementRequestUsage(userId, modelKey) {
-  const today = new Date().toISOString().split('T')[0]
+  const today = formatThailandDate(new Date()) // Thailand timezone
 
   await prisma.chatTokenUsage.upsert({
     where: {

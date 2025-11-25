@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 import { PrismaClient } from '@prisma/client'
+import { formatThailandDate } from '../../../lib/timezone.js'
 
 const prisma = new PrismaClient()
 
@@ -67,7 +68,7 @@ export default async function handler(req, res) {
       })
     }
 
-    const today = new Date().toISOString().split('T')[0]
+    const today = formatThailandDate(new Date()) // Thailand timezone
 
     // Start transaction
     const result = await prisma.$transaction(async (tx) => {

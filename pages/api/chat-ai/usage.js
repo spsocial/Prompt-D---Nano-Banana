@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '../auth/[...nextauth]'
 import { PrismaClient } from '@prisma/client'
+import { formatThailandDate } from '../../../lib/timezone.js'
 
 const prisma = new PrismaClient()
 
@@ -47,7 +48,7 @@ async function checkUnlimitedAccess(userId) {
 }
 
 async function getRequestUsage(userId, modelKey) {
-  const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+  const today = formatThailandDate(new Date()) // YYYY-MM-DD in Thailand timezone
   const modelConfig = CHAT_MODELS[modelKey]
 
   if (!modelConfig) {

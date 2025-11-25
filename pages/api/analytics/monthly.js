@@ -80,6 +80,18 @@ export default async function handler(req, res) {
         totals.videoCost += day.apiCostVideos || 0;
       });
 
+      // Get voice count from VoiceGeneration table (more accurate if DailyStats wasn't updated)
+      const voiceCountFromDb = await prisma.voiceGeneration.count({
+        where: {
+          createdAt: {
+            gte: monthStart,
+            lte: monthEnd
+          }
+        }
+      });
+      // Use the higher value between DailyStats and VoiceGeneration count
+      totals.voices = Math.max(totals.voices, voiceCountFromDb);
+
       // Calculate NEW USERS for this month from User.firstSeen (more accurate)
       const newUsersCount = await prisma.user.count({
         where: {
