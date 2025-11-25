@@ -184,6 +184,16 @@ export default async function handler(req, res) {
   try {
     const { message, image, useProductAnalysis, model } = req.body
 
+    // Debug log - request received
+    console.log('[Chat AI] Request received:', {
+      hasMessage: !!message,
+      messageLength: message?.length || 0,
+      hasImage: !!image,
+      imageLength: image?.length || 0,
+      useProductAnalysis,
+      model
+    })
+
     if (!message && !image) {
       return res.status(400).json({ error: 'Message or image is required' })
     }

@@ -159,7 +159,23 @@ export default function AIChatGenerator() {
         })
       })
 
-      const data = await response.json()
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        // Not JSON - likely session expired or server error
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Session หมดอายุ กรุณา refresh หน้าเว็บและ login ใหม่')
+        }
+        throw new Error('เซิร์ฟเวอร์ไม่ตอบสนอง กรุณาลองใหม่อีกครั้ง')
+      }
+
+      let data
+      try {
+        data = await response.json()
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError)
+        throw new Error('ไม่สามารถอ่านข้อมูลจากเซิร์ฟเวอร์ได้ กรุณาลองใหม่')
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to get response')
