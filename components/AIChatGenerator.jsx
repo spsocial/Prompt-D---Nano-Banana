@@ -22,7 +22,8 @@ export default function AIChatGenerator() {
   const [messages, setMessages] = useState([])
   const [inputMessage, setInputMessage] = useState('')
   const [uploadedImage, setUploadedImage] = useState(null)
-  const [useProductAnalysis, setUseProductAnalysis] = useState(false)
+  // Default to true - Smart logic will handle: image = analysis, no image = normal chat
+  const [useProductAnalysis, setUseProductAnalysis] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
   const [copiedIndex, setCopiedIndex] = useState(null)
   const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash')

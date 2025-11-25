@@ -59,12 +59,17 @@ const PRODUCT_ANALYSIS_PROMPT = `You are an expert Creative Director and AI Prom
 - "Typewriter Font, Rough paper texture"
 - "Retro 70s Groovy Script"
 
-### 📐 ADVANCED LAYOUT TECHNIQUES (Pick 1):
-- **"Depth Layering":** Text BEHIND the product. (ซ้อนหลัง)
-- **"Dynamic Tilt":** Diagonal composition. (วางเฉียง)
-- **"Floor Perspective":** Text flat on ground. (วางราบพื้น)
-- **"Floating Elements":** Text weaving through product. (ลอยตัวร้อยรัด)
-- **"Negative Space":** Small product, big text space. (เน้นที่ว่าง)
+### 📐 ADVANCED LAYOUT TECHNIQUES (Pick 1 from the list, OR invent a unique one if better):
+
+1. **"Depth Layering (Text Behind)":** Headline is huge and placed strictly BEHIND the product. (ซ้อนหลังสินค้า)
+2. **"Dynamic Tilt (Diagonal Action)":** Composition is tilted diagonally (30-45 degrees). (วางเฉียง)
+3. **"Floor Perspective (Isometric)":** Text is laid flat on the ground surface. (วางราบบนพื้น)
+4. **"Contour Curve (Text Following Shape)":** Text curves around the product's silhouette. (วางโค้งไต่ตามขอบสินค้า)
+5. **"Intertwined (Weaving Effect)":** Text weaves IN FRONT of and BEHIND the product alternately. (ร้อยรัดหน้าหลัง)
+6. **"Oversized Magazine (Cropped)":** Text is extremely large, extending off edges. (ใหญ่ล้นเฟรม)
+7. **"Floating Elements (Anti-Gravity)":** Product and text characters are floating freely. (ลอยตัวอิสระ)
+8. **"Minimalist Negative Space":** Product is small, surrounded by vast empty space. (เน้นพื้นที่ว่าง)
+9. **"AI Freestyle (Wildcard)":** Analyze the image and INVENT a unique composition that perfectly suits the product's shape, even if it's not listed above. (คิดสไตล์การจัดวางใหม่เอง ให้เข้ากับรูปทรงสินค้าที่สุด)
 
 ### JSON OUTPUT FORMAT:
 Generate the following JSON structure exactly:
@@ -231,15 +236,46 @@ export default async function handler(req, res) {
 
     let result
 
+    // Helper function to safely parse base64 image
+    const parseBase64Image = (imageData) => {
+      try {
+        // Validate base64 format: should be "data:image/xxx;base64,..."
+        if (!imageData || typeof imageData !== 'string') {
+          throw new Error('Invalid image data')
+        }
+
+        if (!imageData.includes(',') || !imageData.includes(';') || !imageData.includes(':')) {
+          throw new Error('Invalid base64 format')
+        }
+
+        const base64Data = imageData.split(',')[1]
+        const mimeType = imageData.split(';')[0].split(':')[1]
+
+        if (!base64Data || !mimeType) {
+          throw new Error('Could not extract image data')
+        }
+
+        // Validate mime type
+        if (!mimeType.startsWith('image/')) {
+          throw new Error('Invalid image type')
+        }
+
+        return {
+          inlineData: {
+            data: base64Data,
+            mimeType: mimeType
+          }
+        }
+      } catch (error) {
+        console.error('Image parsing error:', error.message)
+        throw new Error('รูปภาพไม่ถูกต้อง กรุณาลองอัปโหลดใหม่')
+      }
+    }
+
     // If product analysis is enabled and image is provided (effective mode)
     if (effectiveProductAnalysis) {
       // Convert base64 image to format Gemini expects
-      const imagePart = {
-        inlineData: {
-          data: image.split(',')[1], // Remove data:image/xxx;base64, prefix
-          mimeType: image.split(';')[0].split(':')[1]
-        }
-      }
+      const imagePart = parseBase64Image(image)
 
       // Generate content with product analysis prompt
       result = await geminiModel.generateContent([
@@ -248,14 +284,9 @@ export default async function handler(req, res) {
         message || 'วิเคราะห์รูปภาพสินค้านี้และสร้างโฆษณาที่เหมาะสม'
       ])
     }
-    // If only image (no product analysis)
+    // If only image (no product analysis) - just describe the image normally
     else if (image) {
-      const imagePart = {
-        inlineData: {
-          data: image.split(',')[1],
-          mimeType: image.split(';')[0].split(':')[1]
-        }
-      }
+      const imagePart = parseBase64Image(image)
 
       result = await geminiModel.generateContent([
         imagePart,

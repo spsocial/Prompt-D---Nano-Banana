@@ -1270,6 +1270,52 @@ function MessageBubble({ message, onCreateVideoAd }) {
   }
 
   if (message.type === 'result') {
+    // Detect mobile device
+    const isMobileDevice = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+    // Handle mobile-friendly download
+    const handleMobileDownload = async (url, type) => {
+      if (isMobileDevice) {
+        try {
+          // Fetch the file as blob
+          const response = await fetch(url)
+          const blob = await response.blob()
+
+          // Create object URL
+          const blobUrl = URL.createObjectURL(blob)
+
+          // Create temporary link and trigger download
+          const link = document.createElement('a')
+          link.href = blobUrl
+          link.download = type === 'video' ? `video_${Date.now()}.mp4` : `image_${Date.now()}.png`
+
+          // For iOS Safari - need to use different approach
+          if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            // Open in new tab - user can then long-press to save
+            window.open(blobUrl, '_blank')
+            // Show instruction
+            alert('📱 กดค้างที่รูป/วิดีโอ แล้วเลือก "บันทึกรูปภาพ" หรือ "Save to Photos"')
+          } else {
+            // Android - trigger download
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+          }
+
+          // Cleanup
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+        } catch (error) {
+          console.error('Download error:', error)
+          // Fallback - open in new tab
+          window.open(url, '_blank')
+          alert('📱 กดค้างที่รูป/วิดีโอ แล้วเลือก "บันทึกรูปภาพ" หรือ "Save to Photos"')
+        }
+      } else {
+        // Desktop - normal download
+        window.open(url, '_blank')
+      }
+    }
+
     return (
       <div className="flex justify-start">
         <div className="bg-[#1a1a1a] rounded-2xl overflow-hidden max-w-2xl border border-gray-800">
@@ -1277,28 +1323,40 @@ function MessageBubble({ message, onCreateVideoAd }) {
             <video
               src={message.url}
               controls
-              className="w-full"
-              style={{ maxHeight: '500px' }}
+              className="w-full h-auto"
+              style={{ maxHeight: '500px', objectFit: 'contain' }}
             />
           ) : (
             <img
               src={message.url}
               alt="Generated"
-              className="w-full"
-              style={{ maxHeight: '500px' }}
+              className="w-full h-auto"
+              style={{ maxHeight: '500px', objectFit: 'contain' }}
             />
           )}
           <div className="p-3 border-t border-gray-800 flex items-center gap-2 flex-wrap">
-            <a
-              href={message.url}
-              download
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white rounded-lg text-sm font-medium hover:shadow-lg transition-all"
-            >
-              <Download className="h-4 w-4" />
-              ดาวน์โหลด
-            </a>
+            {isMobileDevice ? (
+              // Mobile: Custom download button
+              <button
+                onClick={() => handleMobileDownload(message.url, message.mode)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white rounded-lg text-sm font-medium hover:shadow-lg transition-all"
+              >
+                <Download className="h-4 w-4" />
+                {message.mode === 'video' ? 'บันทึกวิดีโอ' : 'บันทึกรูปภาพ'}
+              </button>
+            ) : (
+              // Desktop: Normal download link
+              <a
+                href={message.url}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white rounded-lg text-sm font-medium hover:shadow-lg transition-all"
+              >
+                <Download className="h-4 w-4" />
+                ดาวน์โหลด
+              </a>
+            )}
             {/* Show "Create Video Ad" button only for images */}
             {message.mode === 'image' && onCreateVideoAd && (
               <button
