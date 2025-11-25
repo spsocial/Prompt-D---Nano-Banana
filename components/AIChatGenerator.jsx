@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Image as ImageIcon, X, Bot, User, Sparkles, Copy, Check, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useSession } from 'next-auth/react'
 
 // Model configurations
 const CHAT_MODELS = {
@@ -18,7 +19,38 @@ const CHAT_MODELS = {
   }
 }
 
+// Helper function to compress image for mobile
+const compressImage = (base64String, maxWidth = 1024, quality = 0.7) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      let width = img.width
+      let height = img.height
+
+      // Calculate new dimensions
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width
+        width = maxWidth
+      }
+
+      canvas.width = width
+      canvas.height = height
+
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, width, height)
+
+      // Convert to compressed JPEG
+      const compressedBase64 = canvas.toDataURL('image/jpeg', quality)
+      resolve(compressedBase64)
+    }
+    img.onerror = reject
+    img.src = base64String
+  })
+}
+
 export default function AIChatGenerator() {
+  const { data: session } = useSession()
   const [messages, setMessages] = useState([])
   const [inputMessage, setInputMessage] = useState('')
   const [uploadedImage, setUploadedImage] = useState(null)
@@ -33,32 +65,50 @@ export default function AIChatGenerator() {
   const messagesEndRef = useRef(null)
   const fileInputRef = useRef(null)
 
-  // Load chat history from localStorage on mount
+  // Get user-specific storage key
+  const getChatStorageKey = () => {
+    const email = session?.user?.email
+    if (email) {
+      // Create a simple hash from email for the key
+      return `aiChatHistory_${email.replace(/[^a-zA-Z0-9]/g, '_')}`
+    }
+    return 'aiChatHistory_guest'
+  }
+
+  // Load chat history from localStorage on mount (user-specific)
   useEffect(() => {
     try {
-      const savedMessages = localStorage.getItem('aiChatHistory')
+      const storageKey = getChatStorageKey()
+      const savedMessages = localStorage.getItem(storageKey)
       if (savedMessages) {
         const parsed = JSON.parse(savedMessages)
         // Keep only last 20 messages
         setMessages(parsed.slice(-20))
+      } else {
+        // Clear messages when switching to new user with no history
+        setMessages([])
       }
     } catch (error) {
       console.error('Failed to load chat history:', error)
     }
-  }, [])
+  }, [session?.user?.email]) // Re-run when user changes
 
-  // Save messages to localStorage whenever they change
+  // Save messages to localStorage whenever they change (user-specific)
   useEffect(() => {
+    const storageKey = getChatStorageKey()
     if (messages.length > 0) {
       try {
-        // Keep only last 20 messages
-        const messagesToSave = messages.slice(-20)
-        localStorage.setItem('aiChatHistory', JSON.stringify(messagesToSave))
+        // Keep only last 20 messages, exclude images to save space
+        const messagesToSave = messages.slice(-20).map(msg => ({
+          ...msg,
+          image: msg.image ? '[IMAGE]' : undefined // Don't save full base64 images
+        }))
+        localStorage.setItem(storageKey, JSON.stringify(messagesToSave))
       } catch (error) {
         console.error('Failed to save chat history:', error)
       }
     }
-  }, [messages])
+  }, [messages, session?.user?.email])
 
   // Load initial usage data on mount and when model changes
   useEffect(() => {
@@ -146,6 +196,22 @@ export default function AIChatGenerator() {
     setIsGenerating(true)
 
     try {
+      // Compress image before sending (especially important for mobile)
+      let imageToSend = currentImage
+      if (currentImage) {
+        try {
+          // Compress to max 1024px width, 70% quality
+          imageToSend = await compressImage(currentImage, 1024, 0.7)
+          console.log('Image compressed:', {
+            originalSize: Math.round(currentImage.length / 1024) + 'KB',
+            compressedSize: Math.round(imageToSend.length / 1024) + 'KB'
+          })
+        } catch (compressError) {
+          console.error('Image compression failed, using original:', compressError)
+          imageToSend = currentImage
+        }
+      }
+
       const response = await fetch('/api/chat-ai', {
         method: 'POST',
         headers: {
@@ -153,7 +219,7 @@ export default function AIChatGenerator() {
         },
         body: JSON.stringify({
           message: userMessage.content,
-          image: currentImage,
+          image: imageToSend,
           useProductAnalysis: useProductAnalysis,
           model: selectedModel
         })
@@ -251,7 +317,8 @@ export default function AIChatGenerator() {
   const clearChatHistory = () => {
     if (confirm('ต้องการล้างประวัติการแชททั้งหมดหรือไม่?')) {
       setMessages([])
-      localStorage.removeItem('aiChatHistory')
+      const storageKey = getChatStorageKey()
+      localStorage.removeItem(storageKey)
     }
   }
 
