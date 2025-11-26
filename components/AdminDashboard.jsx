@@ -661,7 +661,9 @@ export default function AdminDashboard() {
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg">
                       <p className="text-sm text-gray-600">รายได้</p>
-                      <p className="text-2xl font-bold text-green-600">{formatCurrency(historicalData.totals.revenue)}</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {formatCurrency(historicalData.chartData.reduce((sum, d) => sum + (d.revenue || 0), 0))}
+                      </p>
                     </div>
                     <div className="bg-orange-50 p-4 rounded-lg">
                       <p className="text-sm text-gray-600">ต้นทุน</p>
@@ -682,6 +684,48 @@ export default function AdminDashboard() {
                       }`}>
                         {formatCurrency(historicalData.chartData.reduce((sum, d) => sum + (d.profit || 0), 0))}
                       </p>
+                    </div>
+                  </div>
+
+                  {/* Daily Data Table - moved before charts */}
+                  <div className="mb-8">
+                    <p className="text-sm font-medium text-gray-700 mb-2">📊 ข้อมูลรายวัน:</p>
+                    <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                      <table className="min-w-full text-sm">
+                        <thead className="sticky top-0 bg-gray-100">
+                          <tr className="text-left text-xs text-gray-600">
+                            <th className="p-2">วันที่</th>
+                            <th className="p-2">ภาพ</th>
+                            <th className="p-2">วิดีโอ</th>
+                            <th className="p-2">เสียง</th>
+                            <th className="p-2">Error</th>
+                            <th className="p-2">รายได้</th>
+                            <th className="p-2">ต้นทุน</th>
+                            <th className="p-2 font-semibold">กำไร</th>
+                            <th className="p-2">User ใหม่</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {historicalData.chartData.slice().reverse().map((day, index) => {
+                            const profit = day.profit || 0;
+                            const profitColor = profit >= 0 ? 'text-emerald-600' : 'text-red-600';
+
+                            return (
+                              <tr key={day.date} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                <td className="p-2 font-mono text-xs">{day.date}</td>
+                                <td className="p-2">{day.images}</td>
+                                <td className="p-2 font-semibold text-red-600">{day.videos}</td>
+                                <td className="p-2 font-semibold text-cyan-600">{day.voices || 0}</td>
+                                <td className="p-2 text-orange-600">{day.videoErrors}</td>
+                                <td className="p-2 text-green-600">{formatCurrency(day.revenue)}</td>
+                                <td className="p-2 text-orange-600">{formatCurrency(day.cost || 0)}</td>
+                                <td className={`p-2 font-bold ${profitColor}`}>{formatCurrency(profit)}</td>
+                                <td className="p-2">{day.newUsers}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
 
@@ -870,47 +914,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Daily Data Table */}
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">📊 ข้อมูลรายวัน:</p>
-                    <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                      <table className="min-w-full text-sm">
-                        <thead className="sticky top-0 bg-gray-100">
-                          <tr className="text-left text-xs text-gray-600">
-                            <th className="p-2">วันที่</th>
-                            <th className="p-2">ภาพ</th>
-                            <th className="p-2">วิดีโอ</th>
-                            <th className="p-2">เสียง</th>
-                            <th className="p-2">Error</th>
-                            <th className="p-2">รายได้</th>
-                            <th className="p-2">ต้นทุน</th>
-                            <th className="p-2 font-semibold">กำไร</th>
-                            <th className="p-2">User ใหม่</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {historicalData.chartData.slice().reverse().map((day, index) => {
-                            const profit = day.profit || 0;
-                            const profitColor = profit >= 0 ? 'text-emerald-600' : 'text-red-600';
-
-                            return (
-                              <tr key={day.date} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                <td className="p-2 font-mono text-xs">{day.date}</td>
-                                <td className="p-2">{day.images}</td>
-                                <td className="p-2 font-semibold text-red-600">{day.videos}</td>
-                                <td className="p-2 font-semibold text-cyan-600">{day.voices || 0}</td>
-                                <td className="p-2 text-orange-600">{day.videoErrors}</td>
-                                <td className="p-2 text-green-600">{formatCurrency(day.revenue)}</td>
-                                <td className="p-2 text-orange-600">{formatCurrency(day.cost || 0)}</td>
-                                <td className={`p-2 font-bold ${profitColor}`}>{formatCurrency(profit)}</td>
-                                <td className="p-2">{day.newUsers}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
                 </div>
               ) : (
                 <p className="text-center text-gray-500 py-4">ไม่มีข้อมูลย้อนหลัง</p>
