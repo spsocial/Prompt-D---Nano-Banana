@@ -6,6 +6,10 @@ import {
   BarChart3, Clock, TrendingDown, Wallet, Mic
 } from 'lucide-react';
 import { getAnalyticsSummary, getDetailedStats, exportAnalyticsData } from '../lib/analytics-client';
+import {
+  LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart
+} from 'recharts';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -681,9 +685,194 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
+                  {/* Revenue & Profit Chart */}
+                  <div className="mb-8">
+                    <p className="text-sm font-medium text-gray-700 mb-3">📈 กราฟรายได้ / ต้นทุน / กำไร</p>
+                    <div className="bg-gray-50 p-4 rounded-xl">
+                      <ResponsiveContainer width="100%" height={300}>
+                        <ComposedChart data={historicalData.chartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                          <XAxis
+                            dataKey="date"
+                            tick={{ fontSize: 11 }}
+                            tickFormatter={(value) => value.slice(5)} // Show MM-DD only
+                          />
+                          <YAxis
+                            tick={{ fontSize: 11 }}
+                            tickFormatter={(value) => `฿${value >= 1000 ? (value/1000).toFixed(1) + 'k' : value}`}
+                          />
+                          <Tooltip
+                            formatter={(value, name) => [`฿${value.toLocaleString()}`, name]}
+                            labelFormatter={(label) => `วันที่: ${label}`}
+                            contentStyle={{ borderRadius: '8px', border: '1px solid #e0e0e0' }}
+                          />
+                          <Legend />
+                          <Bar dataKey="revenue" name="รายได้" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="cost" name="ต้นทุน" fill="#f97316" radius={[4, 4, 0, 0]} />
+                          <Line
+                            type="monotone"
+                            dataKey="profit"
+                            name="กำไร"
+                            stroke="#8b5cf6"
+                            strokeWidth={3}
+                            dot={{ fill: '#8b5cf6', strokeWidth: 2 }}
+                          />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Usage Chart - Images, Videos, Voices */}
+                  <div className="mb-8">
+                    <p className="text-sm font-medium text-gray-700 mb-3">🎨 กราฟการใช้งาน (ภาพ / วิดีโอ / เสียง)</p>
+                    <div className="bg-gray-50 p-4 rounded-xl">
+                      <ResponsiveContainer width="100%" height={280}>
+                        <AreaChart data={historicalData.chartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                          <XAxis
+                            dataKey="date"
+                            tick={{ fontSize: 11 }}
+                            tickFormatter={(value) => value.slice(5)}
+                          />
+                          <YAxis tick={{ fontSize: 11 }} />
+                          <Tooltip
+                            contentStyle={{ borderRadius: '8px', border: '1px solid #e0e0e0' }}
+                            labelFormatter={(label) => `วันที่: ${label}`}
+                          />
+                          <Legend />
+                          <Area
+                            type="monotone"
+                            dataKey="images"
+                            name="ภาพ"
+                            stackId="1"
+                            stroke="#a855f7"
+                            fill="#a855f7"
+                            fillOpacity={0.6}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="videos"
+                            name="วิดีโอ"
+                            stackId="1"
+                            stroke="#ef4444"
+                            fill="#ef4444"
+                            fillOpacity={0.6}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="voices"
+                            name="เสียง"
+                            stackId="1"
+                            stroke="#06b6d4"
+                            fill="#06b6d4"
+                            fillOpacity={0.6}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* New Users Chart */}
+                  <div className="mb-8">
+                    <p className="text-sm font-medium text-gray-700 mb-3">👥 ผู้ใช้ใหม่รายวัน</p>
+                    <div className="bg-gray-50 p-4 rounded-xl">
+                      <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={historicalData.chartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                          <XAxis
+                            dataKey="date"
+                            tick={{ fontSize: 11 }}
+                            tickFormatter={(value) => value.slice(5)}
+                          />
+                          <YAxis tick={{ fontSize: 11 }} />
+                          <Tooltip
+                            contentStyle={{ borderRadius: '8px', border: '1px solid #e0e0e0' }}
+                            labelFormatter={(label) => `วันที่: ${label}`}
+                          />
+                          <Bar
+                            dataKey="newUsers"
+                            name="ผู้ใช้ใหม่"
+                            fill="#3b82f6"
+                            radius={[4, 4, 0, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Pie Chart - Usage Proportion */}
+                  <div className="mb-8">
+                    <p className="text-sm font-medium text-gray-700 mb-3">📊 สัดส่วนการใช้งาน</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Usage Type Pie */}
+                      <div className="bg-gray-50 p-4 rounded-xl">
+                        <p className="text-xs text-center text-gray-500 mb-2">สัดส่วน ภาพ / วิดีโอ / เสียง</p>
+                        <ResponsiveContainer width="100%" height={220}>
+                          <PieChart>
+                            <Pie
+                              data={[
+                                { name: 'ภาพ', value: historicalData.totals.images, color: '#a855f7' },
+                                { name: 'วิดีโอ', value: historicalData.totals.videos, color: '#ef4444' },
+                                { name: 'เสียง', value: historicalData.chartData.reduce((sum, d) => sum + (d.voices || 0), 0), color: '#06b6d4' }
+                              ].filter(d => d.value > 0)}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={80}
+                              paddingAngle={3}
+                              dataKey="value"
+                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                              labelLine={{ stroke: '#666', strokeWidth: 1 }}
+                            >
+                              {[
+                                { name: 'ภาพ', value: historicalData.totals.images, color: '#a855f7' },
+                                { name: 'วิดีโอ', value: historicalData.totals.videos, color: '#ef4444' },
+                                { name: 'เสียง', value: historicalData.chartData.reduce((sum, d) => sum + (d.voices || 0), 0), color: '#06b6d4' }
+                              ].filter(d => d.value > 0).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(value) => [value.toLocaleString(), 'จำนวน']} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Revenue vs Cost Pie */}
+                      <div className="bg-gray-50 p-4 rounded-xl">
+                        <p className="text-xs text-center text-gray-500 mb-2">สัดส่วน รายได้ / ต้นทุน</p>
+                        <ResponsiveContainer width="100%" height={220}>
+                          <PieChart>
+                            <Pie
+                              data={[
+                                { name: 'กำไร', value: Math.max(0, historicalData.chartData.reduce((sum, d) => sum + (d.profit || 0), 0)), color: '#22c55e' },
+                                { name: 'ต้นทุน', value: historicalData.chartData.reduce((sum, d) => sum + (d.cost || 0), 0), color: '#f97316' }
+                              ].filter(d => d.value > 0)}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={80}
+                              paddingAngle={3}
+                              dataKey="value"
+                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                              labelLine={{ stroke: '#666', strokeWidth: 1 }}
+                            >
+                              {[
+                                { name: 'กำไร', value: Math.max(0, historicalData.chartData.reduce((sum, d) => sum + (d.profit || 0), 0)), color: '#22c55e' },
+                                { name: 'ต้นทุน', value: historicalData.chartData.reduce((sum, d) => sum + (d.cost || 0), 0), color: '#f97316' }
+                              ].filter(d => d.value > 0).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(value) => [`฿${value.toLocaleString()}`, '']} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Daily Data Table */}
                   <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">ข้อมูลรายวัน:</p>
+                    <p className="text-sm font-medium text-gray-700 mb-2">📊 ข้อมูลรายวัน:</p>
                     <div className="overflow-x-auto max-h-96 overflow-y-auto">
                       <table className="min-w-full text-sm">
                         <thead className="sticky top-0 bg-gray-100">
