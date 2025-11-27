@@ -682,7 +682,7 @@ export default function ChatInterfaceGenerator({ defaultMode = 'video' }) {
             {/* Mode Toggle - TikTok Style - Centered with absolute positioning */}
             <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-[#1a1a1a] rounded-full p-1">
               <button
-                onClick={() => setMode('image')}
+                onClick={() => router.push('/image')}
                 className={`px-3 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
                   mode === 'image'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
@@ -693,7 +693,7 @@ export default function ChatInterfaceGenerator({ defaultMode = 'video' }) {
                 <span className="hidden sm:inline">Image</span>
               </button>
               <button
-                onClick={() => setMode('video')}
+                onClick={() => router.push('/video')}
                 className={`px-3 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
                   mode === 'video'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
@@ -704,7 +704,7 @@ export default function ChatInterfaceGenerator({ defaultMode = 'video' }) {
                 <span className="hidden sm:inline">Video</span>
               </button>
               <button
-                onClick={() => setMode('voice')}
+                onClick={() => router.push('/voice')}
                 className={`px-3 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
                   mode === 'voice'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
@@ -715,7 +715,7 @@ export default function ChatInterfaceGenerator({ defaultMode = 'video' }) {
                 <span className="hidden sm:inline">Voice</span>
               </button>
               <button
-                onClick={() => setMode('chat')}
+                onClick={() => router.push('/chat')}
                 className={`px-3 sm:px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1 ${
                   mode === 'chat'
                     ? 'bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white'
@@ -848,10 +848,20 @@ export default function ChatInterfaceGenerator({ defaultMode = 'video' }) {
               {messages.length === 0 ? (
                 <div className="text-center py-20">
                   <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-[#00F2EA]/20 to-[#FE2C55]/20 rounded-full mb-6">
-                    <Sparkles className="h-10 w-10 text-[#00F2EA]" />
+                    {mode === 'image' ? (
+                      <ImageIcon className="h-10 w-10 text-[#00F2EA]" />
+                    ) : (
+                      <Film className="h-10 w-10 text-[#FE2C55]" />
+                    )}
                   </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">สร้างคอนเทนต์ด้วย AI</h2>
-                  <p className="text-gray-400">บอก AI ว่าคุณต้องการอะไร แล้วปล่อยให้มันสร้างให้คุณ</p>
+                  <h2 className="text-2xl font-bold text-white mb-2">
+                    {mode === 'image' ? 'สร้างภาพโฆษณาด้วย AI' : 'สร้างวิดีโอโฆษณาด้วย AI'}
+                  </h2>
+                  <p className="text-gray-400">
+                    {mode === 'image'
+                      ? 'อัพโหลดรูปสินค้า แล้วให้ AI สร้างภาพโฆษณาให้คุณ'
+                      : 'อัพโหลดรูปสินค้า แล้วให้ AI สร้างวิดีโอโฆษณาให้คุณ'}
+                  </p>
                 </div>
               ) : (
                 <>
