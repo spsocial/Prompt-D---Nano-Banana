@@ -79,9 +79,13 @@ export default async function handler(req, res) {
     const {
       prompt,
       aspectRatio = '1:1',
-      originalImage = null, // Image URL for image-to-image editing
+      originalImage = null, // Single image for backward compatibility
+      originalImages = [], // Array of images for multi-image editing
       userId = 'anonymous'
     } = req.body
+
+    // Support both single image and multiple images
+    const imagesToProcess = originalImages.length > 0 ? originalImages : (originalImage ? [originalImage] : [])
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' })
@@ -98,15 +102,17 @@ export default async function handler(req, res) {
       })
     }
 
-    // Determine model based on whether image is provided
-    const modelName = originalImage ? 'google/nano-banana-edit' : 'google/nano-banana'
-    const mode = originalImage ? 'image-edit' : 'text-to-image'
+    // Determine model based on whether images are provided
+    const hasImages = imagesToProcess.length > 0
+    const modelName = hasImages ? 'google/nano-banana-edit' : 'google/nano-banana'
+    const mode = hasImages ? 'image-edit' : 'text-to-image'
 
     console.log(`🎨 Starting image generation via KIE.AI...`)
     console.log(`📝 Prompt: ${prompt.substring(0, 100)}...`)
     console.log(`📐 Aspect Ratio: ${aspectRatio}`)
     console.log(`🎯 Model: ${modelName}`)
     console.log(`🖼️ Mode: ${mode}`)
+    console.log(`📸 Number of reference images: ${imagesToProcess.length}`)
 
     // Prepare request body for Nano Banana model
     const requestBody = {
@@ -118,27 +124,34 @@ export default async function handler(req, res) {
       }
     }
 
-    // Handle image: if base64, upload to Cloudinary first to get URL
-    if (originalImage) {
-      let imageUrl = originalImage
+    // Handle images: if base64, upload to Cloudinary first to get URLs
+    if (imagesToProcess.length > 0) {
+      console.log(`🔄 Processing ${imagesToProcess.length} image(s)...`)
+      const imageUrls = []
 
-      if (originalImage.startsWith('data:')) {
-        console.log('🔄 Base64 image detected, uploading to Cloudinary first...')
-        try {
-          imageUrl = await uploadToCloudinary(originalImage)
-          console.log(`✅ Converted base64 → Cloudinary URL: ${imageUrl}`)
-        } catch (uploadError) {
-          console.error('❌ Failed to upload to Cloudinary:', uploadError)
-          return res.status(500).json({
-            error: 'Cannot upload image to Cloudinary',
-            details: uploadError.message,
-            suggestion: 'ตรวจสอบ CLOUDINARY_CLOUD_NAME และ CLOUDINARY_UPLOAD_PRESET'
-          })
+      for (let i = 0; i < imagesToProcess.length; i++) {
+        let imageUrl = imagesToProcess[i]
+
+        if (imageUrl.startsWith('data:')) {
+          console.log(`🔄 Image ${i + 1}: Base64 detected, uploading to Cloudinary...`)
+          try {
+            imageUrl = await uploadToCloudinary(imageUrl)
+            console.log(`✅ Image ${i + 1} uploaded: ${imageUrl.substring(0, 50)}...`)
+          } catch (uploadError) {
+            console.error(`❌ Failed to upload image ${i + 1} to Cloudinary:`, uploadError)
+            return res.status(500).json({
+              error: `Cannot upload image ${i + 1} to Cloudinary`,
+              details: uploadError.message,
+              suggestion: 'ตรวจสอบ CLOUDINARY_CLOUD_NAME และ CLOUDINARY_UPLOAD_PRESET'
+            })
+          }
         }
+
+        imageUrls.push(imageUrl)
       }
 
-      requestBody.input.image_urls = [imageUrl]
-      console.log(`📸 Image URL ready: ${imageUrl.substring(0, 50)}...`)
+      requestBody.input.image_urls = imageUrls
+      console.log(`📸 ${imageUrls.length} image URL(s) ready`)
     }
 
     console.log('🚀 Creating image task on KIE.AI...')

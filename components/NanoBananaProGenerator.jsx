@@ -4,7 +4,7 @@ import useStore from '../lib/store'
 import { Upload, Image as ImageIcon, Loader2, Wand2, RefreshCw, X, Sparkles, Zap } from 'lucide-react'
 
 export default function NanoBananaProGenerator() {
-  const [preview, setPreview] = useState(null)
+  const [previews, setPreviews] = useState([]) // Changed to array for multiple images
   const [prompt, setPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [result, setResult] = useState(null)
@@ -17,38 +17,59 @@ export default function NanoBananaProGenerator() {
 
   // Cost: 3 credits per image
   const COST_PER_IMAGE = 3
+  const MAX_IMAGES = 8 // Maximum 8 reference images
 
-  // Handle image upload
+  // Handle image upload - supports multiple images
   const onDrop = useCallback(acceptedFiles => {
-    const file = acceptedFiles[0]
-    if (!file) return
+    if (!acceptedFiles || acceptedFiles.length === 0) return
 
-    if (!file.type.startsWith('image/')) {
-      setError('กรุณาเลือกไฟล์รูปภาพ')
+    // Check if adding these would exceed the limit
+    const remainingSlots = MAX_IMAGES - previews.length
+    if (remainingSlots <= 0) {
+      setError(`สามารถแนบรูปได้สูงสุด ${MAX_IMAGES} รูปเท่านั้น`)
       return
     }
 
-    // Max 10MB
-    if (file.size > 10 * 1024 * 1024) {
-      setError('ไฟล์ต้องมีขนาดไม่เกิน 10MB')
-      return
-    }
+    const filesToProcess = acceptedFiles.slice(0, remainingSlots)
+    const newPreviews = []
 
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setPreview(reader.result)
-      setError(null)
-    }
-    reader.readAsDataURL(file)
-  }, [])
+    filesToProcess.forEach(file => {
+      if (!file.type.startsWith('image/')) {
+        setError('กรุณาเลือกไฟล์รูปภาพ')
+        return
+      }
+
+      // Max 10MB per file
+      if (file.size > 10 * 1024 * 1024) {
+        setError('ไฟล์แต่ละไฟล์ต้องมีขนาดไม่เกิน 10MB')
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreviews(prev => {
+          if (prev.length >= MAX_IMAGES) return prev
+          return [...prev, reader.result]
+        })
+        setError(null)
+      }
+      reader.readAsDataURL(file)
+    })
+  }, [previews.length])
+
+  // Remove a specific image
+  const removeImage = (indexToRemove) => {
+    setPreviews(prev => prev.filter((_, index) => index !== indexToRemove))
+  }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.webp']
     },
-    multiple: false,
-    maxSize: 10 * 1024 * 1024 // 10MB
+    multiple: true, // Allow multiple files
+    maxSize: 10 * 1024 * 1024, // 10MB per file
+    disabled: previews.length >= MAX_IMAGES
   })
 
   const handleGenerate = async () => {
@@ -70,11 +91,9 @@ export default function NanoBananaProGenerator() {
     try {
       console.log('🎨 Generating with Nano Banana PRO...')
 
-      // Prepare image input
-      let imageInput = []
-      if (preview) {
-        imageInput = [preview]
-      }
+      // Prepare image input - now supports multiple images
+      const imageInput = previews.length > 0 ? [...previews] : []
+      console.log(`📸 Sending ${imageInput.length} reference image(s)`)
 
       const response = await fetch('/api/generate-image-kie-pro', {
         method: 'POST',
@@ -133,7 +152,7 @@ export default function NanoBananaProGenerator() {
   }
 
   const handleReset = () => {
-    setPreview(null)
+    setPreviews([])
     setPrompt('')
     setResult(null)
     setError(null)
@@ -200,38 +219,77 @@ export default function NanoBananaProGenerator() {
         </div>
       </div>
 
-      {/* Image Upload (Optional) */}
+      {/* Image Upload (Optional) - Multiple Images */}
       <div>
         <label className="block text-sm font-bold text-gray-800 mb-2">
-          อัพโหลดรูปภาพ (ถ้าต้องการแปลงภาพ)
-          <span className="text-gray-500 font-normal ml-2">ไม่บังคับ</span>
+          อัพโหลดรูปภาพอ้างอิง (ถ้าต้องการแปลงภาพ)
+          <span className="text-gray-500 font-normal ml-2">ไม่บังคับ - สูงสุด {MAX_IMAGES} รูป</span>
         </label>
 
-        {!preview ? (
+        {/* Image Preview Grid */}
+        {previews.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">
+                รูปที่เลือก: {previews.length}/{MAX_IMAGES} รูป
+              </span>
+              <button
+                onClick={() => setPreviews([])}
+                className="text-sm text-red-500 hover:text-red-600 font-medium"
+              >
+                ลบทั้งหมด
+              </button>
+            </div>
+            <div className="grid grid-cols-4 gap-3">
+              {previews.map((preview, index) => (
+                <div key={index} className="relative group aspect-square">
+                  <img
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                  />
+                  <button
+                    onClick={() => removeImage(index)}
+                    className="absolute top-1 right-1 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                  <div className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-black/60 text-white text-xs rounded">
+                    {index + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Dropzone - Show if not at max */}
+        {previews.length < MAX_IMAGES && (
           <div
             {...getRootProps()}
-            className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer ${
+            className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer ${
               isDragActive
                 ? 'border-orange-500 bg-orange-50'
                 : 'border-gray-300 hover:border-orange-400 bg-white'
             }`}
           >
             <input {...getInputProps()} />
-            <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600 mb-2">
+            <Upload className="h-10 w-10 mx-auto mb-3 text-gray-400" />
+            <p className="text-gray-600 mb-1">
               {isDragActive ? 'วางรูปภาพที่นี่...' : 'ลากรูปภาพมาวางที่นี่'}
             </p>
-            <p className="text-sm text-gray-500">หรือคลิกเพื่อเลือกไฟล์ (สูงสุด 10MB)</p>
+            <p className="text-sm text-gray-500">
+              คลิกเพื่อเลือกไฟล์ (สูงสุด 10MB/รูป) - เหลือ {MAX_IMAGES - previews.length} รูป
+            </p>
           </div>
-        ) : (
-          <div className="relative">
-            <img src={preview} alt="Preview" className="w-full rounded-xl border-2 border-gray-200" />
-            <button
-              onClick={() => setPreview(null)}
-              className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full"
-            >
-              <X className="h-4 w-4" />
-            </button>
+        )}
+
+        {/* Max reached notice */}
+        {previews.length >= MAX_IMAGES && (
+          <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-center">
+            <p className="text-sm text-orange-800">
+              แนบรูปครบ {MAX_IMAGES} รูปแล้ว - ลบรูปเพื่อเพิ่มรูปใหม่
+            </p>
           </div>
         )}
       </div>
@@ -406,8 +464,8 @@ export default function NanoBananaProGenerator() {
       {/* Tips */}
       <div className="p-4 bg-gradient-to-r from-orange-100/50 to-yellow-100/50 rounded-xl border border-orange-200/50">
         <p className="text-sm text-orange-800">
-          <span className="font-bold">💡 Tips:</span> Nano Banana PRO สร้างได้ทีละ 1 รูป ความละเอียด 4K
-          ให้คุณภาพสูงสุดแต่ใช้เวลานานกว่า 1K - เลือกตามความต้องการของคุณ
+          <span className="font-bold">💡 Tips:</span> Nano Banana PRO รองรับการแนบรูปอ้างอิงได้สูงสุด {MAX_IMAGES} รูป
+          เพื่อให้ AI เข้าใจสไตล์และบริบทได้ดียิ่งขึ้น - ความละเอียด 4K ให้คุณภาพสูงสุด
         </p>
       </div>
     </div>

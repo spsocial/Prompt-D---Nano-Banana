@@ -16,7 +16,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prompts, apiKey, replicateApiKey, originalImage, aspectRatio = '1:1', userId } = req.body
+    const { prompts, apiKey, replicateApiKey, originalImage, originalImages = [], aspectRatio = '1:1', userId } = req.body
+
+    // Support both single image and multiple images
+    const imagesToUse = originalImages.length > 0 ? originalImages : (originalImage ? [originalImage] : [])
 
     if (!prompts || !Array.isArray(prompts)) {
       return res.status(400).json({ error: 'No prompts provided' })
@@ -76,17 +79,17 @@ export default async function handler(req, res) {
       const result = await (async () => {
         try {
           console.log(`🎨 Generating image ${index + 1}: ${promptData.style}`)
-          if (originalImage && index === 0) {
-            console.log('📸 Original image size:', truncateDataUri(originalImage))
+          if (imagesToUse.length > 0 && index === 0) {
+            console.log(`📸 Reference images: ${imagesToUse.length} image(s)`)
           }
 
           // Build enhanced prompt
           let enhancedPrompt
-          if (originalImage) {
+          if (imagesToUse.length > 0) {
             enhancedPrompt = `${promptData.prompt}
 
 Requirements:
-- Create a premium advertisement from the provided product image
+- Create a premium advertisement from the provided product image(s)
 - Professional quality commercial style
 - Maintain product recognizability
 - ${promptData.style} aesthetic
@@ -115,7 +118,8 @@ ${promptData.style} style with premium quality`
               body: JSON.stringify({
                 prompt: enhancedPrompt,
                 aspectRatio: aspectRatio,
-                originalImage: originalImage || null, // Pass originalImage for image-edit mode
+                originalImage: imagesToUse[0] || null, // For backward compatibility
+                originalImages: imagesToUse, // Pass all images for multi-image mode
                 userId: userId
               })
             }
@@ -278,8 +282,9 @@ ${promptData.style} style with premium quality`
         placeholders: placeholderCount,
         quotaErrors: quotaErrorCount
       },
-      model: originalImage ? 'google/nano-banana-edit' : 'google/nano-banana',
-      mode: originalImage ? 'image-edit' : 'text-to-image',
+      model: imagesToUse.length > 0 ? 'google/nano-banana-edit' : 'google/nano-banana',
+      mode: imagesToUse.length > 0 ? 'image-edit' : 'text-to-image',
+      referenceImagesCount: imagesToUse.length,
       info: {
         apiKeyStatus: successCount > 0 ? '✅ KIE.AI Nano Banana API works!'
                     : quotaErrorCount > 0 ? '🔄 Quota exceeded - รอ 1 นาที'

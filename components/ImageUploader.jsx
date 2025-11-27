@@ -6,7 +6,7 @@ import SuccessNotification from './SuccessNotification'
 
 export default function ImageUploader() {
   const [mode, setMode] = useState('withImage') // 'withImage' or 'promptOnly'
-  const [preview, setPreview] = useState(null)
+  const [previews, setPreviews] = useState([]) // Changed to array for multiple images
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [isCompressing, setIsCompressing] = useState(false)
@@ -19,6 +19,8 @@ export default function ImageUploader() {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
+
+  const MAX_IMAGES = 10 // Maximum 10 reference images for Nano Banana Edit
   
   const {
     setIsProcessing,
@@ -36,7 +38,10 @@ export default function ImageUploader() {
   // Initialize component state from global store
   useEffect(() => {
     if (uploadedImage) {
-      setPreview(uploadedImage)
+      setPreviews(prev => {
+        if (prev.includes(uploadedImage)) return prev
+        return [...prev, uploadedImage]
+      })
       setReadyToProcess(true)
       setShowAdvanced(true)
     }
@@ -121,22 +126,27 @@ Focus on:
     })
   }
 
-  const processImage = async (base64Image = null) => {
+  const processImage = async (base64Images = []) => {
     setIsProcessing(true)
     setError(null)
     setResults([])
 
     try {
-      let compressedImage = null
+      let compressedImages = []
 
-      // Compress image for withImage mode
-      if (base64Image && mode === 'withImage') {
+      // Compress images for withImage mode
+      if (base64Images.length > 0 && mode === 'withImage') {
         setIsCompressing(true)
-        console.log('🗜️ Compressing image...')
-        compressedImage = await compressImage(base64Image, 1024, 0.85)
-        const originalSize = (base64Image.length * 0.75) / 1024 / 1024
-        const compressedSize = (compressedImage.length * 0.75) / 1024 / 1024
-        console.log(`✅ Compressed: ${originalSize.toFixed(2)}MB → ${compressedSize.toFixed(2)}MB`)
+        console.log(`🗜️ Compressing ${base64Images.length} image(s)...`)
+
+        for (const base64Image of base64Images) {
+          const compressedImage = await compressImage(base64Image, 1024, 0.85)
+          const originalSize = (base64Image.length * 0.75) / 1024 / 1024
+          const compressedSize = (compressedImage.length * 0.75) / 1024 / 1024
+          console.log(`✅ Compressed: ${originalSize.toFixed(2)}MB → ${compressedSize.toFixed(2)}MB`)
+          compressedImages.push(compressedImage)
+        }
+
         setIsCompressing(false)
       } else if (mode === 'promptOnly') {
         console.log('🎨 Creating image from prompt only (no image input)')
@@ -146,7 +156,7 @@ Focus on:
       let prompts = []
 
       if (mode === 'withImage') {
-        // Image-to-Image: Analyze image first
+        // Image-to-Image: Analyze image first (use first image for analysis)
         const promptToUse = useCustomPrompt ? customPrompt : (customPrompt || mainPrompt)
 
         const analyzeResponse = await fetch('/api/analyze', {
@@ -155,7 +165,8 @@ Focus on:
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            image: compressedImage,
+            image: compressedImages[0], // Use first image for analysis
+            images: compressedImages, // Send all images
             apiKey: userPlan === 'free' ? apiKeys.gemini : null,
             customPrompt: promptToUse,
             selectedStyle: selectedPromptStyle,
@@ -198,7 +209,8 @@ Focus on:
           prompts,
           apiKey: userPlan === 'free' ? apiKeys.gemini : null,
           replicateApiKey: userPlan === 'free' ? apiKeys.replicate : null,
-          originalImage: compressedImage, // ส่งภาพที่บีบอัดแล้ว
+          originalImage: compressedImages[0], // ส่งภาพแรกสำหรับ backward compatibility
+          originalImages: compressedImages, // ส่งรูปทั้งหมด
           aspectRatio: aspectRatio // Pass selected aspect ratio
         }),
       })
@@ -265,43 +277,76 @@ Focus on:
   }
 
   const onDrop = useCallback((acceptedFiles) => {
-    const file = acceptedFiles[0]
-    if (!file) return
+    if (!acceptedFiles || acceptedFiles.length === 0) return
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError('กรุณาอัพโหลดไฟล์รูปภาพ')
+    // Check if adding these would exceed the limit
+    const remainingSlots = MAX_IMAGES - previews.length
+    if (remainingSlots <= 0) {
+      setError(`สามารถแนบรูปได้สูงสุด ${MAX_IMAGES} รูปเท่านั้น`)
       return
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('ไฟล์ต้องมีขนาดไม่เกิน 10MB')
-      return
-    }
+    const filesToProcess = acceptedFiles.slice(0, remainingSlots)
 
-    console.log(`📁 File: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`)
+    filesToProcess.forEach(file => {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('กรุณาอัพโหลดไฟล์รูปภาพ')
+        return
+      }
 
-    // Create preview
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const base64 = e.target.result
-      setPreview(base64)
-      setStoreUploadedImage(base64) // Save to global store
-      setReadyToProcess(true) // Don't process automatically
-      setShowAdvanced(true) // Auto-open advanced settings when image uploaded
-    }
-    reader.readAsDataURL(file)
-  }, [setStoreUploadedImage])
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('ไฟล์แต่ละไฟล์ต้องมีขนาดไม่เกิน 10MB')
+        return
+      }
+
+      console.log(`📁 File: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`)
+
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const base64 = e.target.result
+        setPreviews(prev => {
+          if (prev.length >= MAX_IMAGES) return prev
+          const newPreviews = [...prev, base64]
+          // Save first image to global store for backward compatibility
+          if (newPreviews.length === 1) {
+            setStoreUploadedImage(base64)
+          }
+          return newPreviews
+        })
+        setReadyToProcess(true)
+        setShowAdvanced(true)
+        setError(null)
+      }
+      reader.readAsDataURL(file)
+    })
+  }, [setStoreUploadedImage, previews.length])
+
+  // Remove a specific image
+  const removeImage = (indexToRemove) => {
+    setPreviews(prev => {
+      const newPreviews = prev.filter((_, index) => index !== indexToRemove)
+      // Update store if first image was removed
+      if (indexToRemove === 0 && newPreviews.length > 0) {
+        setStoreUploadedImage(newPreviews[0])
+      } else if (newPreviews.length === 0) {
+        clearUploadedImage()
+        setReadyToProcess(false)
+      }
+      return newPreviews
+    })
+  }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
     },
-    maxFiles: 1,
-    maxSize: 10 * 1024 * 1024, // 10MB
-    disabled: useStore((state) => state.isProcessing)
+    multiple: true, // Allow multiple files
+    maxSize: 10 * 1024 * 1024, // 10MB per file
+    disabled: useStore((state) => state.isProcessing) || previews.length >= MAX_IMAGES
   })
 
   const isProcessing = useStore((state) => state.isProcessing)
@@ -314,7 +359,7 @@ Focus on:
       return
     }
 
-    if (mode === 'withImage' && !uploadedImage) {
+    if (mode === 'withImage' && previews.length === 0) {
       setError('กรุณาอัพโหลดรูปภาพ')
       return
     }
@@ -335,16 +380,16 @@ Focus on:
     }
 
     // Process based on mode
-    if (mode === 'withImage' && uploadedImage) {
-      processImage(uploadedImage)
+    if (mode === 'withImage' && previews.length > 0) {
+      processImage(previews) // Send all images
     } else if (mode === 'promptOnly') {
-      processImage(null) // No image, prompt-only generation
+      processImage([]) // No images, prompt-only generation
     }
   }
 
   // Handle reset
   const handleReset = () => {
-    setPreview(null)
+    setPreviews([])
     setReadyToProcess(false)
     setError(null)
     setResults([])
@@ -501,8 +546,14 @@ Focus on:
           reader.onload = (e) => {
             if (e.target && e.target.result) {
               const base64 = e.target.result
-              setPreview(base64)
-              setStoreUploadedImage(base64) // Save to global store
+              setPreviews(prev => {
+                if (prev.length >= MAX_IMAGES) return prev
+                const newPreviews = [...prev, base64]
+                if (newPreviews.length === 1) {
+                  setStoreUploadedImage(base64)
+                }
+                return newPreviews
+              })
               setReadyToProcess(true)
               setShowAdvanced(true)
               stopCamera()
@@ -605,96 +656,118 @@ Focus on:
       {mode === 'withImage' ? (
         /* Image to Image Mode: Upload Area First, then Prompt Below */
         <div className="space-y-6">
-          {/* Upload Area */}
-          <div
-            {...getRootProps()}
-            className={`
-            relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer
-            transition-all duration-300
-            ${isDragActive
-              ? 'border-yellow-500 bg-gradient-to-br from-yellow-50/50 to-amber-50/50 backdrop-blur-sm'
-              : 'border-gray-300/50 hover:border-yellow-400 hover:bg-gradient-to-br hover:from-yellow-50/30 hover:to-amber-50/30 hover:backdrop-blur-sm'
-            }
-            ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
-            ${preview ? 'bg-gradient-to-br from-gray-50/50 to-white/50 backdrop-blur-sm' : 'bg-white/20 backdrop-blur-sm'}
-          `}
-          >
-            <input {...getInputProps()} />
-
-            {preview ? (
-              <div className="relative">
-                <div className="relative inline-block">
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    className="mx-auto max-h-64 rounded-xl shadow-lg border-4 border-white"
-                  />
-                  {!isProcessing && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleReset()
-                      }}
-                      className="absolute -top-3 -right-3 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors"
-                      aria-label="ลบรูปภาพ"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-                {!isProcessing && (
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-700 font-medium">
-                      คลิกหรือลากรูปใหม่มาเพื่อเปลี่ยน
-                    </p>
+          {/* Multiple Images Preview Grid */}
+          {previews.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-bold text-gray-800">
+                  รูปที่เลือก: {previews.length}/{MAX_IMAGES} รูป
+                </label>
+                <button
+                  onClick={handleReset}
+                  className="text-sm text-red-500 hover:text-red-600 font-medium"
+                >
+                  ลบทั้งหมด
+                </button>
+              </div>
+              <div className="grid grid-cols-4 gap-3 mb-4">
+                {previews.map((preview, index) => (
+                  <div key={index} className="relative group aspect-square">
+                    <img
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover rounded-xl border-2 border-gray-200 shadow-md"
+                    />
+                    {!isProcessing && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeImage(index)
+                        }}
+                        className="absolute top-1 right-1 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                    <div className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-black/60 text-white text-xs rounded">
+                      {index + 1}
+                    </div>
                   </div>
-                )}
-                {isCompressing && (
-                  <div className="mt-4 flex items-center justify-center space-x-2">
-                    <Loader2 className="h-5 w-5 animate-spin text-yellow-500" />
-                    <span className="text-sm text-gray-700 font-medium">กำลังบีบอัดรูปภาพ...</span>
+                ))}
+              </div>
+              {isCompressing && (
+                <div className="flex items-center justify-center space-x-2 py-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-yellow-500" />
+                  <span className="text-sm text-gray-700 font-medium">กำลังบีบอัดรูปภาพ...</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Upload Area - Show if not at max */}
+          {previews.length < MAX_IMAGES && (
+            <div
+              {...getRootProps()}
+              className={`
+              relative border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer
+              transition-all duration-300
+              ${isDragActive
+                ? 'border-yellow-500 bg-gradient-to-br from-yellow-50/50 to-amber-50/50 backdrop-blur-sm'
+                : 'border-gray-300/50 hover:border-yellow-400 hover:bg-gradient-to-br hover:from-yellow-50/30 hover:to-amber-50/30 hover:backdrop-blur-sm'
+              }
+              ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}
+              bg-white/20 backdrop-blur-sm
+            `}
+            >
+              <input {...getInputProps()} />
+
+              <div className="flex justify-center mb-3">
+                {isDragActive ? (
+                  <div className="p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full">
+                    <Image className="h-8 w-8 text-white animate-pulse" />
+                  </div>
+                ) : isProcessing ? (
+                  <div className="p-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full">
+                    <Loader2 className="h-8 w-8 text-white animate-spin" />
+                  </div>
+                ) : (
+                  <div className="p-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full">
+                    <Upload className="h-8 w-8 text-gray-600" />
                   </div>
                 )}
               </div>
-            ) : (
-              <>
-                <div className="flex justify-center mb-4">
-                  {isDragActive ? (
-                    <div className="p-4 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full">
-                      <Image className="h-10 w-10 text-white animate-pulse" />
-                    </div>
-                  ) : isProcessing ? (
-                    <div className="p-4 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full">
-                      <Loader2 className="h-10 w-10 text-white animate-spin" />
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full">
-                      <Upload className="h-10 w-10 text-gray-600" />
-                    </div>
-                  )}
-                </div>
 
-                <p className="text-xl font-bold text-gray-800 mb-2">
-                  {isDragActive
-                    ? 'วางรูปได้เลย'
-                    : isProcessing
-                    ? 'กำลังประมวลผลรูปภาพ...'
-                    : 'ลากและวางรูปสินค้าที่นี่'}
-                </p>
+              <p className="text-lg font-bold text-gray-800 mb-1">
+                {isDragActive
+                  ? 'วางรูปได้เลย'
+                  : isProcessing
+                  ? 'กำลังประมวลผลรูปภาพ...'
+                  : previews.length > 0 ? 'เพิ่มรูปภาพ' : 'ลากและวางรูปสินค้าที่นี่'}
+              </p>
 
-                <p className="text-gray-600">
-                  หรือ <span className="text-yellow-600 font-bold">คลิกเพื่อเลือกไฟล์</span>
-                </p>
+              <p className="text-gray-600 text-sm">
+                {previews.length > 0
+                  ? `เหลือ ${MAX_IMAGES - previews.length} รูป`
+                  : `คลิกเพื่อเลือกไฟล์ (สูงสุด ${MAX_IMAGES} รูป)`}
+              </p>
 
-                <p className="text-sm text-gray-500 mt-4">
-                  รองรับ: JPG, PNG, GIF, WebP (สูงสุด 10MB)
-                </p>
-              </>
-            )}
-          </div>
+              <p className="text-xs text-gray-500 mt-2">
+                รองรับ: JPG, PNG, GIF, WebP (สูงสุด 10MB/รูป)
+              </p>
+            </div>
+          )}
+
+          {/* Max reached notice */}
+          {previews.length >= MAX_IMAGES && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-center">
+              <p className="text-sm text-yellow-800">
+                แนบรูปครบ {MAX_IMAGES} รูปแล้ว - ลบรูปเพื่อเพิ่มรูปใหม่
+              </p>
+            </div>
+          )}
 
           {/* Show Prompt Section after image is uploaded */}
-          {preview && (
+          {previews.length > 0 && (
             <>
               {/* 3. Prompt Style Selection - Beautiful Card Style */}
               <div>
@@ -1098,7 +1171,7 @@ Focus on:
       )}
 
       {/* 6. Generate Button - Large Prominent Button */}
-      {(mode === 'withImage' ? preview : true) && (
+      {(mode === 'withImage' ? previews.length > 0 : true) && (
         <div className="mt-6">
           <button
             onClick={handleProcess}
@@ -1128,7 +1201,7 @@ Focus on:
           </button>
 
           {/* Reset Button for Image Mode */}
-          {mode === 'withImage' && preview && !isProcessing && (
+          {mode === 'withImage' && previews.length > 0 && !isProcessing && (
             <button
               onClick={handleReset}
               className="w-full mt-3 px-6 py-3 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700 font-bold rounded-xl transition-all transform hover:scale-[1.01] shadow-md flex items-center justify-center gap-2"
@@ -1141,7 +1214,7 @@ Focus on:
       )}
 
       {/* File Size Info */}
-      {preview && !isProcessing && (
+      {previews.length > 0 && !isProcessing && (
         <div className="mt-3 flex items-center justify-center space-x-2 text-sm text-gray-600">
           <AlertCircle className="h-4 w-4" />
           <span>รูปภาพจะถูกปรับขนาดอัตโนมัติเพื่อประสิทธิภาพที่ดีขึ้น</span>
