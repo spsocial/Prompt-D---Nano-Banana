@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/router'
 import VideoAdsModal from './VideoAdsModal'
+import ImageAdsModal from './ImageAdsModal'
 import VoiceGenerator from './VoiceGenerator'
 import AIChatGenerator from './AIChatGenerator'
 import FabButton from './FabButton'
@@ -116,6 +117,9 @@ export default function ChatInterfaceGenerator({ defaultMode = 'video' }) {
 
   const textareaRef = useRef(null)
   const messagesEndRef = useRef(null)
+
+  // Image Ads Modal state
+  const [showImageAdsModal, setShowImageAdsModal] = useState(false)
 
   const { userId, userCredits, useCredits, refundCredits, setIsGeneratingVideo, addToHistory, addVideoToHistory, showVideoAdsModal, videoAdsPreloadedImage, openVideoAdsModal, closeVideoAdsModal } = useStore()
   const { data: session } = useSession()
@@ -668,6 +672,167 @@ export default function ChatInterfaceGenerator({ defaultMode = 'video' }) {
     }
   }
 
+  // Handle Image Ads form submission
+  const handleImageAdsSubmit = async (formData) => {
+    const requiredCredits = formData.totalCredits
+
+    if (userCredits < requiredCredits) {
+      alert(`เครดิตไม่เพียงพอ! ต้องการ ${requiredCredits} เครดิต`)
+      return
+    }
+
+    // Add timestamp
+    const currentTime = new Date().toLocaleString('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+
+    // Add user message
+    const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      prompt: `สร้างภาพโฆษณา: ${formData.style}`,
+      images: formData.images,
+      mode: 'image',
+      numberOfImages: formData.numberOfImages,
+      style: formData.style,
+      aspectRatio: formData.aspectRatio,
+      timestamp: currentTime
+    }
+    setMessages(prev => [...prev, userMessage])
+
+    // Close modal
+    setShowImageAdsModal(false)
+
+    setIsGenerating(true)
+
+    // Add loading message
+    const loadingMessage = {
+      id: Date.now() + 1,
+      type: 'loading',
+      mode: 'image'
+    }
+    setMessages(prev => [...prev, loadingMessage])
+
+    try {
+      // Deduct credits
+      await useCredits(requiredCredits)
+
+      if (formData.selectedModel === 'nano-banana-pro') {
+        // Nano Banana PRO - ใช้ KIE.AI API
+        const generateResponse = await fetch('/api/generate-image-kie-pro', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: formData.prompt,
+            aspectRatio: formData.aspectRatio,
+            resolution: '1K',
+            outputFormat: 'png',
+            imageInput: formData.images,
+            userId: userId || 'anonymous'
+          })
+        })
+
+        setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
+
+        if (!generateResponse.ok) {
+          throw new Error('Failed to generate image with Nano Banana PRO')
+        }
+
+        const result = await generateResponse.json()
+
+        // Add result message
+        const resultMessage = {
+          id: Date.now() + 2,
+          type: 'result',
+          mode: 'image',
+          url: result.imageUrl,
+          data: result
+        }
+        setMessages(prev => [...prev, resultMessage])
+
+        // Save to history
+        await addToHistory({
+          imageUrl: result.imageUrl,
+          prompt: formData.prompt,
+          style: 'Image Ads - ' + formData.style,
+          aspectRatio: formData.aspectRatio
+        })
+
+      } else {
+        // Nano Banana (original) - ใช้ Gemini
+        const prompts = Array(formData.numberOfImages).fill(null).map((_, i) => ({
+          style: `Image Ads ${i + 1}`,
+          prompt: formData.prompt
+        }))
+
+        const generateResponse = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompts: prompts,
+            originalImage: formData.images[0],
+            aspectRatio: formData.aspectRatio,
+            userId: userId
+          })
+        })
+
+        setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
+
+        if (!generateResponse.ok) {
+          throw new Error('Failed to generate images')
+        }
+
+        const { results } = await generateResponse.json()
+
+        // Add each result as separate message
+        results.forEach((result, index) => {
+          const resultMessage = {
+            id: Date.now() + 2 + index,
+            type: 'result',
+            mode: 'image',
+            url: result.imageUrl,
+            data: result
+          }
+          setMessages(prev => [...prev, resultMessage])
+        })
+
+        // Save each image to history
+        for (const result of results) {
+          await addToHistory({
+            imageUrl: result.imageUrl,
+            prompt: formData.prompt,
+            style: 'Image Ads - ' + formData.style,
+            aspectRatio: formData.aspectRatio
+          })
+        }
+      }
+
+    } catch (error) {
+      console.error('Image ads generation error:', error)
+
+      // Refund credits on error
+      const refundSuccess = await refundCredits(requiredCredits, error.message || 'Image ads generation failed')
+
+      setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
+
+      const errorMessage = {
+        id: Date.now() + 3,
+        type: 'error',
+        message: error.message + (refundSuccess
+          ? ' (เครดิตถูกคืนให้อัตโนมัติแล้ว)'
+          : ' ⚠️ กรุณาติดต่อแอดมินเพื่อคืนเครดิต')
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-screen bg-[#000000]">
       {/* Header */}
@@ -1096,6 +1261,18 @@ export default function ChatInterfaceGenerator({ defaultMode = 'video' }) {
                     <span>ฟอร์มโฆษณา</span>
                   </button>
                 )}
+
+                {/* Image Ads Button - Only in image mode */}
+                {mode === 'image' && (
+                  <button
+                    onClick={() => setShowImageAdsModal(true)}
+                    disabled={isGenerating}
+                    className="px-3 py-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-lg text-xs font-medium transition-all disabled:opacity-50 flex items-center gap-1"
+                  >
+                    <span>🎨</span>
+                    <span>ฟอร์มภาพโฆษณา</span>
+                  </button>
+                )}
               </div>
 
               {/* Send Button */}
@@ -1127,6 +1304,13 @@ export default function ChatInterfaceGenerator({ defaultMode = 'video' }) {
         onClose={closeVideoAdsModal}
         onSubmit={handleAdsSubmit}
         initialImage={videoAdsPreloadedImage}
+      />
+
+      {/* Image Ads Modal */}
+      <ImageAdsModal
+        isOpen={showImageAdsModal}
+        onClose={() => setShowImageAdsModal(false)}
+        onSubmit={handleImageAdsSubmit}
       />
 
       {/* Confirmation Popup */}
