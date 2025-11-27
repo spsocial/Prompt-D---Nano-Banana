@@ -296,7 +296,7 @@ export default async function handler(req, res) {
         const errorMsg = statusData.error || statusData.errorMessage || 'Task failed'
         console.error(`❌ Task failed: ${errorMsg}`)
         throw new Error(errorMsg)
-      } else if (state === 'processing' || state === 'pending' || state === 'PROCESSING' || state === 'PENDING' || state === 'waiting') {
+      } else if (state === 'processing' || state === 'pending' || state === 'PROCESSING' || state === 'PENDING' || state === 'waiting' || state === 'generating' || state === 'GENERATING') {
         // Continue polling
         console.log('⏳ Task still processing...')
       } else {
