@@ -62,12 +62,13 @@ const IMAGE_MODELS = {
   }
 }
 
-export default function ChatInterfaceGenerator() {
-  const [mode, setMode] = useState('video') // 'image', 'video', 'voice', or 'chat'
+export default function ChatInterfaceGenerator({ defaultMode = 'video' }) {
+  const [mode, setMode] = useState(defaultMode) // 'image', 'video', 'voice', or 'chat'
   const [prompt, setPrompt] = useState('')
   const [duration, setDuration] = useState(10)
   const [aspectRatio, setAspectRatio] = useState('16:9')
-  const [uploadedImage, setUploadedImage] = useState(null)
+  const [uploadedImages, setUploadedImages] = useState([]) // Changed to array for multiple images
+  const MAX_IMAGES = 8
   const [messages, setMessages] = useState([])
   const [isGenerating, setIsGenerating] = useState(false)
 
@@ -146,28 +147,50 @@ export default function ChatInterfaceGenerator() {
   }, [showProfileMenu])
 
   const handleImageUpload = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
 
-    if (!file.type.startsWith('image/')) {
-      alert('กรุณาเลือกไฟล์รูปภาพ')
+    // Check how many more images we can add
+    const remainingSlots = MAX_IMAGES - uploadedImages.length
+    if (remainingSlots <= 0) {
+      alert(`สามารถแนบได้สูงสุด ${MAX_IMAGES} รูป`)
       return
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      alert('ไฟล์รูปภาพต้องมีขนาดไม่เกิน 10MB')
-      return
-    }
+    // Take only what we can fit
+    const filesToProcess = files.slice(0, remainingSlots)
 
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setUploadedImage(reader.result)
-    }
-    reader.readAsDataURL(file)
+    filesToProcess.forEach(file => {
+      if (!file.type.startsWith('image/')) {
+        alert('กรุณาเลือกไฟล์รูปภาพ')
+        return
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert('ไฟล์รูปภาพต้องมีขนาดไม่เกิน 10MB')
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setUploadedImages(prev => {
+          if (prev.length >= MAX_IMAGES) return prev
+          return [...prev, reader.result]
+        })
+      }
+      reader.readAsDataURL(file)
+    })
+
+    // Reset input value so same file can be selected again
+    e.target.value = ''
+  }
+
+  const removeImage = (indexToRemove) => {
+    setUploadedImages(prev => prev.filter((_, index) => index !== indexToRemove))
   }
 
   const handleGenerate = async () => {
-    if (!prompt.trim() && !uploadedImage) {
+    if (!prompt.trim() && uploadedImages.length === 0) {
       alert('กรุณาใส่ prompt หรืออัพโหลดรูปภาพ')
       return
     }
@@ -187,7 +210,7 @@ export default function ChatInterfaceGenerator() {
     // Show confirmation popup before generating
     setPendingGeneration({
       prompt,
-      uploadedImage,
+      uploadedImages,
       mode,
       duration,
       aspectRatio,
@@ -204,7 +227,7 @@ export default function ChatInterfaceGenerator() {
 
     if (!pendingGeneration) return
 
-    const { prompt, uploadedImage, mode, duration, aspectRatio, numberOfImages, selectedStyle, requiredCredits } = pendingGeneration
+    const { prompt, uploadedImages, mode, duration, aspectRatio, numberOfImages, selectedStyle, requiredCredits } = pendingGeneration
 
     // Add user message
     const currentTime = new Date().toLocaleString('th-TH', {
@@ -220,7 +243,7 @@ export default function ChatInterfaceGenerator() {
       id: Date.now(),
       type: 'user',
       prompt: prompt,
-      image: uploadedImage,
+      images: uploadedImages, // Changed to array
       mode: mode,
       duration: duration,
       aspectRatio: aspectRatio,
@@ -232,9 +255,9 @@ export default function ChatInterfaceGenerator() {
 
     // Clear input
     const currentPrompt = prompt
-    const currentImage = uploadedImage
+    const currentImages = uploadedImages // Changed to array
     setPrompt('')
-    setUploadedImage(null)
+    setUploadedImages([])
     setIsGenerating(true)
     if (mode === 'video') setIsGeneratingVideo(true)
 
@@ -277,7 +300,7 @@ export default function ChatInterfaceGenerator() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               prompt: videoPrompt,
-              image: currentImage,
+              image: currentImages[0] || null, // Video uses first image only
               duration: duration,
               aspectRatio: aspectRatio,
               model: 'sora-2',
@@ -356,7 +379,7 @@ export default function ChatInterfaceGenerator() {
               aspectRatio: aspectRatio,
               resolution: resolution, // Use resolution from state (1K, 2K, 4K)
               outputFormat: 'png',
-              imageInput: currentImage ? [currentImage] : [],
+              imageInput: currentImages.length > 0 ? currentImages : [],
               userId: userId || 'anonymous'
             })
           })
@@ -392,13 +415,13 @@ export default function ChatInterfaceGenerator() {
           // Step 1: Analyze (if image provided) or prepare prompts
           let prompts = []
 
-          if (currentImage) {
-            // Image-to-Image: analyze first
+          if (currentImages.length > 0) {
+            // Image-to-Image: analyze first (use first image for analysis)
             const analyzeResponse = await fetch('/api/analyze', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                image: currentImage,
+                image: currentImages[0], // Use first image for analysis
                 customPrompt: finalPrompt,
                 selectedStyle: selectedStyle,
                 numberOfImages: numberOfImages,
@@ -426,7 +449,7 @@ export default function ChatInterfaceGenerator() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               prompts: prompts,
-              originalImage: currentImage,
+              originalImage: currentImages[0] || null, // Use first image
               aspectRatio: aspectRatio,
               userId: userId
             })
@@ -851,18 +874,27 @@ export default function ChatInterfaceGenerator() {
       {mode !== 'voice' && mode !== 'chat' && (
         <div className="sticky bottom-0 z-20 backdrop-blur-lg bg-[#121212]/95 border-t border-gray-800 p-4">
           <div className="max-w-4xl mx-auto">
-            {/* Uploaded Image Preview */}
-            {uploadedImage && (
-            <div className="mb-3 relative inline-block">
-              <img src={uploadedImage} alt="Upload" className="h-20 rounded-lg border border-gray-700" />
-              <button
-                onClick={() => setUploadedImage(null)}
-                className="absolute -top-2 -right-2 p-1 bg-[#FE2C55] rounded-full text-white hover:bg-[#ff0050] transition-colors"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
+            {/* Uploaded Images Preview - Grid */}
+            {uploadedImages.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {uploadedImages.map((img, index) => (
+                  <div key={index} className="relative inline-block">
+                    <img src={img} alt={`Upload ${index + 1}`} className="h-20 rounded-lg border border-gray-700" />
+                    <button
+                      onClick={() => removeImage(index)}
+                      className="absolute -top-2 -right-2 p-1 bg-[#FE2C55] rounded-full text-white hover:bg-[#ff0050] transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {uploadedImages.length < MAX_IMAGES && (
+                  <div className="h-20 w-20 rounded-lg border-2 border-dashed border-gray-600 flex items-center justify-center text-gray-500 text-xs">
+                    +{MAX_IMAGES - uploadedImages.length}
+                  </div>
+                )}
+              </div>
+            )}
 
           {/* Main Input Container */}
           <div className="bg-[#1a1a1a] rounded-2xl border border-gray-800 overflow-hidden">
@@ -883,22 +915,23 @@ export default function ChatInterfaceGenerator() {
             <div className="flex items-center justify-between px-4 py-3 border-t border-gray-800">
               {/* Left Controls */}
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Image Upload - Always visible */}
+                {/* Image Upload - Always visible - supports multiple */}
                 <label className="cursor-pointer group">
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleImageUpload}
                     className="hidden"
-                    disabled={isGenerating}
+                    disabled={isGenerating || uploadedImages.length >= MAX_IMAGES}
                   />
                   <div className={`p-2 rounded-lg transition-all ${
-                    uploadedImage
+                    uploadedImages.length > 0
                       ? 'bg-[#00F2EA]/20 border border-[#00F2EA]'
                       : 'hover:bg-gray-800'
                   }`}>
                     <ImageIcon className={`h-5 w-5 ${
-                      uploadedImage
+                      uploadedImages.length > 0
                         ? 'text-[#00F2EA]'
                         : 'text-gray-400 group-hover:text-[#00F2EA]'
                     }`} />
@@ -1058,7 +1091,7 @@ export default function ChatInterfaceGenerator() {
               {/* Send Button */}
               <button
                 onClick={handleGenerate}
-                disabled={isGenerating || (!prompt.trim() && !uploadedImage)}
+                disabled={isGenerating || (!prompt.trim() && uploadedImages.length === 0)}
                 className="p-3 bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] rounded-xl text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-[#00F2EA]/50 transition-all"
               >
                 {isGenerating ? (
@@ -1205,7 +1238,16 @@ function MessageBubble({ message, onCreateVideoAd }) {
     return (
       <div className="flex justify-end">
         <div className="max-w-2xl">
-          {message.image && (
+          {/* Support both single image (legacy) and multiple images */}
+          {message.images && message.images.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2 justify-end">
+              {message.images.map((img, index) => (
+                <img key={index} src={img} alt={`Input ${index + 1}`} className="rounded-lg max-h-40" />
+              ))}
+            </div>
+          )}
+          {/* Legacy support for single image */}
+          {message.image && !message.images && (
             <img src={message.image} alt="Input" className="rounded-lg mb-2 max-h-40 ml-auto" />
           )}
           <div className="bg-gradient-to-r from-[#00F2EA] to-[#FE2C55] text-white rounded-2xl rounded-tr-sm px-4 py-3">

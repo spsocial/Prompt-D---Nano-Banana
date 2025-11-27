@@ -20,7 +20,7 @@ export default function ImageUploader() {
   const videoRef = useRef(null)
   const streamRef = useRef(null)
 
-  const MAX_IMAGES = 10 // Maximum 10 reference images for Nano Banana Edit
+  const MAX_IMAGES = 8 // Maximum 8 reference images for all models
   
   const {
     setIsProcessing,
@@ -627,7 +627,7 @@ Focus on:
           <button
             onClick={() => {
               setMode('promptOnly')
-              setPreview(null)
+              setPreviews([])
               setReadyToProcess(true)
               setShowAdvanced(true)
             }}

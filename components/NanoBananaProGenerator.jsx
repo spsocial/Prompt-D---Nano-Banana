@@ -4,7 +4,7 @@ import useStore from '../lib/store'
 import { Upload, Image as ImageIcon, Loader2, Wand2, RefreshCw, X, Sparkles, Zap } from 'lucide-react'
 
 export default function NanoBananaProGenerator() {
-  const [previews, setPreviews] = useState([]) // Changed to array for multiple images
+  const [previews, setPreviews] = useState([])
   const [prompt, setPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [result, setResult] = useState(null)
@@ -15,60 +15,53 @@ export default function NanoBananaProGenerator() {
 
   const { userCredits, useCredits } = useStore()
 
-  // Cost: 3 credits per image
   const COST_PER_IMAGE = 3
-  const MAX_IMAGES = 8 // Maximum 8 reference images
+  const MAX_IMAGES = 8
 
-  // Handle image upload - supports multiple images
-  const onDrop = useCallback(acceptedFiles => {
+  // Handle file drop using react-dropzone
+  const onDrop = useCallback((acceptedFiles) => {
     if (!acceptedFiles || acceptedFiles.length === 0) return
 
-    // Process all files and add them
-    const validFiles = acceptedFiles.filter(file => {
+    console.log('📁 Dropped files:', acceptedFiles.length)
+
+    acceptedFiles.forEach(file => {
       if (!file.type.startsWith('image/')) {
         setError('กรุณาเลือกไฟล์รูปภาพ')
-        return false
+        return
       }
       if (file.size > 10 * 1024 * 1024) {
         setError('ไฟล์แต่ละไฟล์ต้องมีขนาดไม่เกิน 10MB')
-        return false
+        return
       }
-      return true
-    })
 
-    if (validFiles.length === 0) return
-
-    // Read all files and add to previews
-    validFiles.forEach(file => {
       const reader = new FileReader()
-      reader.onloadend = () => {
+      reader.onload = (e) => {
         setPreviews(prev => {
           if (prev.length >= MAX_IMAGES) {
             setError(`สามารถแนบรูปได้สูงสุด ${MAX_IMAGES} รูปเท่านั้น`)
             return prev
           }
           setError(null)
-          return [...prev, reader.result]
+          return [...prev, e.target.result]
         })
       }
       reader.readAsDataURL(file)
     })
-  }, []) // No dependencies needed - uses functional update
-
-  // Remove a specific image
-  const removeImage = (indexToRemove) => {
-    setPreviews(prev => prev.filter((_, index) => index !== indexToRemove))
-  }
+  }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.webp']
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
     },
-    multiple: true, // Allow multiple files
-    maxSize: 10 * 1024 * 1024, // 10MB per file
-    disabled: previews.length >= MAX_IMAGES
+    multiple: true,
+    maxSize: 10 * 1024 * 1024,
+    disabled: isGenerating || previews.length >= MAX_IMAGES
   })
+
+  const removeImage = (indexToRemove) => {
+    setPreviews(prev => prev.filter((_, index) => index !== indexToRemove))
+  }
 
   const handleGenerate = async () => {
     if (!prompt) {
@@ -76,7 +69,6 @@ export default function NanoBananaProGenerator() {
       return
     }
 
-    // Check credits
     if (userCredits < COST_PER_IMAGE) {
       setError(`ไม่มีเครดิตเพียงพอ (ต้องการ ${COST_PER_IMAGE} เครดิต, คุณมี ${userCredits} เครดิต)`)
       return
@@ -89,7 +81,6 @@ export default function NanoBananaProGenerator() {
     try {
       console.log('🎨 Generating with Nano Banana PRO...')
 
-      // Prepare image input - now supports multiple images
       const imageInput = previews.length > 0 ? [...previews] : []
       console.log(`📸 Sending ${imageInput.length} reference image(s)`)
 
@@ -116,7 +107,6 @@ export default function NanoBananaProGenerator() {
       const data = await response.json()
       console.log('✅ Image generated:', data)
 
-      // Deduct credits
       const userId = localStorage.getItem('nano_user_id')
       if (userId) {
         await useCredits(userId, COST_PER_IMAGE, 'Nano Banana PRO Image Generation')
@@ -124,7 +114,6 @@ export default function NanoBananaProGenerator() {
 
       setResult(data)
 
-      // Add to history
       try {
         useStore.getState().addToHistory({
           imageUrl: data.imageUrl,
@@ -138,7 +127,6 @@ export default function NanoBananaProGenerator() {
         console.error('Error adding to history:', historyError)
       }
 
-      // Update stats
       useStore.getState().incrementGenerated()
 
     } catch (error) {
@@ -212,19 +200,49 @@ export default function NanoBananaProGenerator() {
           </div>
           <div className="flex items-center space-x-1">
             <span>✅</span>
-            <span>อัตราส่วนหลากหลาย</span>
+            <span>แนบได้สูงสุด {MAX_IMAGES} รูป</span>
           </div>
         </div>
       </div>
 
-      {/* Image Upload (Optional) - Multiple Images */}
+      {/* Image Upload - Multiple Images */}
       <div>
         <label className="block text-sm font-bold text-gray-800 mb-2">
           อัพโหลดรูปภาพอ้างอิง (ถ้าต้องการแปลงภาพ)
           <span className="text-gray-500 font-normal ml-2">ไม่บังคับ - สูงสุด {MAX_IMAGES} รูป</span>
         </label>
 
-        {/* Image Preview Grid */}
+        {/* Upload area using react-dropzone */}
+        {previews.length < MAX_IMAGES && (
+          <div
+            {...getRootProps()}
+            className={`mb-4 p-6 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 ${
+              isDragActive
+                ? 'border-orange-500 bg-orange-50'
+                : 'border-gray-300 hover:border-orange-400 bg-white hover:bg-orange-50/50'
+            } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <input {...getInputProps()} />
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className={`p-3 rounded-full mb-3 ${
+                isDragActive ? 'bg-orange-500' : 'bg-gray-200'
+              }`}>
+                <Upload className={`h-6 w-6 ${isDragActive ? 'text-white' : 'text-gray-600'}`} />
+              </div>
+              <p className="text-sm font-medium text-gray-700">
+                {isDragActive
+                  ? 'วางรูปได้เลย!'
+                  : 'ลากและวางรูปภาพที่นี่ หรือคลิกเพื่อเลือกไฟล์'
+                }
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                เลือกได้หลายรูปพร้อมกัน - สูงสุด {MAX_IMAGES} รูป (รองรับ JPG, PNG, GIF, WebP)
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Preview Grid */}
         {previews.length > 0 && (
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
@@ -258,27 +276,6 @@ export default function NanoBananaProGenerator() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Dropzone - Show if not at max */}
-        {previews.length < MAX_IMAGES && (
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer ${
-              isDragActive
-                ? 'border-orange-500 bg-orange-50'
-                : 'border-gray-300 hover:border-orange-400 bg-white'
-            }`}
-          >
-            <input {...getInputProps()} multiple />
-            <Upload className="h-10 w-10 mx-auto mb-3 text-gray-400" />
-            <p className="text-gray-600 mb-1">
-              {isDragActive ? 'วางรูปภาพที่นี่...' : 'ลากรูปภาพมาวางที่นี่'}
-            </p>
-            <p className="text-sm text-gray-500">
-              คลิกเพื่อเลือกไฟล์ (สูงสุด 10MB/รูป) - เหลือ {MAX_IMAGES - previews.length} รูป
-            </p>
           </div>
         )}
 
