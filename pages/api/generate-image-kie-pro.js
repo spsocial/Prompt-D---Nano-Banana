@@ -67,7 +67,7 @@ export const config = {
     },
     responseLimit: false,
   },
-  maxDuration: 300, // 5 minutes timeout for image generation
+  maxDuration: 600, // 10 minutes timeout for image generation
 }
 
 export default async function handler(req, res) {
@@ -198,7 +198,7 @@ export default async function handler(req, res) {
     console.log(`✅ Task created: ${taskId}`)
 
     // Step 2: Poll for results
-    const maxAttempts = 60 // Max 5 minutes (60 * 5 seconds)
+    const maxAttempts = 120 // Max 10 minutes (120 * 5 seconds)
     let attempts = 0
     let imageUrl = null
 
@@ -305,7 +305,7 @@ export default async function handler(req, res) {
     }
 
     if (!imageUrl) {
-      throw new Error('Timeout: Image not ready after 5 minutes')
+      throw new Error('Timeout: Image not ready after 10 minutes')
     }
 
     console.log(`🎉 KIE.AI Nano Banana PRO generation complete!`)

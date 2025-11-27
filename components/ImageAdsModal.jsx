@@ -23,39 +23,39 @@ const AI_MODELS = [
 // สไตล์ภาพ
 const IMAGE_STYLES = [
   {
+    id: 'review',
+    name: 'Review',
+    nameTh: 'รีวิวสินค้า',
+    icon: '⭐',
+    prompt: 'กำลังรีวิวสินค้า'
+  },
+  {
     id: 'realistic',
     name: 'Realistic',
     nameTh: 'สมจริง',
     icon: '📷',
-    prompt: 'ถ่ายภาพแบบสมจริงระดับไฮเปอร์เรียลลิสติก แสงธรรมชาติ รายละเอียดพื้นผิวคมชัด ภาพถ่ายสินค้าระดับมืออาชีพ'
+    prompt: ''
   },
   {
     id: 'cinematic',
     name: 'Cinematic',
     nameTh: 'แนวภาพยนตร์',
     icon: '🎬',
-    prompt: 'แสงแบบภาพยนตร์ เงาดราม่า สไตล์โปสเตอร์หนัง คอนทราสต์สูง บรรยากาศยิ่งใหญ่อลังการ'
-  },
-  {
-    id: 'commercial',
-    name: 'Commercial',
-    nameTh: 'โฆษณามืออาชีพ',
-    icon: '💼',
-    prompt: 'ภาพถ่ายโฆษณาระดับมืออาชีพ พื้นหลังสะอาดตา แสงสตูดิโอ สไตล์โฆษณาระดับพรีเมียม'
+    prompt: 'สไตล์ภาพยนตร์'
   },
   {
     id: 'poster',
     name: 'Poster',
     nameTh: 'โปสเตอร์',
     icon: '🎨',
-    prompt: 'สไตล์โปสเตอร์โฆษณา สีสันโดดเด่น องค์ประกอบดราม่า ดีไซน์ดึงดูดสายตา งานโปรโมทที่น่าสนใจ'
+    prompt: 'สไตล์โปสเตอร์โฆษณา'
   },
   {
     id: 'infographic',
     name: 'Infographic',
     nameTh: 'อินโฟกราฟฟิค',
     icon: '📊',
-    prompt: 'สไตล์อินโฟกราฟฟิค เลย์เอาต์สะอาดตา ดีไซน์ให้ข้อมูล กราฟิกทันสมัย สวยงามเรียบหรู'
+    prompt: 'สไตล์อินโฟกราฟฟิค'
   }
 ]
 
@@ -98,7 +98,7 @@ export default function ImageAdsModal({ isOpen, onClose, onSubmit }) {
   const [customText, setCustomText] = useState('')
 
   // สไตล์และมุมกล้อง
-  const [selectedStyle, setSelectedStyle] = useState('realistic')
+  const [selectedStyle, setSelectedStyle] = useState('review')
   const [selectedAngle, setSelectedAngle] = useState('close-up')
   const [aspectRatio, setAspectRatio] = useState('1:1')
 
@@ -115,7 +115,7 @@ export default function ImageAdsModal({ isOpen, onClose, onSubmit }) {
       setModelOption('none')
       setWantText(false)
       setCustomText('')
-      setSelectedStyle('realistic')
+      setSelectedStyle('review')
       setSelectedAngle('close-up')
       setAspectRatio('1:1')
       setSelectedModel('banana')
@@ -158,6 +158,7 @@ export default function ImageAdsModal({ isOpen, onClose, onSubmit }) {
   }
 
   const buildPrompt = () => {
+    const style = IMAGE_STYLES.find(s => s.id === selectedStyle)
     const angle = CAMERA_ANGLES.find(a => a.id === selectedAngle)
 
     let prompt = ''
@@ -173,15 +174,9 @@ export default function ImageAdsModal({ isOpen, onClose, onSubmit }) {
       prompt += 'สินค้าจากภาพที่แนบไป'
     }
 
-    // สไตล์ (ถ้าไม่ใช่ realistic ค่อยเพิ่ม)
-    if (selectedStyle === 'cinematic') {
-      prompt += ' สไตล์ภาพยนตร์'
-    } else if (selectedStyle === 'commercial') {
-      prompt += ' กำลังรีวิวสินค้า'
-    } else if (selectedStyle === 'poster') {
-      prompt += ' สไตล์โปสเตอร์โฆษณา'
-    } else if (selectedStyle === 'infographic') {
-      prompt += ' สไตล์อินโฟกราฟฟิค'
+    // สไตล์ (เพิ่มถ้ามี prompt)
+    if (style.prompt) {
+      prompt += ` ${style.prompt}`
     }
 
     // มุมกล้อง
