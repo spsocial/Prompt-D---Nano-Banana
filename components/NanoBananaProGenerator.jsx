@@ -23,39 +23,37 @@ export default function NanoBananaProGenerator() {
   const onDrop = useCallback(acceptedFiles => {
     if (!acceptedFiles || acceptedFiles.length === 0) return
 
-    // Check if adding these would exceed the limit
-    const remainingSlots = MAX_IMAGES - previews.length
-    if (remainingSlots <= 0) {
-      setError(`สามารถแนบรูปได้สูงสุด ${MAX_IMAGES} รูปเท่านั้น`)
-      return
-    }
-
-    const filesToProcess = acceptedFiles.slice(0, remainingSlots)
-    const newPreviews = []
-
-    filesToProcess.forEach(file => {
+    // Process all files and add them
+    const validFiles = acceptedFiles.filter(file => {
       if (!file.type.startsWith('image/')) {
         setError('กรุณาเลือกไฟล์รูปภาพ')
-        return
+        return false
       }
-
-      // Max 10MB per file
       if (file.size > 10 * 1024 * 1024) {
         setError('ไฟล์แต่ละไฟล์ต้องมีขนาดไม่เกิน 10MB')
-        return
+        return false
       }
+      return true
+    })
 
+    if (validFiles.length === 0) return
+
+    // Read all files and add to previews
+    validFiles.forEach(file => {
       const reader = new FileReader()
       reader.onloadend = () => {
         setPreviews(prev => {
-          if (prev.length >= MAX_IMAGES) return prev
+          if (prev.length >= MAX_IMAGES) {
+            setError(`สามารถแนบรูปได้สูงสุด ${MAX_IMAGES} รูปเท่านั้น`)
+            return prev
+          }
+          setError(null)
           return [...prev, reader.result]
         })
-        setError(null)
       }
       reader.readAsDataURL(file)
     })
-  }, [previews.length])
+  }, []) // No dependencies needed - uses functional update
 
   // Remove a specific image
   const removeImage = (indexToRemove) => {

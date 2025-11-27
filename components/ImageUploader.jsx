@@ -279,50 +279,47 @@ Focus on:
   const onDrop = useCallback((acceptedFiles) => {
     if (!acceptedFiles || acceptedFiles.length === 0) return
 
-    // Check if adding these would exceed the limit
-    const remainingSlots = MAX_IMAGES - previews.length
-    if (remainingSlots <= 0) {
-      setError(`สามารถแนบรูปได้สูงสุด ${MAX_IMAGES} รูปเท่านั้น`)
-      return
-    }
-
-    const filesToProcess = acceptedFiles.slice(0, remainingSlots)
-
-    filesToProcess.forEach(file => {
-      // Validate file type
+    // Filter valid files
+    const validFiles = acceptedFiles.filter(file => {
       if (!file.type.startsWith('image/')) {
         setError('กรุณาอัพโหลดไฟล์รูปภาพ')
-        return
+        return false
       }
-
-      // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         setError('ไฟล์แต่ละไฟล์ต้องมีขนาดไม่เกิน 10MB')
-        return
+        return false
       }
+      return true
+    })
 
+    if (validFiles.length === 0) return
+
+    // Read all files and add to previews
+    validFiles.forEach(file => {
       console.log(`📁 File: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`)
 
-      // Create preview
       const reader = new FileReader()
       reader.onload = (e) => {
         const base64 = e.target.result
         setPreviews(prev => {
-          if (prev.length >= MAX_IMAGES) return prev
+          if (prev.length >= MAX_IMAGES) {
+            setError(`สามารถแนบรูปได้สูงสุด ${MAX_IMAGES} รูปเท่านั้น`)
+            return prev
+          }
           const newPreviews = [...prev, base64]
           // Save first image to global store for backward compatibility
           if (newPreviews.length === 1) {
             setStoreUploadedImage(base64)
           }
+          setError(null)
           return newPreviews
         })
         setReadyToProcess(true)
         setShowAdvanced(true)
-        setError(null)
       }
       reader.readAsDataURL(file)
     })
-  }, [setStoreUploadedImage, previews.length])
+  }, [setStoreUploadedImage]) // Remove previews.length from dependencies
 
   // Remove a specific image
   const removeImage = (indexToRemove) => {
