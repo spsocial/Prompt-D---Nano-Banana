@@ -719,7 +719,7 @@ Focus on:
               bg-white/20 backdrop-blur-sm
             `}
             >
-              <input {...getInputProps()} />
+              <input {...getInputProps()} multiple />
 
               <div className="flex justify-center mb-3">
                 {isDragActive ? (

@@ -273,7 +273,7 @@ export default function NanoBananaProGenerator() {
                 : 'border-gray-300 hover:border-orange-400 bg-white'
             }`}
           >
-            <input {...getInputProps()} />
+            <input {...getInputProps()} multiple />
             <Upload className="h-10 w-10 mx-auto mb-3 text-gray-400" />
             <p className="text-gray-600 mb-1">
               {isDragActive ? 'วางรูปภาพที่นี่...' : 'ลากรูปภาพมาวางที่นี่'}
