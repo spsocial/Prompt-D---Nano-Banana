@@ -730,7 +730,7 @@ export default function ChatInterfaceGenerator({ defaultMode = 'video' }) {
           body: JSON.stringify({
             prompt: formData.prompt,
             aspectRatio: formData.aspectRatio,
-            resolution: '1K',
+            resolution: formData.resolution || '1K',
             outputFormat: 'png',
             imageInput: formData.images,
             userId: userId || 'anonymous'

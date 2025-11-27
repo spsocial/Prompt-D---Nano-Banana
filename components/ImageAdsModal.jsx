@@ -61,12 +61,12 @@ const IMAGE_STYLES = [
 
 // มุมกล้อง
 const CAMERA_ANGLES = [
-  { id: 'close-up', name: 'Close-up', nameTh: 'ระยะใกล้', prompt: 'ถ่ายระยะใกล้ เน้นรายละเอียดสินค้า' },
-  { id: 'medium', name: 'Medium Shot', nameTh: 'ระยะกลาง', prompt: 'ถ่ายระยะกลาง เห็นสินค้าและบริบทรอบข้าง' },
-  { id: 'wide', name: 'Wide Shot', nameTh: 'ระยะไกล', prompt: 'ถ่ายระยะไกล เห็นฉากโดยรวมทั้งหมด' },
-  { id: 'eye-level', name: 'Eye Level', nameTh: 'ระดับสายตา', prompt: 'ถ่ายระดับสายตา มุมมองธรรมชาติ' },
-  { id: 'high-angle', name: 'High Angle', nameTh: 'มุมสูง', prompt: 'ถ่ายมุมสูงลงมา มองจากด้านบน' },
-  { id: 'low-angle', name: 'Low Angle', nameTh: 'มุมต่ำ', prompt: 'ถ่ายมุมต่ำขึ้นไป ให้ความรู้สึกยิ่งใหญ่ทรงพลัง' }
+  { id: 'close-up', name: 'Close-up', nameTh: 'ระยะใกล้', prompt: 'มุมกล้องระยะใกล้' },
+  { id: 'medium', name: 'Medium Shot', nameTh: 'ระยะกลาง', prompt: 'มุมกล้องระยะกลาง' },
+  { id: 'wide', name: 'Wide Shot', nameTh: 'ระยะไกล', prompt: 'มุมกล้องระยะไกล' },
+  { id: 'eye-level', name: 'Eye Level', nameTh: 'ระดับสายตา', prompt: 'มุมกล้องระดับสายตา' },
+  { id: 'high-angle', name: 'High Angle', nameTh: 'มุมสูง', prompt: 'มุมกล้องมุมสูง' },
+  { id: 'low-angle', name: 'Low Angle', nameTh: 'มุมต่ำ', prompt: 'มุมกล้องมุมต่ำ' }
 ]
 
 // Aspect Ratios
@@ -76,6 +76,13 @@ const ASPECT_RATIOS = [
   { id: '9:16', name: '9:16', desc: 'Story/Reels' },
   { id: '16:9', name: '16:9', desc: 'YouTube' },
   { id: '3:4', name: '3:4', desc: 'Portrait' }
+]
+
+// ความละเอียด (สำหรับ Nano Banana PRO)
+const RESOLUTIONS = [
+  { id: '1K', name: '1K', desc: 'มาตรฐาน' },
+  { id: '2K', name: '2K', desc: 'คมชัดสูง' },
+  { id: '4K', name: '4K', desc: 'คมชัดสูงสุด' }
 ]
 
 export default function ImageAdsModal({ isOpen, onClose, onSubmit }) {
@@ -98,6 +105,7 @@ export default function ImageAdsModal({ isOpen, onClose, onSubmit }) {
   // ตัวเลือกการสร้าง
   const [selectedModel, setSelectedModel] = useState('banana')
   const [numberOfImages, setNumberOfImages] = useState(1)
+  const [resolution, setResolution] = useState('1K') // สำหรับ Nano Banana PRO
 
   // Reset form when modal closes
   useEffect(() => {
@@ -112,6 +120,7 @@ export default function ImageAdsModal({ isOpen, onClose, onSubmit }) {
       setAspectRatio('1:1')
       setSelectedModel('banana')
       setNumberOfImages(1)
+      setResolution('1K')
     }
   }, [isOpen])
 
@@ -149,41 +158,43 @@ export default function ImageAdsModal({ isOpen, onClose, onSubmit }) {
   }
 
   const buildPrompt = () => {
-    const style = IMAGE_STYLES.find(s => s.id === selectedStyle)
     const angle = CAMERA_ANGLES.find(a => a.id === selectedAngle)
 
     let prompt = ''
 
-    // เริ่มต้นด้วยคำสั่งหลัก
-    prompt += 'สร้างภาพโฆษณาสินค้าจากภาพต้นฉบับที่ให้มา รักษารูปร่าง โลโก้ และข้อความบนสินค้าให้ตรงตามต้นฉบับ '
-
-    // นายแบบ/นางแบบ
+    // นายแบบ/นางแบบ + สินค้า
     if (modelOption === 'from-image') {
-      prompt += 'ใช้นางแบบจากรูปที่อัพโหลดมา ให้นางแบบถือหรือนำเสนอสินค้าอย่างเป็นธรรมชาติ '
+      prompt += 'ผู้หญิงจากภาพที่แนบถือสินค้าจากภาพที่แนบไป'
     } else if (modelOption === 'male') {
-      prompt += 'มีนายแบบชายเอเชียหน้าตาดี ถือหรือนำเสนอสินค้า ดูมั่นใจและเป็นมืออาชีพ '
+      prompt += 'ผู้ชายถือสินค้าจากภาพที่แนบไป'
     } else if (modelOption === 'female') {
-      prompt += 'มีนางแบบหญิงเอเชียสวยงาม ถือหรือนำเสนอสินค้า ดูสง่างามและเป็นมืออาชีพ '
+      prompt += 'ผู้หญิงถือสินค้าจากภาพที่แนบไป'
     } else {
-      prompt += 'เน้นที่ตัวสินค้าเท่านั้น ไม่ต้องมีนายแบบหรือนางแบบ '
+      prompt += 'สินค้าจากภาพที่แนบไป'
+    }
+
+    // สไตล์ (ถ้าไม่ใช่ realistic ค่อยเพิ่ม)
+    if (selectedStyle === 'cinematic') {
+      prompt += ' สไตล์ภาพยนตร์'
+    } else if (selectedStyle === 'commercial') {
+      prompt += ' กำลังรีวิวสินค้า'
+    } else if (selectedStyle === 'poster') {
+      prompt += ' สไตล์โปสเตอร์โฆษณา'
+    } else if (selectedStyle === 'infographic') {
+      prompt += ' สไตล์อินโฟกราฟฟิค'
     }
 
     // มุมกล้อง
-    prompt += `${angle.prompt} `
-
-    // สไตล์
-    prompt += `${style.prompt} `
+    prompt += ` ${angle.prompt}`
 
     // ข้อความ
     if (wantText) {
       if (customText.trim()) {
-        prompt += `ใส่ข้อความโปรโมทบนภาพ: "${customText}" ให้อ่านง่ายและโดดเด่น `
+        prompt += ` มีตัวหนังสือ "${customText}" ขึ้นด้านบนของภาพ`
       } else {
-        prompt += 'มีข้อความรีวิวสินค้าที่ด้านบนของภาพ '
+        prompt += ' มีตัวหนังสือรีวิวสินค้าขึ้นด้านบนของภาพ'
       }
     }
-
-    prompt += 'ภาพคุณภาพสูง ความละเอียดระดับ 8K แสงสวยระดับมืออาชีพ รายละเอียดคมชัด'
 
     return prompt
   }
@@ -212,6 +223,7 @@ export default function ImageAdsModal({ isOpen, onClose, onSubmit }) {
       images: modelImage ? [productImage, modelImage] : [productImage],
       selectedModel,
       numberOfImages,
+      resolution,
       totalCredits
     })
   }
@@ -568,6 +580,29 @@ export default function ImageAdsModal({ isOpen, onClose, onSubmit }) {
                   </p>
                 )}
               </div>
+
+              {/* ความละเอียด - เฉพาะ Nano Banana PRO */}
+              {selectedModel === 'nano-banana-pro' && (
+                <div className="space-y-2">
+                  <label className="text-sm text-gray-400">ความละเอียด</label>
+                  <div className="flex gap-2">
+                    {RESOLUTIONS.map((res) => (
+                      <button
+                        key={res.id}
+                        onClick={() => setResolution(res.id)}
+                        className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                          resolution === res.id
+                            ? 'bg-[#00F2EA] text-black'
+                            : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                        }`}
+                      >
+                        <div>{res.name}</div>
+                        <div className="text-xs opacity-70">{res.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* สรุปเครดิต */}
               <div className="flex items-center justify-between p-3 bg-gray-800 rounded-xl">
