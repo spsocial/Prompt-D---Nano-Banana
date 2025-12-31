@@ -48,7 +48,7 @@ export const authOptions = {
             image: user.image,
             firstSeen: new Date(),
             lastActive: new Date(),
-            credits: 10, // Give 10 free credits for new users
+            credits: 5, // Give 5 free credits for new users
             totalGenerated: 0,
             totalSpent: 0,
             creditsUsed: 0,
@@ -56,7 +56,7 @@ export const authOptions = {
           }
         })
 
-        console.log(`✅ Created new user: ${user.email} with 10 free credits`)
+        console.log(`✅ Created new user: ${user.email} with 5 free credits`)
       } else {
         // Update last active
         await prisma.user.update({

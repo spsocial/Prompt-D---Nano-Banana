@@ -107,7 +107,7 @@ export default function Home() {
                   </div>
                   <div>
                     <div className="font-bold text-[#00F2EA] text-sm">เครดิตฟรี</div>
-                    <div className="text-xs text-gray-400">รับ 10 เครดิตทันทีเมื่อสมัคร</div>
+                    <div className="text-xs text-gray-400">รับ 5 เครดิตทันทีเมื่อสมัคร</div>
                   </div>
                 </div>
                 <div className="p-3 bg-[#0a0a0a] rounded-xl flex flex-col items-center gap-2 text-center">
