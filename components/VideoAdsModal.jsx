@@ -7,7 +7,7 @@ const ADS_TEMPLATES = {
     name: 'CGI Style',
     icon: '🎬',
     description: 'สไตล์ CGI สมจริง เหมาะกับสินค้าทั่วไป',
-    format: 'โฆษณา{productName} แนว CGI {gender}พูด"{script}" อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง'
+    format: 'โฆษณา{productName} แนว CGI {gender}พูด"{script}"'
   },
   ugc: {
     name: 'UGC Style',
@@ -19,13 +19,13 @@ const ADS_TEMPLATES = {
     name: 'Cinematic Style',
     icon: '🎥',
     description: 'สไตล์ภาพยนตร์ ดูหรูหรา พรีเมี่ยม',
-    format: 'โฆษณา{productName} แนว Cinematic {gender}พูด"{script}" อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง'
+    format: 'โฆษณา{productName} แนว Cinematic {gender}พูด"{script}"'
   },
   minimalist: {
     name: 'Minimalist Style',
     icon: '✨',
     description: 'สไตล์มินิมอล เรียบง่าย ดูดี',
-    format: 'โฆษณา{productName} แนว Minimalist {gender}พูด"{script}" อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง'
+    format: 'โฆษณา{productName} แนว Minimalist {gender}พูด"{script}"'
   }
 }
 
@@ -187,10 +187,10 @@ export default function VideoAdsModal({ isOpen, onClose, onSubmit, initialImage 
       if (cameo.trim()) {
         // Format with cameo
         const cleanCameo = cameo.trim().startsWith('@') ? cameo.trim() : `@${cameo.trim()}`
-        prompt = `โฆษณา${productName} แนว ${styleName} โดย ${cleanCameo}${modelDescription}${voiceDescription} อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง`
+        prompt = `โฆษณา${productName} แนว ${styleName} โดย ${cleanCameo}${modelDescription}${voiceDescription}`
       } else {
         // Format without cameo
-        prompt = `โฆษณา${productName} แนว ${styleName}${modelDescription}${voiceDescription} อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง`
+        prompt = `โฆษณา${productName} แนว ${styleName}${modelDescription}${voiceDescription}`
       }
     }
 

@@ -133,7 +133,11 @@ export default async function handler(req, res) {
     // If completed successfully, track the video generation
     if (updatedVideo.status === 'completed' && updatedVideo.videoUrl) {
       try {
-        await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/track-video`, {
+        const protocol = req.headers['x-forwarded-proto'] || 'http';
+        const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+        const baseUrl = `${protocol}://${host}`;
+
+        await fetch(`${baseUrl}/api/track-video`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -278,10 +278,8 @@ export default function ChatInterfaceGenerator({ defaultMode = 'video' }) {
       await useCredits(requiredCredits)
 
       if (mode === 'video') {
-        // Add "no text" instruction to prevent Thai text overlays
-        const videoPrompt = currentPrompt
-          ? `${currentPrompt} อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง`
-          : 'Create cinematic video อย่าใส่ตัวหนังสือภาษาไทยที่คิดขึ้นมาเอง'
+        // Use prompt directly without adding extra text (was causing OpenAI content policy issues)
+        const videoPrompt = currentPrompt || 'Create cinematic video'
 
         // Detect mobile for proper endpoint selection
         const isMobileDevice = isMobile()
